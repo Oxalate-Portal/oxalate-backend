@@ -1,0 +1,122 @@
+### Common settings ###
+spring:
+  application:
+    name: Oxalate Portal
+  profiles:
+    default: local
+  datasource:
+    url: override-me
+    username: override-me
+    password: override-me
+    hikari:
+      schema: override-me
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      jdbc:
+        time_zone: UTC
+      hibernate:
+        default_schema: override-me
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    schemas:
+      - override-me
+  mail:
+    host: override-me
+    port: override-me
+
+actuator:
+  enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: [ "openapi", "swagger-ui" ]
+    enabled-by-default: true
+
+#  These values come from Maven
+info:
+  app:
+    name: @project.artifactId@
+  build:
+    version: @project.version@
+
+springdoc:
+  show-login-endpoint: true
+  swagger-ui:
+    operationsSorter: alpha
+    tagsSorter: alpha
+  show-actuator: true
+  api-docs:
+    enabled: true
+    resolve-schema-properties: true
+  use-management-port: true
+
+# Set so we can get the real IP address of the client when doing auditing
+server:
+  forward-headers-strategy: native
+
+oxalate:
+  app:
+    org-name: override-me
+    env: override-me
+    backend-url: override-me
+    frontend-url: override-me
+    jwt-secret: override-me
+    jwt-expiration-ms: override-me
+  mail:
+    enabled: override-me
+    system-email: override-me
+    org-email: override-me
+    support-email: override-me
+  payment:
+    period-start-month: override-me # 1 = January, 12 = December
+    event-requires-payment: override-me
+  cors:
+    allowed-origins: ${oxalate.app.frontend-url}
+    cors-pattern: '/**'
+    max-age: 3600
+  captcha:
+    enabled: override-me
+    verification-url: https://www.google.com/recaptcha/api/siteverify
+    site-key: override-me
+    secret-key: override-me
+    threshold: override-me
+  token:
+    expires-after: 12
+    maxRetryCount: 3
+    registration-url: ${oxalate.app.frontend-url}/registration
+    confirmation-url: ${oxalate.app.backend-url}/api/auth/registrations
+    lost-password-url: ${oxalate.app.frontend-url}/auth/new-password
+  audit:
+    retention:
+      days: 30
+
+---
+### Local machine ###
+
+spring:
+  config:
+    activate:
+      on-profile: local
+    import: classpath:local.yaml
+---
+### Production machine ###
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+    import: classpath:prod.yaml

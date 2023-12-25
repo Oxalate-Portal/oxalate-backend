@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fi">
+<head>
+    <title>[[${orgName}]] portaaliin rekisteröityminen</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+
+<p>Hei <span th:text="${name}"></span>!</p>
+
+<p>Olet rekisteröitynyt [[${orgName}]]:n portaaliin.
+    Vahvista sähköpostiosoitteesi klikkaamalla <a th:href="@{${url}}">tästä</a>.</p>
+
+<p>Linkki on voimassa [[${tokenTtl}]] tuntia rekisteröitymishetkestä.</p>
+
+<p>Jos viesti on aiheeton tai tunnuksen vahvistaminen ei onnistu, ota yhteys [[${supportEmail}]].</p>
+
+<p>Terveisin [[${orgName}]]</p>
+
+</body>
+</html>
