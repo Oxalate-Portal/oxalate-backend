@@ -108,30 +108,30 @@ public class UserController implements UserAPI {
     @Override
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ORGANIZER') or hasRole('ROLE_ADMIN')")
     public ResponseEntity<AdminUserResponse> updateUser(UserUpdateRequest updateRequest, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(USERS_UPDATE_START + updateRequest.getUserId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+        var auditUuid = appEventPublisher.publishAuditEvent(USERS_UPDATE_START + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         // Only admins can update other users
-        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN) && AuthTools.getCurrentUserId() != updateRequest.getUserId()) {
-            appEventPublisher.publishAuditEvent(USERS_UPDATE_UNAUTHORIZED + updateRequest.getUserId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            log.error("User {} tried to update user {} info", AuthTools.getCurrentUserId(), updateRequest.getUserId());
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN) && AuthTools.getCurrentUserId() != updateRequest.getId()) {
+            appEventPublisher.publishAuditEvent(USERS_UPDATE_UNAUTHORIZED + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            log.error("User {} tried to update user {} info", AuthTools.getCurrentUserId(), updateRequest.getId());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                                  .body(null);
         }
 
         try {
-            Optional<User> optionalUser = userService.findUserById(updateRequest.getUserId());
+            Optional<User> optionalUser = userService.findUserById(updateRequest.getId());
 
             if (optionalUser.isEmpty()) {
-                appEventPublisher.publishAuditEvent(USERS_UPDATE_NOT_FOUND + updateRequest.getUserId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-                log.warn("Non-existing user {} tried to update their data with {}", updateRequest.getUserId(), updateRequest);
+                appEventPublisher.publishAuditEvent(USERS_UPDATE_NOT_FOUND + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+                log.warn("Non-existing user {} tried to update their data with {}", updateRequest.getId(), updateRequest);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
 
             // Check first whether the new user status is ANONYMIZED, in which case we start an alternative process
             if (updateRequest.getStatus() == ANONYMIZED) {
-                anonymizeService.anonymize(updateRequest.getUserId());
-                appEventPublisher.publishAuditEvent(USERS_UPDATE_ANONYMIZED + updateRequest.getUserId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-                log.info("User {} anonymized", updateRequest.getUserId());
+                anonymizeService.anonymize(updateRequest.getId());
+                appEventPublisher.publishAuditEvent(USERS_UPDATE_ANONYMIZED + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+                log.info("User {} anonymized", updateRequest.getId());
                 return ResponseEntity.status(HttpStatus.OK).body(null);
             }
 
@@ -139,9 +139,9 @@ public class UserController implements UserAPI {
 
             // Currently we do not allow changing the username/email
             if (!user.getUsername().equals(updateRequest.getUsername())) {
-                appEventPublisher.publishAuditEvent(USERS_UPDATE_USERNAME_CHANGED + updateRequest.getUserId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
+                appEventPublisher.publishAuditEvent(USERS_UPDATE_USERNAME_CHANGED + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
                         auditUuid);
-                log.error("User {} tried to change username from {} to {}", updateRequest.getUserId(), user.getUsername(), updateRequest.getUsername());
+                log.error("User {} tried to change username from {} to {}", updateRequest.getId(), user.getUsername(), updateRequest.getUsername());
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
 
@@ -164,11 +164,11 @@ public class UserController implements UserAPI {
             user.setRoles(roles);
             var newUser = userService.updateUser(user);
 
-            appEventPublisher.publishAuditEvent(USERS_UPDATE_OK + updateRequest.getUserId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            appEventPublisher.publishAuditEvent(USERS_UPDATE_OK + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             return ResponseEntity.status(HttpStatus.OK).body(newUser.toAdminUserResponse());
         } catch (Exception e) {
-            appEventPublisher.publishAuditEvent(USERS_UPDATE_FAIL + updateRequest.getUserId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            log.error("Failed to update user ID {}: {}", updateRequest.getUserId(), e.getMessage(), e);
+            appEventPublisher.publishAuditEvent(USERS_UPDATE_FAIL + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            log.error("Failed to update user ID {}: {}", updateRequest.getId(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }

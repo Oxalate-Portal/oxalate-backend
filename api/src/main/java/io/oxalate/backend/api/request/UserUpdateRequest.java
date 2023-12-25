@@ -13,8 +13,8 @@ import lombok.Data;
 public class UserUpdateRequest {
 
     @Schema(description = "ID of the user to be updated", example = "123", requiredMode = Schema.RequiredMode.REQUIRED)
-    @JsonProperty("userId")
-    private long userId;
+    @JsonProperty("id")
+    private long id;
 
     @Size(max = 80)
     @Email
