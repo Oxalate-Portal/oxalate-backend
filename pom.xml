@@ -20,7 +20,7 @@
         <spring.boot.version>3.2.1</spring.boot.version> <!-- Keep this in sync with the parent version -->
         <flyway.version>10.4.1</flyway.version>
         <jjwt.version>0.12.3</jjwt.version>
-        <swagger.version>2.2.19</swagger.version>
+        <swagger.version>2.2.20</swagger.version>
     </properties>
 
     <build>
