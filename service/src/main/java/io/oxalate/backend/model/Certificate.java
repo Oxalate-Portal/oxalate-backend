@@ -46,14 +46,15 @@ public class Certificate {
     @Column(name = "certification_date")
     private Timestamp certificationDate;
 
-    public CertificateResponse toCertificateDto() {
+    public CertificateResponse toCertificateResponse() {
         return CertificateResponse.builder()
-								  .id(this.id)
-								  .organization(this.organization)
-								  .certificateName(this.certificateName)
-								  .certificateId(this.certificateId)
-								  .diverId(this.diverId)
-								  .certificationDate(this.certificationDate.toInstant())
-								  .build();
+                                  .id(this.id)
+                                  .userId(this.userId)
+                                  .organization(this.organization)
+                                  .certificateName(this.certificateName)
+                                  .certificateId(this.certificateId)
+                                  .diverId(this.diverId)
+                                  .certificationDate(this.certificationDate.toInstant())
+                                  .build();
     }
 }

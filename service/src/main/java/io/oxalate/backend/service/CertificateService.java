@@ -60,7 +60,7 @@ public class CertificateService {
 
         var savedCertificate = certificateRepository.save(certificate);
 
-        return savedCertificate.toCertificateDto();
+        return savedCertificate.toCertificateResponse();
     }
 
     public CertificateResponse updateCertificate(long userId, CertificateRequest certificateRequest) {
@@ -87,7 +87,7 @@ public class CertificateService {
 
         var savedCertificate = certificateRepository.save(certificate);
 
-        return savedCertificate.toCertificateDto();
+        return savedCertificate.toCertificateResponse();
     }
 
     public boolean deleteCertificate(long certificateId) {
@@ -104,13 +104,13 @@ public class CertificateService {
     public CertificateResponse findById(long certificateId) {
         var optionalCertificate = certificateRepository.findById(certificateId);
 
-        return optionalCertificate.map(Certificate::toCertificateDto).orElse(null);
+        return optionalCertificate.map(Certificate::toCertificateResponse).orElse(null);
     }
 
 
     public CertificateResponse findCertificateByUserOrgAndCertification(Long userId, String organization, String certificateName) {
         var optionalCertificate = certificateRepository.findByUserIdAndOrganizationAndAndCertificateName(userId, organization, certificateName);
-        return optionalCertificate.map(Certificate::toCertificateDto).orElse(null);
+        return optionalCertificate.map(Certificate::toCertificateResponse).orElse(null);
     }
 
     @Transactional

@@ -33,7 +33,7 @@ public interface CertificateAPI {
     @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<CertificateResponse>> getCertificates(@PathVariable("userId") long userId, HttpServletRequest request);
 
-    @Operation(description = "Get specific certificate of a membuserer", tags = "CertificateAPI")
+    @Operation(description = "Get specific certificate of a user", tags = "CertificateAPI")
     @Parameter(name = "userId", description = "User ID who's certificate should be retrieved", example = "123", required = true)
     @Parameter(name = "certificateId", description = "Certificate ID that should be retrieved", example = "123", required = true)
     @ApiResponses(value = {
@@ -46,7 +46,6 @@ public interface CertificateAPI {
             HttpServletRequest request);
 
     @Operation(description = "Add a new dive certificate to a user", tags = "CertificateAPI")
-    @Parameter(name = "userId", description = "User ID to whom the new certificates is added", example = "123", required = true)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "CertificateRequest", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Certificate added successfully"),
@@ -54,13 +53,11 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @PostMapping(value = BASE_PATH + "/{userId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CertificateResponse> addCertificate(@PathVariable("userId") long userId, @RequestBody CertificateRequest certificateRequest,
+    @PostMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<CertificateResponse> addCertificate(@RequestBody CertificateRequest certificateRequest,
             HttpServletRequest request);
 
     @Operation(description = "Update an existing dive certificate of a user", tags = "CertificateAPI")
-    @Parameter(name = "userId", description = "User ID who's certificate should be updated", example = "123", required = true)
-    @Parameter(name = "certificateId", description = "certificate ID which should be updated", example = "123", required = true)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "CertificateRequest", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Certificate updated successfully"),
@@ -69,10 +66,8 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @PutMapping(value = BASE_PATH + "/{userId}/{certificateId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CertificateResponse> updateCertificate(@PathVariable("userId") long userId,
-            @PathVariable("certificateId") long certificateId,
-            @RequestBody CertificateRequest certificateRequest, HttpServletRequest request);
+    @PutMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<CertificateResponse> updateCertificate(@RequestBody CertificateRequest certificateRequest, HttpServletRequest request);
 
     @Operation(description = "Remove given certificate from the user", tags = "CertificateAPI")
     @Parameter(name = "userId", description = "User ID who's certificate should be removed", example = "123", required = true)

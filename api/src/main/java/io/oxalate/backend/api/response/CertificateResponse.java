@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 public class CertificateResponse {
     @JsonProperty("id")
     private long id;
+    @JsonProperty("userId")
+    private long userId;
     @JsonProperty("organization")
     private String organization;
     @JsonProperty("certificateName")
