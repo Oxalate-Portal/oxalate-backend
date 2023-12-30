@@ -83,7 +83,7 @@ public interface UserAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @PutMapping(value = BASE_PATH + "/accept-terms", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = BASE_PATH + "/accept-terms")
     ResponseEntity<Void> recordTermAnswer(@RequestBody TermRequest termRequest, HttpServletRequest request);
 
     @Operation(description = "Reset term and conditions answer for all users, forcing them to re-approve", tags = "UserAPI")
