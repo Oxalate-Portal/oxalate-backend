@@ -81,7 +81,7 @@ public class AuditController implements AuditAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public ResponseEntity<Page<AuditEntryResponse>> getAuditEvents(long userId, int page, int pageSize, String sorting, HttpServletRequest request) {
+    public ResponseEntity<Page<AuditEntryResponse>> getAuditEventsByUserId(long userId, int page, int pageSize, String sorting, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(AUDIT_GET_USER_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         var column = sorting.split(",")[0];

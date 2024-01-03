@@ -53,7 +53,7 @@ public interface AuditAPI {
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Page<AuditEntryResponse>> getAuditEvents(
+    ResponseEntity<Page<AuditEntryResponse>> getAuditEventsByUserId(
             @PathVariable("userId") long userId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,

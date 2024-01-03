@@ -78,7 +78,6 @@ public class ApplicationAuditEventService {
             case "ipAddress" -> applicationAuditEventRepository.findByIpAddressContainingIgnoreCase(filter, pageRequest);
             case "source" -> applicationAuditEventRepository.findBySourceContainingIgnoreCase(filter, pageRequest);
             case "userId" -> applicationAuditEventRepository.findAllByUserIdIn(userIdList, pageRequest);
-            // case "userName" -> applicationAuditEventRepository.findByUserId(Long.parseLong(filter), pageRequest);
             default -> applicationAuditEventRepository.findAll(pageRequest);
         };
 

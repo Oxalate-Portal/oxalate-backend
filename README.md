@@ -143,5 +143,5 @@ This code is published under the [GPL 2 License](LICENSE).
 
 # Contributors
 
-* Mikko Mustonen (Frontend, Backend)
-* Paul-Erik 'Poltsi' Törrönen  (Frontend, Backend)
+* Mikko Mustonen, founder, (Frontend, Backend)
+* Paul-Erik 'Poltsi' Törrönen, developer, (Frontend, Backend)
