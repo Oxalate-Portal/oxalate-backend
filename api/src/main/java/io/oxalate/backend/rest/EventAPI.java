@@ -45,8 +45,8 @@ public interface EventAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @GetMapping(path = BASE_PATH + "/current", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventResponse>> getCurrentEvents(HttpServletRequest request);
+    @GetMapping(path = BASE_PATH + "/ongoing", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<EventResponse>> getOngoingEvents(HttpServletRequest request);
 
     @Operation(description = "Get a list of all past events.", tags = "EventAPI")
     @ApiResponses(value = {

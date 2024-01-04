@@ -124,7 +124,7 @@ public class EventController implements EventAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<EventResponse>> getCurrentEvents(HttpServletRequest request) {
+    public ResponseEntity<List<EventResponse>> getOngoingEvents(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(EVENTS_GET_CURRENT_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAcceptedTerms()) {
