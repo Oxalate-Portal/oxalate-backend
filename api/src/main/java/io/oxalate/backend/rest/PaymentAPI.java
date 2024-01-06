@@ -48,9 +48,8 @@ public interface PaymentAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @PostMapping(path = BASE_PATH + "/user", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PaymentStatusResponse> addPaymentForUser(@RequestBody PaymentRequest paymentRequest,
-            HttpServletRequest request);
+    @PostMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PaymentStatusResponse> addPaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
 
     @Operation(description = "Update payment status for a specific user. This is only effective on one-time payments where you can decrease the count",
             tags = "PaymentAPI")
@@ -60,9 +59,8 @@ public interface PaymentAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @PutMapping(path = BASE_PATH + "/user", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PaymentStatusResponse> updatePaymentForUser(@RequestBody PaymentRequest paymentRequest,
-            HttpServletRequest request);
+    @PutMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PaymentStatusResponse> updatePaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
 
     @Operation(description = "Reset all period payments immediately. This will update the period payment expiration time to now()", tags = "PaymentAPI")
     @ApiResponses(value = {
