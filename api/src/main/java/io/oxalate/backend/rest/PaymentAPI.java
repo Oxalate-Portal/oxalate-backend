@@ -28,7 +28,7 @@ public interface PaymentAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @GetMapping(path = BASE_PATH + "/list/active", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = BASE_PATH + "/active", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatus(HttpServletRequest request);
 
     @Operation(description = "Get the payment status a specific user", tags = "PaymentAPI")

@@ -263,8 +263,6 @@ public class EventService {
 
             eventUserResponse.setEventDiveCount(countDivesByUserAndEvent(participant.getId(), event.getId()));
             participantsSet.add(eventUserResponse);
-
-
         }
 
         var eventResponse = event.toEventResponse();
@@ -314,20 +312,31 @@ public class EventService {
                 .type(eventRequest.getType())
                 .build();
 
-        var eventResponse = saveToResponse(event);
+        var newEvent = eventRepository.save(event);
 
         // Add organizer as event participant with ORGANIZER type
-        eventRepository.addParticipantToEvent(userId, eventResponse.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name());
+        eventRepository.addParticipantToEvent(userId, newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name());
 
+        // Add participants
         if (eventRequest.getParticipants() != null) {
             for (Long participantId : eventRequest.getParticipants()) {
-                eventRepository.addParticipantToEvent(participantId, eventResponse.getId(), ParticipantTypeEnum.USER.name(),
+                eventRepository.addParticipantToEvent(participantId, newEvent.getId(), ParticipantTypeEnum.USER.name(),
                         paymentService.getBestAvailablePaymentType(participantId)
                                       .name());
             }
         }
 
-        log.info("Created new event: title '{}', ID '{}'", eventResponse.getTitle(), eventResponse.getId());
+        // Now we can get the repopulated response
+        var optionalEventResponse = getPopulatedEventResponse(newEvent);
+
+        if (optionalEventResponse.isEmpty()) {
+            log.error("Failed to populate the event ID {} response", newEvent.getId());
+            return null;
+        }
+
+        var eventResponse = optionalEventResponse.get();
+
+        log.debug("Created new event: title '{}', ID '{}'", eventResponse.getTitle(), eventResponse.getId());
         return eventResponse;
     }
 
