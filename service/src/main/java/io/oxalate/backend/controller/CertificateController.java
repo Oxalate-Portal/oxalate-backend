@@ -145,10 +145,13 @@ public class CertificateController implements CertificateAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<Void> deleteCertificate(long userId, long certificateId, HttpServletRequest request) {
+    public ResponseEntity<Void> deleteCertificate(long certificateId, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_DELETE_START + certificateId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-        // Any user can delete certificates only from their own profile
-        if (AuthTools.isUserIdCurrentUser(userId)) {
+        var userId = AuthTools.getCurrentUserId();
+
+        var certificate = certificateService.findById(certificateId);
+        // Any user can delete only their own certificates
+        if (certificate.getUserId() == userId) {
             if (certificateService.deleteCertificate(certificateId)) {
                 appEventPublisher.publishAuditEvent(CERTIFICATES_DELETE_OK + certificateId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
                 return ResponseEntity.status(HttpStatus.OK)

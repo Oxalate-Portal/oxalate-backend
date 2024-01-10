@@ -70,7 +70,6 @@ public interface CertificateAPI {
     ResponseEntity<CertificateResponse> updateCertificate(@RequestBody CertificateRequest certificateRequest, HttpServletRequest request);
 
     @Operation(description = "Remove given certificate from the user", tags = "CertificateAPI")
-    @Parameter(name = "userId", description = "User ID who's certificate should be removed", example = "123", required = true)
     @Parameter(name = "certificateId", description = "certificate ID which should be removed", example = "123", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Certificate deleted successfully"),
@@ -78,6 +77,6 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @DeleteMapping(value = BASE_PATH + "/{userId}/{certificateId}")
-    ResponseEntity<Void> deleteCertificate(@PathVariable("userId") long userId, @PathVariable("certificateId") long certificateId, HttpServletRequest request);
+    @DeleteMapping(value = BASE_PATH + "/{certificateId}")
+    ResponseEntity<Void> deleteCertificate(@PathVariable("certificateId") long certificateId, HttpServletRequest request);
 }
