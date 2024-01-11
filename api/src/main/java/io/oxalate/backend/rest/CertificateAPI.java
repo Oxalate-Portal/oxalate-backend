@@ -30,7 +30,7 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<CertificateResponse>> getCertificates(@PathVariable("userId") long userId, HttpServletRequest request);
 
     @Operation(description = "Get specific certificate", tags = "CertificateAPI")
