@@ -33,16 +33,15 @@ public interface CertificateAPI {
     @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<CertificateResponse>> getCertificates(@PathVariable("userId") long userId, HttpServletRequest request);
 
-    @Operation(description = "Get specific certificate of a user", tags = "CertificateAPI")
-    @Parameter(name = "userId", description = "User ID who's certificate should be retrieved", example = "123", required = true)
+    @Operation(description = "Get specific certificate", tags = "CertificateAPI")
     @Parameter(name = "certificateId", description = "Certificate ID that should be retrieved", example = "123", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Certificate retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    @GetMapping(value = BASE_PATH + "/{userId}/{certificateId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CertificateResponse> getCertificate(@PathVariable("userId") long userId, @PathVariable("certificateId") long certificateId,
+    @GetMapping(value = BASE_PATH + "/{certificateId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<CertificateResponse> getCertificate(@PathVariable("certificateId") long certificateId,
             HttpServletRequest request);
 
     @Operation(description = "Add a new dive certificate to a user", tags = "CertificateAPI")

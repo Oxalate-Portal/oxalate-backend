@@ -68,17 +68,18 @@ public class CertificateController implements CertificateAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<CertificateResponse> getCertificate(long userId, long certificateId, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_START + certificateId + " for user ID: " + userId, INFO, request,
+    public ResponseEntity<CertificateResponse> getCertificate(long certificateId, HttpServletRequest request) {
+        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_START + certificateId, INFO, request,
                 AUDIT_NAME, AuthTools.getCurrentUserId());
-        // Check if user is allowed to see this user's certificates. ADMIN and ORGANIZER can see any, USER can see only their own
-        if (AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) || AuthTools.isUserIdCurrentUser(userId)) {
-            var certificateDto = certificateService.findById(certificateId);
 
-            if (certificateDto != null) {
+        var certificateResponse = certificateService.findById(certificateId);
+        // Check if user is allowed to see this user's certificates. ADMIN and ORGANIZER can see any, USER can see only their own
+        if (AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) || AuthTools.isUserIdCurrentUser(certificateResponse.getUserId())) {
+
+            if (certificateResponse != null) {
                 appEventPublisher.publishAuditEvent(CERTIFICATES_GET_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
                 return ResponseEntity.status(HttpStatus.OK)
-                                     .body(certificateDto);
+                                     .body(certificateResponse);
             } else {
                 appEventPublisher.publishAuditEvent(CERTIFICATES_GET_NOT_FOUND + certificateId, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
                         auditUuid);
@@ -87,8 +88,8 @@ public class CertificateController implements CertificateAPI {
             }
         }
 
-        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_UNAUTHORIZED + userId, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        log.warn("User {} is not allowed to see user {}'s certificate ID {}", AuthTools.getCurrentUserId(), userId, certificateId);
+        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_UNAUTHORIZED + certificateResponse.getUserId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+        log.warn("User {} is not allowed to see user {}'s certificate ID {}", AuthTools.getCurrentUserId(), certificateResponse.getUserId(), certificateId);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                              .body(null);
     }
