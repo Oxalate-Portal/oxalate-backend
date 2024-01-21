@@ -59,7 +59,6 @@ public class AppAuditMessages {
 
     public static final String CERTIFICATES_ADD_START = "Adding a new certificate";
     public static final String CERTIFICATES_ADD_FAIL = "Failed to add a new certificate";
-    public static final String CERTIFICATES_ADD_UNAUTHORIZED = "User was not authorized to add a new certificate";
     public static final String CERTIFICATES_ADD_OK = "Certificate added";
 
     public static final String CERTIFICATES_UPDATE_START = "Updating certificate: ";

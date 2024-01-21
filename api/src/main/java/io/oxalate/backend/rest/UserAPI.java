@@ -25,6 +25,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface UserAPI {
     String BASE_PATH = "/api/users";
 
+    @Operation(description = "Get a list of all users", tags = "UserAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<AdminUserResponse>> getUsers(HttpServletRequest request);
+
+    @Operation(description = "Get a list of all users with given role", tags = "UserAPI")
+    @Parameter(name = "role", description = "Role by which the users should be filtered", example = "ROLE_USER", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    @GetMapping(value = BASE_PATH + "/role/{role}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<EventUserResponse>> getUserIdNameListWithRole(@PathVariable("role") RoleEnum roleEnum, HttpServletRequest request);
+
     @Operation(description = "Show specific user details", tags = "UserAPI")
     @Parameter(name = "userId", description = "User ID to be retrieved", example = "123", required = true)
     @ApiResponses(value = {
@@ -56,25 +75,6 @@ public interface UserAPI {
     @SecurityRequirement(name = "Bearer Authentication")
     @PutMapping(value = BASE_PATH + "/{userId}/status")
     ResponseEntity<Void> updateUserStatus(@PathVariable("userId") long userId, @RequestBody UserStatusRequest userStatusRequest, HttpServletRequest request);
-
-    @Operation(description = "Get a list of all users", tags = "UserAPI")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @SecurityRequirement(name = "Bearer Authentication")
-    @GetMapping(value = BASE_PATH + "/list", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<AdminUserResponse>> getUsers(HttpServletRequest request);
-
-    @Operation(description = "Get a list of all users with given role", tags = "UserAPI")
-    @Parameter(name = "role", description = "Role by which the users should be filtered", example = "ROLE_USER", required = true)
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @SecurityRequirement(name = "Bearer Authentication")
-    @GetMapping(value = BASE_PATH + "/list/{role}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventUserResponse>> getUserIdNameListWithRole(@PathVariable("role") RoleEnum roleEnum, HttpServletRequest request);
 
     @Operation(description = "Receive answer to whether the user accepts or rejects the terms", tags = "UserAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "TermRequest", required = true)

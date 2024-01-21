@@ -10,7 +10,6 @@ import io.oxalate.backend.api.response.CertificateResponse;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_ADD_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_ADD_OK;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_ADD_START;
-import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_ADD_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_DELETE_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_DELETE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_DELETE_START;
@@ -88,7 +87,8 @@ public class CertificateController implements CertificateAPI {
             }
         }
 
-        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_UNAUTHORIZED + certificateResponse.getUserId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_UNAUTHORIZED + certificateResponse.getUserId(), ERROR, request, AUDIT_NAME,
+                AuthTools.getCurrentUserId(), auditUuid);
         log.warn("User {} is not allowed to see user {}'s certificate ID {}", AuthTools.getCurrentUserId(), certificateResponse.getUserId(), certificateId);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                              .body(null);
@@ -98,50 +98,51 @@ public class CertificateController implements CertificateAPI {
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<CertificateResponse> addCertificate(CertificateRequest certificateRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-        // Any user can add certificates only to their own profile
-        if (AuthTools.isUserIdCurrentUser(certificateRequest.getUserId())) {
-            var certificateDto = certificateService.addCertificate(certificateRequest.getUserId(), certificateRequest);
+        // Any user can add certificates only to their own profile. We disregard the userId given in the request and use instead the one from the session
+        var userId = AuthTools.getCurrentUserId();
 
-            if (certificateDto != null) {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-                return ResponseEntity.status(HttpStatus.OK)
-                                     .body(certificateDto);
-            } else {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_FAIL, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                     .body(null);
-            }
+        var certificateDto = certificateService.addCertificate(userId, certificateRequest);
+
+        if (certificateDto != null) {
+            appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            return ResponseEntity.status(HttpStatus.OK)
+                                 .body(certificateDto);
         }
 
-        appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_UNAUTHORIZED, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        log.warn("User {} is not allowed to add certificates to user {}'s profile", AuthTools.getCurrentUserId(), certificateRequest.getUserId());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_FAIL, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                             .body(null);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<CertificateResponse> updateCertificate(CertificateRequest certificateRequest, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_START + certificateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_START + certificateRequest.getId(), INFO, request, AUDIT_NAME,
+                AuthTools.getCurrentUserId());
         // Any user can update certificates only to their own profile
         if (AuthTools.isUserIdCurrentUser(certificateRequest.getUserId())) {
             var certificateDto = certificateService.updateCertificate(certificateRequest.getUserId(), certificateRequest);
 
             if (certificateDto != null) {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_OK + certificateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+                appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_OK + certificateRequest.getId(), INFO, request, AUDIT_NAME,
+                        AuthTools.getCurrentUserId(), auditUuid);
                 return ResponseEntity.status(HttpStatus.OK)
                                      .body(certificateDto);
             } else {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_FAIL + certificateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
+                appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_FAIL + certificateRequest.getId(), INFO, request, AUDIT_NAME,
+                        AuthTools.getCurrentUserId(),
                         auditUuid);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                                      .body(null);
             }
         }
 
-        appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_UNAUTHORIZED + certificateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
+        appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_UNAUTHORIZED + certificateRequest.getId(), INFO, request, AUDIT_NAME,
+                AuthTools.getCurrentUserId(),
                 auditUuid);
-        log.warn("User {} is not allowed to add certificates to user {}'s profile", AuthTools.getCurrentUserId(), certificateRequest.getUserId());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        log.warn("User {} is not allowed to update certificates belonging to user {}", AuthTools.getCurrentUserId(), certificateRequest.getUserId());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                             .body(null);
     }
 
     @Override

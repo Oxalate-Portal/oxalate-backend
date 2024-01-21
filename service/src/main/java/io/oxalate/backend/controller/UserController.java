@@ -154,14 +154,18 @@ public class UserController implements UserAPI {
             user.setStatus(updateRequest.getStatus());
             user.setLanguage(updateRequest.getLanguage());
 
-            var roles = roleService.findAllByNames(updateRequest.getRoles());
+            // Only admins can change the user roles
+            if (AuthTools.currentUserHasRole(ROLE_ADMIN)) {
+                var roles = roleService.findAllByNames(updateRequest.getRoles());
 
-            // If the user has organizer role, then the privacy flag gets turned off
-            if (roles.contains(roleService.findByName(ROLE_ORGANIZER.name()))) {
-                user.setPrivacy(false);
+                // If the updated list of user roles contain organizer role, then the privacy flag gets turned off
+                if (roles.contains(roleService.findByName(ROLE_ORGANIZER.name()))) {
+                    user.setPrivacy(false);
+                }
+
+                user.setRoles(roles);
             }
 
-            user.setRoles(roles);
             var newUser = userService.updateUser(user);
 
             appEventPublisher.publishAuditEvent(USERS_UPDATE_OK + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);

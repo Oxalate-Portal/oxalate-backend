@@ -44,7 +44,8 @@ public interface CertificateAPI {
     ResponseEntity<CertificateResponse> getCertificate(@PathVariable("certificateId") long certificateId,
             HttpServletRequest request);
 
-    @Operation(description = "Add a new dive certificate to a user", tags = "CertificateAPI")
+    @Operation(description = "Add a new dive certificate to the user. The user is always the current caller as the userId in the request is ignored and " +
+            "pulled from the session instead. The userId in the request should thus be set to 0", tags = "CertificateAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "CertificateRequest", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Certificate added successfully"),

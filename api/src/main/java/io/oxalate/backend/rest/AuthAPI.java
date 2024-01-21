@@ -91,7 +91,6 @@ public interface AuthAPI {
     @PostMapping(path = BASE_PATH + "/lost-password")
     ResponseEntity<?> lostPassword(@RequestBody EmailRequest emailRequest, HttpServletRequest request);
 
-
     @Operation(description = "Endpoint used to reset a forgotten password. This is different from the /api/auth/{userId}/password as the latter does "
             + "not require authentication. This requires a valid token", tags = "AuthAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "UserResetPasswordRequest", required = true)
