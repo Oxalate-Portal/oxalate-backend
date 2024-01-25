@@ -1,0 +1,48 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/oxdb
+    username: postgres
+    password:
+    hikari:
+      schema: public
+  jpa:
+    properties:
+      hibernate:
+        default_schema: public
+  flyway:
+    schemas:
+      - public
+  mail:
+    host: localhost
+    port: 2525
+
+logging:
+  level:
+    root: info
+
+oxalate:
+  app:
+    org-name: Oxalate Portal
+    env: local
+    backend-url: http://localhost:8080
+    frontend-url: http://localhost:3000
+    jwt-secret: <Add a very long random string here>
+    jwt-expiration-ms: 86400000
+  cors:
+    allowed-origins: ${oxalate.app.frontend-url},http://localhost:3001
+  mail:
+    enabled: false
+    system-email: noreply@nonexisting.tld
+    org-email: org@nonexisting.tld
+    support-email: support@nonexisting.tld
+  payment:
+    period-start-month: 1 # 1 = January, 12 = December
+    event-requires-payment: false
+  captcha:
+    enabled: true
+    site-key: <Set your Google captcha site key>
+    secret-key: <Set your Google captcha secret key>
+    threshold: 0.5

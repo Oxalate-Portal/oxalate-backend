@@ -1,0 +1,60 @@
+version: '3.7'
+
+volumes:
+  {{ oxalate_db_name }}_{{ item.name }}_volume:
+
+services:
+  backend:
+    hostname: oxalate-backend
+    container_name: {{ item.name }}_oxalate_backend
+    image: "ghcr.io/Oxalate-Portal/Oxalate-Portal/oxalate-backend:${OXALATE_BACKEND_VERSION}"
+    restart: always
+    ports:
+      - "{{ item.ext_app_port }}:8080"
+    depends_on:
+      - db
+    environment:
+      - spring.profiles.active=prod
+      - spring.datasource.url=jdbc:postgresql://oxalate-db:5432/{{ oxalate_db_name }}
+      - spring.datasource.username={{ oxalate_db_user }}
+      - spring.datasource.password={{ oxalate_db_password }}
+      - spring.jpa.properties.hibernate.default_schema={{ oxalate_db_user }}
+      - spring.flyway.schemas={{ oxalate_db_user }}
+      - spring.datasource.hikari.schema={{ oxalate_db_user }}
+      - spring.mail.host={{ oxalate_mail_host }}
+      - spring.mail.username={{ oxalate_mail_username }}
+      - spring.mail.password={{ oxalate_mail_password }}
+      - spring.mail.port=587
+      - spring.mail.properties.mail.smtp.auth=true
+      - spring.mail.properties.mail.smtp.starttls.enable=true
+      - logging.level.io.oxalate=info
+      - oxalate.app.org-name="Oxalate Portal"
+      - oxalate.app.env={{ item.name }}
+      - oxalate.app.backend-url=https://{{ item.hostname }}
+      - oxalate.app.frontend-url=https://{{ item.hostname }}
+      - oxalate.app.jwt-secret={{ oxalate_app_jwt_secret }}
+      - oxalate.app.jwt-expiration-ms=86400000
+      - oxalate.mail.enabled={{ item.mail_enabled }}
+      - oxalate.mail.system-email={{ oxalate_mail_system_email }}
+      - oxalate.mail.org-email={{ oxaalte_mail_org_email }}
+      - oxalate.mail.support-email={{ oxalate_mail_support_email }}
+      - oxalate.payment.period-start-month=1
+      - oxalate.payment.event-require-payment=false
+      - oxalate.captcha.enabled=true
+      - oxalate.captcha.site-key={{ oxalate_captcha_site_key }}
+      - oxalate.captcha.secret-key={{ oxalate_captcha_secret_key }}
+      - oxalate.captcha.threshold=0.5
+
+  db:
+    hostname: oxalate-db
+    container_name: {{ item.name }}_oxalate_db
+    image: "postgres:15"
+    restart: always
+    ports:
+      - "{{ item.ext_db_port }}:5432"
+    environment:
+      - POSTGRES_DB={{ oxalate_db_name }}
+      - POSTGRES_USER={{ oxalate_db_user }}
+      - POSTGRES_PASSWORD={{ oxalate_db_password }}
+    volumes:
+      - {{ oxalate_db_name }}_{{ item.name }}_volume:/var/lib/postgresql/data/
