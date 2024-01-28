@@ -1,5 +1,7 @@
 # Oxalate Portal backend service
 
+If you're looking for installation or management documentation, see the [documentation](documentation/index.md) folder.
+
 ## Structure
 
 The project is a multimodule project where we've separated the REST API to [`api`](api/) module, while the server code

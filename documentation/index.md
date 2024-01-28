@@ -1,6 +1,16 @@
-# Oxalate portal application
+# Oxalate portal backend
+
+The backend is the service/server part of the Oxalate portal. It is a Spring boot application that provides a REST API for the frontend to consume.
+
+Documentation is also available for:
+
+* [Installation](installation/index.md)
+* [Management](management/index.md)
 
 ## Database
+
+PostgreSQL 15 is recommended and is the only database that has been tested. Other versions of PostgreSQL may work, but are not guaranteed to work. Using other
+databases may work, but will require additional changes to the application code.
 
 ## Security
 
