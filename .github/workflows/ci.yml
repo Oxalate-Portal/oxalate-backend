@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  REGISTRY_NAMESPACE: Oxalate-Portal
+  REGISTRY_NAMESPACE: oxalate-portal
   IMAGE_NAME: ${{ github.repository }}
 
 concurrency: build
