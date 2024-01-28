@@ -101,7 +101,7 @@ jobs:
       - name: Build and push Docker image to registry
         shell: bash
         run: |
-          imgName="${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ env.IMAGE_NAME }}"
+          imgName="${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')"
           docker build . --tag ${imgName}:latest
           echo "Setting versions to: '${mainVersion}', '${baseVersion}', '${newVersion}'"
           docker image tag ${imgName}:latest ${imgName}:${mainVersion}
