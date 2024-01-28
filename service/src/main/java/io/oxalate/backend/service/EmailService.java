@@ -47,6 +47,9 @@ public class EmailService {
     @Value("${oxalate.token.lost-password-url}")
     private String lostPasswordUrl;
 
+    @Value("${oxalate.language.default}")
+    private String defaultLanguage;
+
     public EmailService(JavaMailSender javaMailSender, TemplateEngine templateEngine) {
         this.javaMailSender = javaMailSender;
         this.templateEngine = templateEngine;
@@ -54,18 +57,26 @@ public class EmailService {
 
     public void sendConfirmationEmail(User user, String token) {
         var confirmationUrlWithToken = confirmationUrl + "?token=" + token;
+        var userLanguage = user.getLanguage() != null ? user.getLanguage() : defaultLanguage;
+        // TODO Look into proper localization
 
-        // TODO Figure out how to not have this hardcoded, rather use a template, with different language support
-        var subject = "Tervetuloa " + orgName + ":n portaaliin";
+        var subject = "Welcome to " + orgName + " portal";
 
-        try {
+        subject = switch (userLanguage) {
+			case "fi" -> "Tervetuloa " + orgName + ":n portaaliin";
+			case "sv" -> "Välkommen till " + orgName + " portal";
+			case "de" -> "Willkommen zu " + orgName + " portal";
+			default -> subject;
+		};
+
+		try {
             Context context = new Context();
             context.setVariable("name", user.getFirstName());
             context.setVariable("url", confirmationUrlWithToken);
             context.setVariable("supportEmail", supportEmail);
             context.setVariable("orgName", orgName);
             context.setVariable("tokenTtl", tokenTtl);
-            sendHtmlMail(systemEmail, user.getUsername(), subject, "confirmationTemplate_fi", context);
+            sendHtmlMail(systemEmail, user.getUsername(), subject, "confirmationTemplate_" + userLanguage, context);
         } catch (MailException e) {
             log.error("Sending user confirmation email failed: ", e);
         }
@@ -73,7 +84,16 @@ public class EmailService {
 
     public boolean sendForgottenPassword(User user, String token) {
         var lostPasswordUrlWithToken = lostPasswordUrl + "/" + token;
-        var subject = "Unohtunut salasana";
+        var userLanguage = user.getLanguage() != null ? user.getLanguage() : defaultLanguage;
+
+        var subject = "Forgotten password";
+
+        subject = switch (userLanguage) {
+            case "fi" -> "Unohtunut salasana";
+            case "sv" -> "Glömd lösenord";
+            case "de" -> "Passwort vergessen";
+            default -> subject;
+        };
 
         try {
             Context context = new Context();
@@ -82,10 +102,10 @@ public class EmailService {
             context.setVariable("supportEmail", supportEmail);
             context.setVariable("orgName", orgName);
             context.setVariable("tokenTtl", tokenTtl);
-            sendHtmlMail(systemEmail, user.getUsername(), subject, "lostPasswordTemplate_fi", context);
+            sendHtmlMail(systemEmail, user.getUsername(), subject, "lostPasswordTemplate_" + userLanguage, context);
             return true;
         } catch (MailException e) {
-            log.error("Sending user confirmation email failed: ", e);
+            log.error("Sending forgotten password email failed: ", e);
         }
 
         return false;

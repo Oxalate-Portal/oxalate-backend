@@ -76,6 +76,8 @@ oxalate:
     frontend-url: override-me
     jwt-secret: override-me
     jwt-expiration-ms: override-me
+  language:
+    default: en
   mail:
     enabled: override-me
     system-email: override-me

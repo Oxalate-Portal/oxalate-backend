@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <title>Registration to the [[${orgName}]] Portal</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+
+<p>Hello <span th:text="${name}"></span>!</p>
+
+<p>You have registered on the portal of [[${orgName}]].
+    Confirm your email address by clicking <a th:href="@{${url}}">here</a>.</p>
+
+<p>The link is valid for [[${tokenTtl}]] hours from the time of registration.</p>
+
+<p>If the message is unintentional or if the confirmation fails, please contact [[${supportEmail}]].</p>
+
+<p>Best regards, [[${orgName}]]</p>
+
+</body>
+</html>

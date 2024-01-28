@@ -2546,10 +2546,10 @@ VALUES (1, 'Event dYwNlcpoiIYdxsZvJfUMmvfwpzvlVTLVKLnvCXloiNKqwPiAFCaymTLaznRFfQ
         '2023-09-12 07:01:44.900778', 'Event bgyEdCIlSL', 'Avo', 400),
        (234, 'Event yykBjGHutsnfCIPKLcSSOKvryQvtoHIXzghdzqVRdupklGrggLOfTpuWHVdcVdvFQcDpiYiuDFZETriQghETYjosLjioFxapEUsN', 6, 133, 161, 6, true,
         '2023-09-19 07:01:44.900778', 'Event BlzZWiDLBe', 'Virtasukellus', 320),
-       (235, 'Nimenmukaista hedelmäsukellusta 1', 21, 143, 151, 17, true, '2024-03-24 08:00:00', 'Leppoisaa banaanisukellusta', 'Luola / Avo', 320),
-       (236, 'Nimenmukaista hedelmäsukellusta 2', 21, 143, 151, 17, true, '2024-12-24 09:00:00', 'Leppoisaa appelsiinisukellusta', 'Luola / Avo', 400),
-       (237, 'Nimenmukaista hedelmäsukellusta 4', 21, 143, 151, 17, true, NOW(), 'Leppoisaa kiwisukellusta', 'Luola / Avo', 1),
-       (238, 'Nimenmukaista hedelmäsukellusta 3', 21, 143, 151, 17, true, NOW(), 'Leppoisaa mangosukellusta', 'Luola / Avo', 320);
+       (235, 'Fruity diving without any stress 1', 21, 143, 151, 17, true, '2024-03-24 08:00:00', 'Easy going banana diving', 'Luola / Avo', 320),
+       (236, 'Fruity diving without any stress 2', 21, 143, 151, 17, true, '2024-12-24 09:00:00', 'Easy going orange diving', 'Luola / Avo', 400),
+       (237, 'Fruity diving without any stress 4', 21, 143, 151, 17, true, NOW(), 'Easy going kiwi diving', 'Luola / Avo', 1),
+       (238, 'Fruity diving without any stress 3', 21, 143, 151, 17, true, NOW(), 'Easy going mango diving', 'Luola / Avo', 320);
 
 INSERT INTO event_participants (user_id, event_id, dive_count, participant_type, payment_type)
 VALUES (1, 1, 1, 'ORGANIZER', 'NONE'),
