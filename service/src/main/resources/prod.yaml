@@ -1,0 +1,13 @@
+# Minimal production setting, most values are in the application.yaml file and are overridden by environment variables
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    root: info
+
+oks:
+  app:
+    env: production
