@@ -102,6 +102,7 @@ public class AuthTools {
 
     private static Authentication getAuthentication() {
         SecurityContext context = SecurityContextHolder.getContext();
+
         if (context == null) {
             return null;
         }

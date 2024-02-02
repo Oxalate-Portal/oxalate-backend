@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PageGroupRepository extends CrudRepository<PageGroup, Long> {
     List<PageGroup> findAllById(long pageGroupId);
-    @Query("SELECT pg FROM PageGroup pg WHERE pg.id != ?1")
+    @Query(nativeQuery = true, value = "SELECT * FROM page_groups pg WHERE pg.id != ?1")
     List<PageGroup> findAllExceptId(long pageGroupId);
     List<PageGroup> findByIdIn(List<Long> pageGroupIdList);
 }

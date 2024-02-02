@@ -98,16 +98,14 @@ public class PageService {
         log.debug("Got list of page groups before filtering with lang {}: {}", language, pageGroups);
 
         for (var pageGroup : pageGroups) {
-            populatePath(pageGroup, language);
+            populatePageGroup(pageGroup, language);
 
             // Check that the user has access to the pages
             var pageListFiltered = new ArrayList<Page>();
             for (var page : pageGroup.getPages()) {
                 var permissionList = pageRoleAccessRepository.findByPageIdAndRoleIn(page.getId(), roles);
-
                 // In addition to access, the page must be public
-                if (!permissionList.isEmpty() && page.getStatus()
-                                                     .equals(PageStatusEnum.PUBLIC)) {
+                if (!permissionList.isEmpty() && page.getStatus().equals(PageStatusEnum.PUBLIC)) {
                     pageListFiltered.add(page);
                 }
             }
@@ -136,7 +134,7 @@ public class PageService {
 
         for (var pageGroup : pageGroups) {
             // Add all the page group versions
-            populatePath(pageGroup, null);
+            populatePageGroup(pageGroup, null);
             pageGroupResponses.add(pageGroup.toResponse());
         }
 
@@ -154,7 +152,7 @@ public class PageService {
         var pageGroup = optionalPageGroup.get();
 
         // Populate the page group
-        populatePath(pageGroup, null);
+        populatePageGroup(pageGroup, null);
 
         return pageGroup.toResponse();
     }
@@ -174,7 +172,7 @@ public class PageService {
             pageGroupVersionRepository.save(pageGroupVersion);
         }
 
-        populatePath(newPageGroup, null);
+        populatePageGroup(newPageGroup, null);
 
         return newPageGroup.toResponse();
     }
@@ -227,7 +225,7 @@ public class PageService {
         }
 
         var newPageGroup = pageGroupRepository.save(pageGroup);
-        populatePath(newPageGroup, null);
+        populatePageGroup(newPageGroup, null);
 
         return newPageGroup.toResponse();
     }
@@ -552,7 +550,7 @@ public class PageService {
      *
      * @param pageGroup PageGroup to be populated
      */
-    private void populatePath(PageGroup pageGroup, String language) {
+    private void populatePageGroup(PageGroup pageGroup, String language) {
         // If language is defined, then only fetch that language version, if the language does not exist, then return without populating
         if (language != null) {
             var pageGroupVersion = pageGroupVersionRepository.findByPageGroupIdAndLanguage(pageGroup.getId(), language);
@@ -565,8 +563,8 @@ public class PageService {
             pageGroup.setGroupVersions(List.of(pageGroupVersion.get()));
         } else {
             // Get all the path versions
-            var pathVersions = pageGroupVersionRepository.findAllByPageGroupIdOrderByLanguageAsc(pageGroup.getId());
-            pageGroup.setGroupVersions(pathVersions);
+            var pageGroupVersions = pageGroupVersionRepository.findAllByPageGroupIdOrderByLanguageAsc(pageGroup.getId());
+            pageGroup.setGroupVersions(pageGroupVersions);
         }
 
         // Get all the pages
