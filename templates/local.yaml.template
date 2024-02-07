@@ -33,6 +33,7 @@ oxalate:
     jwt-expiration-ms: 86400000
   cors:
     allowed-origins: ${oxalate.app.frontend-url},http://localhost:3001
+  first-time: false
   mail:
     enabled: false
     system-email: noreply@nonexisting.tld

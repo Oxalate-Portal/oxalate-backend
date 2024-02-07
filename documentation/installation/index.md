@@ -24,11 +24,30 @@
 Oxalate backend is a java spring boot application. The most common way to run this application is to run it as a docker container. In all cases you also need
 a database (PostgreSQL) to store the data. The easiest way to set up the database is to run it as a docker container as well.
 
+## Setting up the primary administrator
+
+The first time you start the backend service, you need to override the following configuration variables:
+
+```properties
+oxalate.first-time=true
+oxalate.admin.username=<your username>
+oxalate.admin.hashed-password=<your hashed password string>
+```
+
+Note that the password is a hashed string. You can generate a bcrypted password with the following command (from Apache httpd-utils):
+
+```bash
+htpasswd -bnBC 10 "" yourpassword  | tr -d ':'
+```
+
+If you put the hashed password into the docker compose-file, then remember to use double dollar signs to get a literal `$`.
+
 ## Setting up the database
 
 ### As a part of the docker compose setup
 
-This will require no additional changes, you only need to set values in the docker-compose.yaml file.
+This will require no additional changes, you only need to set values in the docker-compose.yaml file. If you're starting up the backend service for the first
+time, then remember to add the primary administrator credentials as described in the previous section.
 
 ### As a standalone docker container
 
@@ -42,6 +61,9 @@ This will set up a PostgreSQL 15 container for you.
 ```
 
 Be aware that this will wipe out any previous container and volume called `dev_oxdb` and `oxdb_volume` respectively.
+
+If however you intend to run the backend container as a standalone in production, then you need to also set up the primary administrator credentials as
+described in the previous section by adding the necessary environment variables to the `docker run` command.
 
 ### Pre-existing natively running database
 
@@ -93,7 +115,8 @@ One can also build the application locally and run it natively or in a self-buil
    ./mvnw clean verify spring-boot:run -Doxalate.captcha.enabled=false -Dspring.profiles.active=local | tee /tmp/oxalateb.log
    ```
    Once the service is running, then you can continue by populating the database with test data as described in the previous section. After that you need to
-   start up the frontend. See the [frontend documentation](https://github.com/Oxalate-Portal/oxalate-frontend/documentation/setup/)
+   start up the frontend. See the [frontend documentation](https://github.com/Oxalate-Portal/oxalate-frontend/documentation/setup/). Again, if this is the first time then add the primary administrator credentials as described
+   previously.
 
 If instead you want to run the backend service in a docker container, then you should stop in step 5 above and continue with the following section.
 

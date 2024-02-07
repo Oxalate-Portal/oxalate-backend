@@ -44,6 +44,10 @@ services:
       - oxalate.captcha.site-key={{ oxalate_captcha_site_key }}
       - oxalate.captcha.secret-key={{ oxalate_captcha_secret_key }}
       - oxalate.captcha.threshold=0.5
+      # Uncomment the following lines if you start up the backend for the first time and need to set the admin user credentials
+      # - oxalate.first-time=true
+      # - oxalate.admin.username={{ admin email address }}
+      # - oxalate.admin.hashed-password={{ bcrypt 10 hashed password }}
 
   db:
     hostname: oxalate-db
