@@ -8,6 +8,6 @@ logging:
   level:
     root: info
 
-oks:
+oxalate:
   app:
     env: production
