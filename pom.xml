@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.4</version> <!-- Keep this in sync with spring.boot.version -->
+        <version>3.2.5</version> <!-- Keep this in sync with spring.boot.version -->
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -17,8 +17,8 @@
 
     <properties>
         <java.version>21</java.version>
-        <spring.boot.version>3.2.4</spring.boot.version> <!-- Keep this in sync with the parent version -->
-        <flyway.version>10.11.0</flyway.version>
+        <spring.boot.version>3.2.5</spring.boot.version> <!-- Keep this in sync with the parent version -->
+        <flyway.version>10.11.1</flyway.version>
         <jjwt.version>0.12.5</jjwt.version>
         <swagger.version>2.2.21</swagger.version>
     </properties>
