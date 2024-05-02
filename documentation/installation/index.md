@@ -1,16 +1,17 @@
 <!--ts-->
+
 * [Installation of Oxalate backend](#installation-of-oxalate-backend)
-   * [Setting up the database](#setting-up-the-database)
-      * [As a part of the docker compose setup](#as-a-part-of-the-docker-compose-setup)
-      * [As a standalone docker container](#as-a-standalone-docker-container)
-      * [Pre-existing natively running database](#pre-existing-natively-running-database)
-      * [Populating database with test data](#populating-database-with-test-data)
-   * [Run backend service from ready-made docker image](#run-backend-service-from-ready-made-docker-image)
-   * [Build and run locally](#build-and-run-locally)
-      * [Build and run backend service in a docker container](#build-and-run-backend-service-in-a-docker-container)
-         * [Running the backend service with docker-compose](#running-the-backend-service-with-docker-compose)
-         * [Running the backend service with docker](#running-the-backend-service-with-docker)
-   * [Google Captcha setup](#google-captcha-setup)
+    * [Setting up the database](#setting-up-the-database)
+        * [As a part of the docker compose setup](#as-a-part-of-the-docker-compose-setup)
+        * [As a standalone docker container](#as-a-standalone-docker-container)
+        * [Pre-existing natively running database](#pre-existing-natively-running-database)
+        * [Populating database with test data](#populating-database-with-test-data)
+    * [Run backend service from ready-made docker image](#run-backend-service-from-ready-made-docker-image)
+    * [Build and run locally](#build-and-run-locally)
+        * [Build and run backend service in a docker container](#build-and-run-backend-service-in-a-docker-container)
+            * [Running the backend service with docker-compose](#running-the-backend-service-with-docker-compose)
+            * [Running the backend service with docker](#running-the-backend-service-with-docker)
+    * [Google Captcha setup](#google-captcha-setup)
 
 <!-- Created by https://github.com/ekalinin/github-markdown-toc -->
 <!-- Added by: poltsi, at: Thu Jan 25 08:46:15 PM EET 2024 -->
@@ -46,8 +47,8 @@ If you put the hashed password into the docker compose-file, then remember to us
 
 ### As a part of the docker compose setup
 
-This will require no additional changes, you only need to set values in the docker-compose.yaml file. If you're starting up the backend service for the first
-time, then remember to add the primary administrator credentials as described in the previous section.
+This will require no additional changes, you only need to set values in the [docker-compose.yaml](../../templates/docker-compose.yaml.j2) file. If you're
+starting up the backend service for the first time, then remember to add the primary administrator credentials as described in the previous section.
 
 ### As a standalone docker container
 
@@ -115,7 +116,8 @@ One can also build the application locally and run it natively or in a self-buil
    ./mvnw clean verify spring-boot:run -Doxalate.captcha.enabled=false -Dspring.profiles.active=local | tee /tmp/oxalateb.log
    ```
    Once the service is running, then you can continue by populating the database with test data as described in the previous section. After that you need to
-   start up the frontend. See the [frontend documentation](https://github.com/Oxalate-Portal/oxalate-frontend/documentation/setup/). Again, if this is the first time then add the primary administrator credentials as described
+   start up the frontend. See the [frontend documentation](https://github.com/Oxalate-Portal/oxalate-frontend/documentation/setup/). Again, if this is the first
+   time then add the primary administrator credentials as described
    previously.
 
 If instead you want to run the backend service in a docker container, then you should stop in step 5 above and continue with the following section.
@@ -149,16 +151,47 @@ Now you have the option to either start up the backend with the docker-compose f
 The easiest way to run the backend service locally in a docker container is to use the docker-compose file. This will also start up the database for you.
 To do this, you need to copy the `docker-compose.yaml.j2` file from the [templates](../../templates) directory to an empty directory and rename it
 to `docker-compose.yaml`. Note that the file is a Jinja2 template, which should be helpful if you want to use the file later in an Ansible setup.
-For local use you need to replace the bracketed values with the correct values for your environment.
+For local use you need to replace the following bracketed values with the correct values for your environment:
+
+| Variable                        | Description                | Example      |
+|---------------------------------|----------------------------|--------------|
+| item.ext_app_port               | External application port  | 8080         |
+| item.hostname                   | Hostname                   | localhost    |
+| item.mail_enabled               | Mail sending enabled       | true         |
+| item.name                       | Environment type           | dev          |
+| oxalate_admin_email             | Administrator email        | admin@tld    |
+| oxalate_admin_password          | Administrator password     | password     |
+| oxalate_app_jwt_secret          | JWT secret                 | secret       |
+| oxalate_app_org_name            | Organization name          | MyOrg        |
+| oxalate_captcha_enabled         | Captcha enabled            | true         |
+| oxalate_captcha_secret_key      | Google Captcha secret key  | secretkey    |
+| oxalate_captcha_site_key        | Google Captcha site key    | sitekey      |
+| oxalate_db_name                 | Database name              | oxdb         |
+| oxalate_db_password             | Database password          | postgres     |
+| oxalate_db_user                 | Database user              | postgres     |
+| oxalate_installation_first_time | First time installation    | true         |
+| oxalate_language_default        | Default language           | en           |
+| oxalate_mail_host               | Mail server host           | mail.tld     |
+| oxalate_mail_org_email          | Organization email address | info@tld     |
+| oxalate_mail_password           | Mail server password       | password     |
+| oxalate_mail_support_email      | Support email address      | support@tld  |
+| oxalate_mail_system_email       | System email address       | no-reply@tld |
+| oxalate_mail_username           | Mail server username       | user         |
+
+The variables beginning with `item` are used when you set up multiple environments with the same `docker-compose.yaml` file. The other variables are used to
+set the general configuration of the backend service. The `oxalate_admin_email` and `oxalate_admin_password` are used to set up the primary administrator and
+are required to be non-empty when the `oxalate_installation_first_time` is set to `true`.
 
 If you want to use the locally built docker image, then you need to change the `image` property in the `backend` service to `oxalate-backend:latest` on line 10.
-Otherwise you will pull the image from the GitHub container registry.
+Otherwise you will need to set the environment variable `OXALATE_BACKEND_VERSION` in order to pull the image from the GitHub container registry. Visit the
+[package page](https://github.com/Oxalate-Portal/oxalate-backend/pkgs/container/oxalate-portal%2Foxalate-backend) to see which version is the latest.
 
 **Notes:**
+
 * The `item.ext_app_port` should be 8080, unless you want to run the backend service on a different port, in which case you need to remember this when
   configuring the frontend.
 * Make sure the database connection url and credentials match the ones you have set up for the database.
-* You can turn off the Captcha by setting the `oxalate.captcha.enabled` property to `false`.
+* You can turn off the Captcha by setting the `oxalate_captcha_enabled` property to `false`.
 
 Once you have the `docker-compose.yaml` file set up, you can start the backend service with the following command:
 
@@ -186,7 +219,6 @@ docker run -d -p 8080:8080 \
 **Note!** The above command mixes both using the `local.yaml`-profile as well as setting some values from the environment just to give you an example of how to
 do it either way. The preferred way is to use the `local.yaml`-profile as the list of variables that needs to be set is quite long.
 
-
 ## Google Captcha setup
 
 Google Captcha v3 is used to prevent bots from registering to the service. The captcha is enabled by default, but you can disable it by setting the property
@@ -199,8 +231,8 @@ Once you have the keys, you need to set the following properties in the `local.y
 
 ```yaml
 oxalate:
-  captcha:
-    enabled: true
-    site-key: <your site key>
-    secret-key: <your secret key>
+    captcha:
+        enabled: true
+        site-key: <your site key>
+        secret-key: <your secret key>
 ```
