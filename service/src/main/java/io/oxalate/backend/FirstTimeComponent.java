@@ -3,6 +3,7 @@ package io.oxalate.backend;
 import io.oxalate.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -42,7 +43,7 @@ public class FirstTimeComponent implements ApplicationListener<ApplicationReadyE
             return;
         }
 
-        if (adminUsername == null || adminUsername.isEmpty() || adminHashedPassword == null || adminHashedPassword.isEmpty()) {
+        if (StringUtils.isEmpty(adminUsername) || StringUtils.isEmpty(adminHashedPassword)) {
             log.error("Admin username or password is empty, exiting setup");
             return;
         }
