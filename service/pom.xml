@@ -155,12 +155,12 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.172</version>
+                <version>4.8.173</version>
             </dependency>
             <dependency>
                 <groupId>org.checkerframework</groupId>
                 <artifactId>checker-qual</artifactId>
-                <version>3.43.0</version>
+                <version>3.44.0</version>
             </dependency>
             <dependency>
                 <groupId>io.swagger.core.v3</groupId>
