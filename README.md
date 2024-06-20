@@ -35,8 +35,7 @@ right corner.
 
 ### Running the service
 
-The service can be run locally by starting the PostgreSQL server with the
-script [`db_local_setup.sh`](db_local_setup.sh).
+The service can be run locally by starting the PostgreSQL server with the script [`db_local_setup.sh`](db_local_setup.sh).
 The script will clean up any previous docker container and volume, so you always have a fresh, empty database available.
 
 When the database is up and running, you can start up the service itself with the command:
@@ -55,7 +54,7 @@ several thousand users and hundreds of events. This dataset has been generated w
 available when running the service locally. To use the large dataset, you run the command as follows:
 
 ```shell
-cat test-data/test-large.sql | psql --host=localhost --port=5432 --username postgres oxdb
+cat test-data/test-large.sql | psql --host=localhost --port=5432 --username oxalate oxdb
 ```
 
 Once the above are up and running, you can start

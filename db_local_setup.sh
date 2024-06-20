@@ -1,20 +1,46 @@
 #!/usr/bin/env bash
 
-DB_NAME="oxdb"
-CONTAINER_NAME="dev_${DB_NAME}"
-VOLUME_NAME="${DB_NAME}_volume"
+setup_database_container() {
+    local db_name="$1"
+    local schema_name="$2"
+    local db_user="$3"
+    local db_password="$4"
+    local port="$5"
 
-docker rm -f ${CONTAINER_NAME}
-docker volume rm ${VOLUME_NAME}
+    local container_name="dev_${db_name}"
+    local volume_name="${container_name}_volume"
 
-docker run -d -p 5432:5432 -v "${VOLUME_NAME}:/var/lib/postgresql/data/" \
-  -e "POSTGRES_HOST_AUTH_METHOD=trust" \
-  --name "${CONTAINER_NAME}" postgres:15
+    docker rm -f "${container_name}"
+    docker volume rm "${volume_name}"
 
-docker exec -it "${CONTAINER_NAME}" bash -c "\
-    while ! psql --host=localhost --port=5432 --username postgres <<< exit 2>> /dev/null; do\
-        echo \"Waiting for postgres to start\";\
-        sleep 0.5;\
-    done;\
-    echo \"Re-creating DB...\";\
-    createdb ${DB_NAME} -U postgres && echo \"${DB_NAME} created!\""
+    docker run -d -p "${port}:5432" -v "${volume_name}:/var/lib/postgresql/data/" \
+        -e "POSTGRES_HOST_AUTH_METHOD=trust" \
+        --name "${container_name}" postgres:16
+
+    echo "Waiting for postgres to start..."
+    until docker exec "${container_name}" psql --host=localhost --port=5432 --username postgres -c '\l' > /dev/null 2>&1; do
+        sleep 0.5
+    done
+
+    echo "Creating database ${db_name}..."
+    docker exec -it "${container_name}" createdb "${db_name}" -U postgres
+
+    echo "Creating user ${db_user}..."
+    docker exec -it "${container_name}" psql -U postgres -c "CREATE USER ${db_user} WITH ENCRYPTED PASSWORD '${db_password}';"
+
+    echo "Granting privileges to user ${db_user} on database ${db_name}..."
+    docker exec -it "${container_name}" psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${db_name} TO ${db_user};"
+
+    echo "Set user ${db_user} as owner on database ${db_name}..."
+    docker exec -it "${container_name}" psql -U postgres -c "ALTER DATABASE ${db_name} OWNER TO ${db_user};"
+
+    echo "Creating schema ${schema_name}..."
+    docker exec -it "${container_name}" psql -U postgres -d "${db_name}" -c "CREATE SCHEMA ${schema_name} AUTHORIZATION ${db_user};"
+
+    echo "Setting search path to schema ${schema_name} for user ${db_user}..."
+    docker exec -it "${container_name}" psql -U postgres -d "${db_name}" -c "ALTER ROLE ${db_user} SET search_path TO ${schema_name};"
+
+    echo "Database setup for ${db_name} with schema ${schema_name} completed."
+}
+
+setup_database_container "oxdb" "oxalate" "oxalate" "oxalate_password" 5432
