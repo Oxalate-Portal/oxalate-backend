@@ -17,6 +17,9 @@ import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_DELETE_UNA
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_ALL_OK;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_ALL_START;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_ALL_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_ALL_USER_OK;
+import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_ALL_USER_START;
+import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_ALL_USER_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_OK;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_GET_START;
@@ -48,21 +51,34 @@ public class CertificateController implements CertificateAPI {
     private final AppEventPublisher appEventPublisher;
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public ResponseEntity<List<CertificateResponse>> getAllCertificates(HttpServletRequest request) {
+        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+
+        if (AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
+            appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            return ResponseEntity.status(HttpStatus.OK).body(certificateService.findAll());
+        }
+
+        log.warn("User {} is not allowed to see all certificates", AuthTools.getCurrentUserId());
+        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_UNAUTHORIZED, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+    }
+
+    @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<List<CertificateResponse>> getCertificates(long userId, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_START + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_USER_START + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         // Check if user is allowed to see this user's certificates. ADMIN and ORGANIZER can see any, USER can see only their own
         if (AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) || AuthTools.isUserIdCurrentUser(userId)) {
-            appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_OK + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            return ResponseEntity.status(HttpStatus.OK)
-                                 .body(certificateService.findByUserId(userId));
+            appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_USER_OK + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            return ResponseEntity.status(HttpStatus.OK).body(certificateService.findByUserId(userId));
         }
 
         log.warn("User {} is not allowed to see user {}'s certificates", AuthTools.getCurrentUserId(), userId);
-        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_UNAUTHORIZED + userId, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                             .body(null);
+        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_USER_UNAUTHORIZED + userId, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
     }
 
     @Override
