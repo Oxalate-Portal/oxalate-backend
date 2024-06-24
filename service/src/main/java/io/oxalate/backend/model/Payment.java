@@ -2,6 +2,7 @@ package io.oxalate.backend.model;
 
 import io.oxalate.backend.api.PaymentTypeEnum;
 import io.oxalate.backend.api.response.PaymentResponse;
+import io.oxalate.backend.api.response.download.DownloadPaymentResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -68,5 +69,16 @@ public class Payment {
                                           .build();
             default -> throw new IllegalArgumentException("Unknown payment type");
         };
+    }
+
+    public DownloadPaymentResponse toDownloadPaymentResponse() {
+        return DownloadPaymentResponse.builder()
+                                      .id(this.id)
+                                      .userId(this.userId)
+                                      .name(null)
+                                      .paymentType(this.paymentType)
+                                      .paymentCount(this.paymentType == PaymentTypeEnum.ONE_TIME ? this.paymentCount : null)
+                                      .createdAt(this.createdAt)
+                                      .build();
     }
 }

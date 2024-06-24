@@ -76,10 +76,10 @@ should create a separate user for the application.
 
 If your purpose is to try out the application, then you can populate the database with test data present in the [`test_data.sql`](../../test_data.sql) file.
 **NOTE!** This requires that you have first created the schema by starting up the backend service (see section below).
-Assuming that you're using the `postgres` user, you can populate the database with the following command (assuming that you're in the root of the repository):
+Assuming that you're using the `oxalate` user, you can populate the database with the following command (assuming that you're in the root of the repository):
 
 ```bash
-cat test-data/test-large.sql  | psql --host=localhost --port=5432 --username postgres oxdb
+cat test-data/test-large.sql  | psql --host=localhost --port=5432 --username oxalate oxdb
 ```
 
 This will generate a number of users with various roles. The credentials are listed in the main [README.md](../../README.md) file.
@@ -153,30 +153,30 @@ To do this, you need to copy the `docker-compose.yaml.j2` file from the [templat
 to `docker-compose.yaml`. Note that the file is a Jinja2 template, which should be helpful if you want to use the file later in an Ansible setup.
 For local use you need to replace the following bracketed values with the correct values for your environment:
 
-| Variable                        | Description                | Example      |
-|---------------------------------|----------------------------|--------------|
-| item.ext_app_port               | External application port  | 8080         |
-| item.hostname                   | Hostname                   | localhost    |
-| item.mail_enabled               | Mail sending enabled       | true         |
-| item.name                       | Environment type           | dev          |
-| oxalate_admin_email             | Administrator email        | admin@tld    |
-| oxalate_admin_password          | Administrator password     | password     |
-| oxalate_app_jwt_secret          | JWT secret                 | secret       |
-| oxalate_app_org_name            | Organization name          | MyOrg        |
-| oxalate_captcha_enabled         | Captcha enabled            | true         |
-| oxalate_captcha_secret_key      | Google Captcha secret key  | secretkey    |
-| oxalate_captcha_site_key        | Google Captcha site key    | sitekey      |
-| oxalate_db_name                 | Database name              | oxdb         |
-| oxalate_db_password             | Database password          | postgres     |
-| oxalate_db_user                 | Database user              | postgres     |
-| oxalate_installation_first_time | First time installation    | true         |
-| oxalate_language_default        | Default language           | en           |
-| oxalate_mail_host               | Mail server host           | mail.tld     |
-| oxalate_mail_org_email          | Organization email address | info@tld     |
-| oxalate_mail_password           | Mail server password       | password     |
-| oxalate_mail_support_email      | Support email address      | support@tld  |
-| oxalate_mail_system_email       | System email address       | no-reply@tld |
-| oxalate_mail_username           | Mail server username       | user         |
+| Variable                        | Description                | Example          |
+|---------------------------------|----------------------------|------------------|
+| item.ext_app_port               | External application port  | 8080             |
+| item.hostname                   | Hostname                   | localhost        |
+| item.mail_enabled               | Mail sending enabled       | true             |
+| item.name                       | Environment type           | dev              |
+| oxalate_admin_email             | Administrator email        | admin@tld        |
+| oxalate_admin_password          | Administrator password     | password         |
+| oxalate_app_jwt_secret          | JWT secret                 | secret           |
+| oxalate_app_org_name            | Organization name          | MyOrg            |
+| oxalate_captcha_enabled         | Captcha enabled            | true             |
+| oxalate_captcha_secret_key      | Google Captcha secret key  | secretkey        |
+| oxalate_captcha_site_key        | Google Captcha site key    | sitekey          |
+| oxalate_db_name                 | Database name              | oxdb             |
+| oxalate_db_password             | Database password          | oxalate_password |
+| oxalate_db_user                 | Database user              | oxalate          |
+| oxalate_installation_first_time | First time installation    | true             |
+| oxalate_language_default        | Default language           | en               |
+| oxalate_mail_host               | Mail server host           | mail.tld         |
+| oxalate_mail_org_email          | Organization email address | info@tld         |
+| oxalate_mail_password           | Mail server password       | password         |
+| oxalate_mail_support_email      | Support email address      | support@tld      |
+| oxalate_mail_system_email       | System email address       | no-reply@tld     |
+| oxalate_mail_username           | Mail server username       | user             |
 
 The variables beginning with `item` are used when you set up multiple environments with the same `docker-compose.yaml` file. The other variables are used to
 set the general configuration of the backend service. The `oxalate_admin_email` and `oxalate_admin_password` are used to set up the primary administrator and
@@ -212,8 +212,9 @@ docker run -d -p 8080:8080 \
   -e SPRING_PROFILES_ACTIVE=local \
   -e OXALATE_CAPTCHA_ENABLED=false \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/oxdb \
-  -e SPRING_DATASOURCE_USERNAME=postgres \
-  -e SPRING_DATASOURCE_PASSWORD=postgres oxalate-backend:latest
+  -e SPRING_DATASOURCE_USERNAME=oxalate \
+  -e SPRING_DATASOURCE_PASSWORD=oxalate_password \
+  oxalate-backend:latest
 ```
 
 **Note!** The above command mixes both using the `local.yaml`-profile as well as setting some values from the environment just to give you an example of how to
