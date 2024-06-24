@@ -48,9 +48,13 @@ public class AppAuditMessages {
     public static final String AUTH_RESET_PASSWORD_OK = "User password updated";
 
     // CertificateController
-    public static final String CERTIFICATES_GET_ALL_START = "Getting all certificates for user ID: ";
-    public static final String CERTIFICATES_GET_ALL_UNAUTHORIZED = "User is not authorized to get certificates for user ID: ";
-    public static final String CERTIFICATES_GET_ALL_OK = "Retrieved all certificates for user ID: ";
+    public static final String CERTIFICATES_GET_ALL_START = "Getting all certificates";
+    public static final String CERTIFICATES_GET_ALL_UNAUTHORIZED = "User is not authorized to get certificates";
+    public static final String CERTIFICATES_GET_ALL_OK = "Retrieved all certificates";
+
+    public static final String CERTIFICATES_GET_ALL_USER_START = "Getting all certificates for user ID: ";
+    public static final String CERTIFICATES_GET_ALL_USER_UNAUTHORIZED = "User is not authorized to get certificates for user ID: ";
+    public static final String CERTIFICATES_GET_ALL_USER_OK = "Retrieved all certificates for user ID: ";
 
     public static final String CERTIFICATES_GET_START = "Retrieving certificate with ID: ";
     public static final String CERTIFICATES_GET_NOT_FOUND = "Could not find certificate ID: ";
@@ -70,6 +74,19 @@ public class AppAuditMessages {
     public static final String CERTIFICATES_DELETE_FAIL = "Failed to delete certificate: ";
     public static final String CERTIFICATES_DELETE_UNAUTHORIZED = "User was not authorized to delete certificate ID: ";
     public static final String CERTIFICATES_DELETE_OK = "Certificate deleted: ";
+
+    // DataDownloadController
+    public static final String DATA_DOWNLOAD_CERTIFICATES_START = "Downloading all certificates";
+    public static final String DATA_DOWNLOAD_CERTIFICATES_UNAUTHORIZED = "User is not authorized to download certificates";
+    public static final String DATA_DOWNLOAD_CERTIFICATES_OK = "Downloaded all certificates";
+
+    public static final String DATA_DOWNLOAD_DIVES_START = "Downloading dives";
+    public static final String DATA_DOWNLOAD_DIVES_UNAUTHORIZED = "User not authorized to download dive information";
+    public static final String DATA_DOWNLOAD_DIVES_OK = "Dive information has been downloaded";
+
+    public static final String DATA_DOWNLOAD_PAYMENTS_START = "Downloading payments";
+    public static final String DATA_DOWNLOAD_PAYMENTS_UNAUTHORIZED = "User not authorized to download payment information";
+    public static final String DATA_DOWNLOAD_PAYMENTS_OK = "Payment information has been downloaded";
 
     // EventController
     public static final String EVENTS_GET_FUTURE_START = "Retrieving all future events";

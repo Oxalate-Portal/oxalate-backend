@@ -23,6 +23,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface CertificateAPI {
     String BASE_PATH = "/api/certificates";
 
+    @Operation(description = "Get all dive certificates", tags = "CertificateAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of certificates retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<CertificateResponse>> getAllCertificates(HttpServletRequest request);
+
     @Operation(description = "Get all dive certificates of a user", tags = "CertificateAPI")
     @Parameter(name = "userId", description = "User ID who's certificates should be retrieved", example = "123", required = true)
     @ApiResponses(value = {

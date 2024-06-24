@@ -20,25 +20,28 @@ import org.springframework.stereotype.Service;
 public class CertificateService {
 
     private final CertificateRepository certificateRepository;
+    private final UserService userService;
+
+    public List<CertificateResponse> findAll() {
+        var certificates = certificateRepository.findAll();
+        var certificateResponses = new ArrayList<CertificateResponse>();
+
+        for (Certificate certificate : certificates) {
+            certificateResponses.add(certificate.toCertificateResponse());
+        }
+
+        return certificateResponses;
+    }
 
     public List<CertificateResponse> findByUserId(long userId) {
         var certificates = certificateRepository.findByUserIdOrderByCertificationDateAsc(userId);
-        var certificateDtos = new ArrayList<CertificateResponse>();
+        var certificateResponses = new ArrayList<CertificateResponse>();
 
         for (Certificate certificate : certificates) {
-            var certificateDto = CertificateResponse.builder()
-													.id(certificate.getId())
-													.organization(certificate.getOrganization())
-													.certificateName(certificate.getCertificateName())
-													.certificateId(certificate.getCertificateId())
-													.diverId(certificate.getDiverId())
-													.certificationDate(certificate.getCertificationDate().toInstant())
-													.build();
-
-            certificateDtos.add(certificateDto);
+            certificateResponses.add(certificate.toCertificateResponse());
         }
 
-        return certificateDtos;
+        return certificateResponses;
     }
 
     public CertificateResponse addCertificate(long userId, CertificateRequest certificateRequest) {

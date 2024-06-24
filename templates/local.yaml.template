@@ -4,17 +4,17 @@ spring:
       on-profile: local
   datasource:
     url: jdbc:postgresql://localhost:5432/oxdb
-    username: postgres
-    password:
+    username: oxalate
+    password: oxalate_password
     hikari:
-      schema: public
+      schema: oxalate
   jpa:
     properties:
       hibernate:
-        default_schema: public
+        default_schema: oxalate
   flyway:
     schemas:
-      - public
+      - oxalate
   mail:
     host: localhost
     port: 2525
