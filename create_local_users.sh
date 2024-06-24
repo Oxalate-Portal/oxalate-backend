@@ -11,4 +11,4 @@ if [ -z "${TEST_SQL}" ]; then
   TEST_SQL=$(cat test-data/test.sql)
 fi
 
-docker exec -it "${CONTAINER_NAME}" bash -c "echo \"${TEST_SQL}\" | psql --host=localhost --port=5432 --username postgres ${DB_NAME}"
+docker exec -it "${CONTAINER_NAME}" bash -c "echo \"${TEST_SQL}\" | psql --host=localhost --port=5432 --username oxalate ${DB_NAME}"

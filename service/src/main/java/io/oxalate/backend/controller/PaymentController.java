@@ -148,14 +148,12 @@ public class PaymentController implements PaymentAPI {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
             appEventPublisher.publishAuditEvent(PAYMENTS_RESET_UNAUTHORIZED, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.error("User ID {} tried to reset all periodic payments without proper permission", AuthTools.getCurrentUserId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
         if (!paymentService.resetAllPeriodicPayments()) {
             appEventPublisher.publishAuditEvent(PAYMENTS_RESET_FAIL, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
 
         appEventPublisher.publishAuditEvent(PAYMENTS_RESET_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);

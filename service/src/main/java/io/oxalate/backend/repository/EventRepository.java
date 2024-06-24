@@ -52,4 +52,15 @@ public interface EventRepository extends CrudRepository<Event, Long> {
 
     @Query(nativeQuery = true, value = "SELECT * FROM events e WHERE e.start_time < NOW() AND NOW() < (e.start_time + e.event_duration * INTERVAL '1 hour') ORDER BY e.start_time ASC")
     List<Event> findAllCurrentEvents();
+
+    @Query(value = "SELECT ep.user_id AS id, " +
+            "u.first_name AS first_name, " +
+            "u.last_name AS last_name, " +
+            "COALESCE(SUM(ep.dive_count), 0) AS dive_count " +
+            "FROM event_participants ep, users u " +
+            "WHERE u.id = ep.user_id " +
+            "GROUP BY ep.user_id, u.first_name, u.last_name " +
+            "ORDER BY dive_count DESC", nativeQuery = true)
+    List<Object[]> getMemberDiveCount();
+
 }

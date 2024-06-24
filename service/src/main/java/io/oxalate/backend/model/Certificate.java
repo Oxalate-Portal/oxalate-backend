@@ -1,6 +1,7 @@
 package io.oxalate.backend.model;
 
 import io.oxalate.backend.api.response.CertificateResponse;
+import io.oxalate.backend.api.response.download.DownloadCertificateResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -56,5 +57,18 @@ public class Certificate {
                                   .diverId(this.diverId)
                                   .certificationDate(this.certificationDate.toInstant())
                                   .build();
+    }
+
+    public DownloadCertificateResponse toDownloadCertificateResponse() {
+        return DownloadCertificateResponse.builder()
+                                          .id(this.id)
+                                          .userId(this.userId)
+                                          .organization(this.organization)
+                                          .certificateName(this.certificateName)
+                                          .certificateId(this.certificateId)
+                                          .diverId(this.diverId)
+                                          .certificationDate(this.certificationDate.toInstant())
+                                          .memberName(null)
+                                          .build();
     }
 }
