@@ -126,7 +126,7 @@ public class EmailService {
         MimeMessage mail = javaMailSender.createMimeMessage();
 
         var subjectPrefix = "prod".equals(env) ? "" : String.format("[env=%s] ", env);
-        subjectPrefix += "[Oxalate] ";
+        subjectPrefix += "[" + orgName + "] ";
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mail, true);
