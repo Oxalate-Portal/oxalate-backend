@@ -47,6 +47,20 @@ public class AppAuditMessages {
     public static final String AUTH_RESET_PASSWORD_UNKNOWN_ERROR = "User password failed for unknown reason";
     public static final String AUTH_RESET_PASSWORD_OK = "User password updated";
 
+    // BlockedDateController
+    public static final String BLOCKED_DATE_GET_ALL_START = "Getting all blocked dates";
+    public static final String BLOCKED_DATE_GET_ALL_UNAUTHORIZED = "User not authorized to get list of blocked dates";
+    public static final String BLOCKED_DATE_GET_ALL_OK = "Return list of blocked dates";
+
+    public static final String BLOCKED_DATE_ADD_START = "Adding new blocked date";
+    public static final String BLOCKED_DATE_ADD_UNAUTHORIZED = "User not authorized to add new blocked date";
+    public static final String BLOCKED_DATE_ADD_OK = "New blocked date added";
+
+    public static final String BLOCKED_DATE_REMOVE_START = "Removing blocked date";
+    public static final String BLOCKED_DATE_REMOVE_UNAUTHORIZED = "User not authorized to remove blocked date";
+    public static final String BLOCKED_DATE_REMOVE_NOT_FOUND = "Blocked date not found";
+    public static final String BLOCKED_DATE_REMOVE_OK = "Blocked date removed";
+
     // CertificateController
     public static final String CERTIFICATES_GET_ALL_START = "Getting all certificates";
     public static final String CERTIFICATES_GET_ALL_UNAUTHORIZED = "User is not authorized to get certificates";
