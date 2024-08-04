@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Uusi sivuilmoitus</title>
+</head>
+<body>
+    <p>Hyvä jäsen,</p>
+    <p>Uusi sivu otsikolla: <strong th:text="${pageTitle}"></strong> on lisätty sivustollemme.</p>
+    <p>Lisätietoja saat vierailemalla <a th:href="${frontendUrl}">verkkosivullamme</a>.</p>
+    <p>Ystävällisin terveisin,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>

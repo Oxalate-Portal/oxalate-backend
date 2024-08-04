@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Borttagen händelseanmälan</title>
+</head>
+<body>
+    <p>Hej,</p>
+    <p>Vi beklagar att meddela att händelsen: <strong th:text="${eventTitle}"></strong> planerad till <strong th:text="${eventDate}"></strong> har ställts in.</p>
+    <p>Mer information finns på vår <a th:href="${frontendUrl}">portal</a>.</p>
+    <p>Med vänliga hälsningar,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>

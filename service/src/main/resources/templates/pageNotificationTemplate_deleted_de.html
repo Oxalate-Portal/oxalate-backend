@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Gelöschte Seitenbenachrichtigung</title>
+</head>
+<body>
+    <p>Sehr geehrter Mitglied,</p>
+    <p>Wir bedauern, Ihnen mitteilen zu müssen, dass die Seite mit dem Titel: <strong th:text="${pageTitle}"></strong> gelöscht wurde.</p>
+    <p>Weitere Informationen finden Sie auf unserer <a th:href="${frontendUrl}">Website</a>.</p>
+    <p>Mit freundlichen Grüßen,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
