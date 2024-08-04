@@ -4,7 +4,9 @@ import io.oxalate.backend.api.request.BlockedDateRequest;
 import io.oxalate.backend.api.response.BlockedDateResponse;
 import io.oxalate.backend.model.BlockedDate;
 import io.oxalate.backend.repository.BlockedDateRepository;
+import java.sql.Date;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +20,7 @@ public class BlockedDateService {
     private final BlockedDateRepository blockedDateRepository;
 
     public List<BlockedDateResponse> getAllBlockedDates() {
-        var blockedDates = blockedDateRepository.findAll();
+        var blockedDates = blockedDateRepository.findAllByBlockedDateAfterOrderByBlockedDateAsc(Date.valueOf(LocalDate.now()));
         var blockedDateResponses = new ArrayList<BlockedDateResponse>();
 
         for (var blockedDate : blockedDates) {
