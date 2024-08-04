@@ -1,5 +1,7 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.EmailNotificationDetailEnum;
+import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.PageStatusEnum;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.request.PageGroupRequest;
@@ -39,6 +41,7 @@ public class PageService {
     private final PageGroupVersionRepository pageGroupVersionRepository;
     private final PageRoleAccessRepository pageRoleAccessRepository;
     private final PageVersionRepository pageVersionRepository;
+    private final EmailQueueService emailQueueService;
 
     private final long RESERVED_PAGE_GROUP_ID = 1;
 
@@ -50,11 +53,8 @@ public class PageService {
             return null;
         }
 
-        if (!optionalPage.get()
-                         .getStatus()
-                         .equals(PageStatusEnum.PUBLIC)) {
-            log.info("Attempted to fetch page with ID {} which was not public {}", pageId, optionalPage.get()
-                                                                                                       .getStatus());
+        if (!optionalPage.get().getStatus().equals(PageStatusEnum.PUBLISHED)) {
+            log.info("Attempted to fetch page with ID {} which was not public {}", pageId, optionalPage.get().getStatus());
             return null;
         }
 
@@ -105,7 +105,7 @@ public class PageService {
             for (var page : pageGroup.getPages()) {
                 var permissionList = pageRoleAccessRepository.findByPageIdAndRoleIn(page.getId(), roles);
                 // In addition to access, the page must be public
-                if (!permissionList.isEmpty() && page.getStatus().equals(PageStatusEnum.PUBLIC)) {
+                if (!permissionList.isEmpty() && page.getStatus().equals(PageStatusEnum.PUBLISHED)) {
                     pageListFiltered.add(page);
                 }
             }
@@ -158,15 +158,15 @@ public class PageService {
     }
 
     @Transactional
-    public PageGroupResponse createPath(PageGroupRequest pathRequests) {
-        if (!verifyPageGroupRequests(pathRequests)) {
+    public PageGroupResponse createPath(PageGroupRequest pageGroupRequest) {
+        if (!verifyPageGroupRequest(pageGroupRequest)) {
             return null;
         }
 
-        var pageGroup = PageGroup.of(pathRequests);
+        var pageGroup = PageGroup.of(pageGroupRequest);
         var newPageGroup = pageGroupRepository.save(pageGroup);
         // Save all PageGroupVersions
-        for (var pageGroupVersionRequest : pathRequests.getPageGroupVersions()) {
+        for (var pageGroupVersionRequest : pageGroupRequest.getPageGroupVersions()) {
             var pageGroupVersion = PageGroupVersion.of(pageGroupVersionRequest);
             pageGroupVersion.setPageGroupId(newPageGroup.getId());
             pageGroupVersionRepository.save(pageGroupVersion);
@@ -178,8 +178,8 @@ public class PageService {
     }
 
     @Transactional
-    public PageGroupResponse updatePath(PageGroupRequest pageGroupRequest) {
-        if (!verifyPageGroupRequests(pageGroupRequest)) {
+    public PageGroupResponse updatePageGroup(PageGroupRequest pageGroupRequest) {
+        if (!verifyPageGroupRequest(pageGroupRequest)) {
             return null;
         }
 
@@ -203,10 +203,8 @@ public class PageService {
 
             if (newPageGroupVersionRequest.isPresent()) {
                 // Update the page group
-                existingPageGroupVersion.setTitle(newPageGroupVersionRequest.get()
-                                                                            .getTitle());
-                existingPageGroupVersion.setLanguage(newPageGroupVersionRequest.get()
-                                                                               .getLanguage());
+                existingPageGroupVersion.setTitle(newPageGroupVersionRequest.get().getTitle());
+                existingPageGroupVersion.setLanguage(newPageGroupVersionRequest.get().getLanguage());
                 pageGroupVersionRepository.save(existingPageGroupVersion);
 
                 // Remove the request from the list
@@ -224,6 +222,13 @@ public class PageService {
             pageGroupVersionRepository.save(newPageGroupVersion);
         }
 
+        // If the new status of the page group is DELETE, then update also all the pages in the group
+        if (pageGroupRequest.getStatus().equals(PageStatusEnum.DELETED)) {
+            var pages = pageRepository.findAllByPageGroupIdOrderByIdAsc(pageGroupRequest.getId());
+            closePages(pages);
+        }
+
+        pageGroup.setStatus(pageGroupRequest.getStatus());
         var newPageGroup = pageGroupRepository.save(pageGroup);
         populatePageGroup(newPageGroup, null);
 
@@ -231,7 +236,7 @@ public class PageService {
     }
 
     @Transactional
-    public boolean deletePageGroup(long pageGroupId) {
+    public boolean closePageGroup(long pageGroupId) {
 
         var optionalPageGroup = pageGroupRepository.findById(pageGroupId);
 
@@ -239,14 +244,11 @@ public class PageService {
             return false;
         }
 
-        // Delete by the path, the cascade in pages and page_versions, but we need to clean up page_role_access manually
         var pages = pageRepository.findAllByPageGroupIdOrderByIdAsc(pageGroupId);
 
-        for (var page : pages) {
-            pageRoleAccessRepository.deleteAllByPageId(page.getId());
-        }
+        closePages(pages);
 
-        pageGroupRepository.deleteById(pageGroupId);
+        pageGroupRepository.updateStatus(pageGroupId, PageStatusEnum.DELETED);
 
         return true;
     }
@@ -320,6 +322,8 @@ public class PageService {
                                                .build();
             pageRoleAccessRepository.save(pageRoleAccess);
         }
+
+        emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.NEW, newPage.getId());
 
         populatePage(newPage, null);
         return newPage.toResponse();
@@ -419,6 +423,13 @@ public class PageService {
         page.setModifiedAt(Instant.now());
         page.setPageGroupId(pageRequest.getPageGroupId());
         var newPage = pageRepository.save(page);
+
+        // We don't send an email if the page is set back to draft or if it is still a draft
+        if (!newPage.getStatus().equals(PageStatusEnum.DRAFTED)) {
+            var detail = newPage.getStatus() == PageStatusEnum.DELETED ? EmailNotificationDetailEnum.DELETED : EmailNotificationDetailEnum.UPDATED;
+            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, detail, newPage.getId());
+        }
+
         populatePage(newPage, null);
         return newPage.toResponse();
     }
@@ -440,7 +451,7 @@ public class PageService {
     }
 
     @Transactional
-    public boolean deletePage(long pageId) {
+    public boolean closePage(long pageId) {
         // Check if page exists
         var optionalPage = pageRepository.findById(pageId);
 
@@ -448,7 +459,8 @@ public class PageService {
             return false;
         }
 
-        pageRepository.deleteAllById(pageId);
+        pageRepository.updateStatus(pageId, PageStatusEnum.DELETED);
+        emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.DELETED, pageId);
 
         return true;
     }
@@ -461,7 +473,7 @@ public class PageService {
      * @param pathRequests Request send by user
      * @return boolean if the request is correct
      */
-    private boolean verifyPageGroupRequests(PageGroupRequest pathRequests) {
+    private boolean verifyPageGroupRequest(PageGroupRequest pathRequests) {
         var languageSet = new HashSet<String>();
 
         for (var path : pathRequests.getPageGroupVersions()) {
@@ -473,49 +485,6 @@ public class PageService {
         }
 
         return true;
-    }
-
-    /**
-     * Takes in a language and a path ID and returns a list of pages with the specific language that belongs to that path
-     *
-     * @param language    Language of the page
-     * @param pageGroupId ID of the path
-     * @param roles       Roles of the user, used to check that the user has correct role to the page
-     * @return List of pages
-     */
-
-    private List<Page> getPagesByPageGroupIdAndLanguage(String language, long pageGroupId, Set<RoleEnum> roles) {
-        log.debug("Getting pages for path ID {} and language {}", pageGroupId, language);
-
-        var pageListFiltered = new ArrayList<Page>();
-
-        var pageList = pageRepository.findAllByPageGroupIdOrderByIdAsc(pageGroupId);
-
-        log.debug("Got list of pages for path ID ({}): {}", pageGroupId, pageList);
-
-        if (pageList.isEmpty()) {
-            return pageListFiltered;
-        }
-
-        for (var page : pageList) {
-            // First check if the language version is present
-            log.debug("Searching for page version with page ID {} and language {}", page.getId(), language);
-            var optionalPageVersion = pageVersionRepository.findByPageIdAndLanguage(page.getId(), language);
-
-            if (optionalPageVersion.isPresent()) {
-                // Then check that the user has access to the page
-                log.debug("Searching for page role access with page ID {} and roles {}", page.getId(), roles);
-                var permissionList = pageRoleAccessRepository.findByPageIdAndRoleIn(page.getId(), roles);
-
-                if (!permissionList.isEmpty()) {
-                    // We (re)populate the page versions list with the language version
-                    page.setPageVersions(List.of(optionalPageVersion.get()));
-                    pageListFiltered.add(page);
-                }
-            }
-        }
-
-        return pageListFiltered;
     }
 
     /**
@@ -575,5 +544,21 @@ public class PageService {
         }
 
         pageGroup.setPages(pages);
+    }
+
+    private void closePages(List<Page> pages) {
+        for (var page : pages) {
+            pageRoleAccessRepository.deleteAllByPageId(page.getId());
+            // Only admins will have permission to access the pages
+            pageRoleAccessRepository.save(PageRoleAccess.builder()
+                                                        .role(RoleEnum.ROLE_ADMIN)
+                                                        .pageId(page.getId())
+                                                        .readPermission(true)
+                                                        .writePermission(true)
+                                                        .build());
+            pageRepository.updateStatus(page.getId(), PageStatusEnum.DELETED);
+            // We send an email for each page that is closed
+            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.DELETED, page.getId());
+        }
     }
 }

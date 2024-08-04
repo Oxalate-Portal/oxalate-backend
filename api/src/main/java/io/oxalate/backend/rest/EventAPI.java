@@ -133,7 +133,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @DeleteMapping(path = BASE_PATH + "/{eventId}")
-    ResponseEntity<HttpStatus> deleteEvent(@PathVariable("eventId") long eventId, HttpServletRequest request);
+    ResponseEntity<HttpStatus> cancelEvent(@PathVariable("eventId") long eventId, HttpServletRequest request);
 
     @Operation(description = "Subscribe to an event", tags = "EventAPI")
     @Parameter(name = "eventId", description = "ID of the event to which the user subscribes to", example = "123", required = true)

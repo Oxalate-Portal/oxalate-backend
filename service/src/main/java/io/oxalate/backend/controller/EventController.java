@@ -11,15 +11,15 @@ import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CANCEL_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CANCEL_OK;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CANCEL_START;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CREATE_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CREATE_INVALID_DATETIME;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CREATE_INVALID_ORGANIZER;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CREATE_INVALID_PARTICIPANTS_COUNT;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CREATE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CREATE_START;
-import static io.oxalate.backend.events.AppAuditMessages.EVENTS_DELETE_FAIL;
-import static io.oxalate.backend.events.AppAuditMessages.EVENTS_DELETE_OK;
-import static io.oxalate.backend.events.AppAuditMessages.EVENTS_DELETE_START;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_GET_CURRENT_OK;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_GET_CURRENT_START;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_GET_CURRENT_TERMS_NOT_ACCEPTED;
@@ -381,16 +381,16 @@ public class EventController implements EventAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<HttpStatus> deleteEvent(long eventId, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(EVENTS_DELETE_START + eventId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+    public ResponseEntity<HttpStatus> cancelEvent(long eventId, HttpServletRequest request) {
+        var auditUuid = appEventPublisher.publishAuditEvent(EVENTS_CANCEL_START + eventId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         try {
-            eventService.delete(eventId);
-            appEventPublisher.publishAuditEvent(EVENTS_DELETE_OK + eventId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            eventService.cancel(eventId);
+            appEventPublisher.publishAuditEvent(EVENTS_CANCEL_OK + eventId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             return ResponseEntity.status(HttpStatus.NO_CONTENT)
                                  .body(null);
         } catch (Exception e) {
-            appEventPublisher.publishAuditEvent(EVENTS_DELETE_FAIL + eventId, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            appEventPublisher.publishAuditEvent(EVENTS_CANCEL_FAIL + eventId, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                  .body(null);
         }

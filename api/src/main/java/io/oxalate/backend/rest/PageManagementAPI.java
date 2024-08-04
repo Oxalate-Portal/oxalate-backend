@@ -71,17 +71,17 @@ public interface PageManagementAPI {
     @PutMapping(path = BASE_PATH + "/page-groups", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageGroupResponse> updatePageGroup(@RequestBody PageGroupRequest pathRequests, HttpServletRequest request);
 
-    @Operation(description = "Delete path, this will delete all language versions of the path", tags = "PageManagementAPI")
-    @Parameter(name = "pageGroupId", description = "Page group ID to be deleted", example = "/info")
+    @Operation(description = "Close a path, this will close all language versions of the path as well as the pages", tags = "PageManagementAPI")
+    @Parameter(name = "pageGroupId", description = "Page group ID to be closed", example = "/info")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Path deleted successfully"),
-            @ApiResponse(responseCode = "403", description = "User does not have permission to delete path"),
+            @ApiResponse(responseCode = "200", description = "Path closed successfully"),
+            @ApiResponse(responseCode = "403", description = "User does not have permission to close path"),
             @ApiResponse(responseCode = "404", description = "Path does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @DeleteMapping(path = BASE_PATH + "/page-groups/{pageGroupId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<HttpStatus> deletePath(@PathVariable(name = "pageGroupId") long pageGroupId, HttpServletRequest request);
+    ResponseEntity<HttpStatus> closePageGroup(@PathVariable(name = "pageGroupId") long pageGroupId, HttpServletRequest request);
 
     // Pages
     @Operation(description = "Get list of all pages for a specific path ID", tags = "PageManagementAPI")
@@ -129,15 +129,15 @@ public interface PageManagementAPI {
     @PutMapping(path = BASE_PATH + "/pages", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageResponse> updatePage(@RequestBody PageRequest pageRequests, HttpServletRequest request);
 
-    @Operation(description = "Delete a page, this will delete all language versions of the page", tags = "PageManagementAPI")
-    @Parameter(name = "pageId", description = "Page ID to be deleted", example = "/info")
+    @Operation(description = "Close a page, this will close all language versions of the page", tags = "PageManagementAPI")
+    @Parameter(name = "pageId", description = "Page ID to be closed", example = "/info")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Page deleted successfully"),
-            @ApiResponse(responseCode = "403", description = "User does not have permission to delete page"),
+            @ApiResponse(responseCode = "200", description = "Page closed successfully"),
+            @ApiResponse(responseCode = "403", description = "User does not have permission to close page"),
             @ApiResponse(responseCode = "404", description = "Page or page group not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @DeleteMapping(path = BASE_PATH + "/pages/{pageId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<HttpStatus> deletePage(@PathVariable(name = "pageId") long pageId, HttpServletRequest request);
+    ResponseEntity<HttpStatus> closePage(@PathVariable(name = "pageId") long pageId, HttpServletRequest request);
 }

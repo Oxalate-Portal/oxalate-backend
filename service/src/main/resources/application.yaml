@@ -83,6 +83,8 @@ oxalate:
     system-email: override-me
     org-email: override-me
     support-email: override-me
+    notification:
+      retry-times: 5
   payment:
     period-start-month: override-me # 1 = January, 12 = December
     event-requires-payment: override-me

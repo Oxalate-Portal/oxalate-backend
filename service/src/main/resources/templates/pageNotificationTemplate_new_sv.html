@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Ny sidanmälan</title>
+</head>
+<body>
+    <p>Hej,</p>
+    <p>En ny sida med titeln: <strong th:text="${pageTitle}"></strong> har lagts till på vår portal.</p>
+    <p>Mer information finns på vår <a th:href="${frontendUrl}">portal</a>.</p>
+    <p>Med vänliga hälsningar,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>

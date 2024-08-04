@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Poistettu tapahtumailmoitus</title>
+</head>
+<body>
+    <p>Hyvä jäsen,</p>
+    <p>Valitettavasti tapahtuma: <strong th:text="${eventTitle}"></strong> ajankohtana <strong th:text="${eventDate}"></strong> on peruttu.</p>
+    <p>Lisätietoja saat vierailemalla <a th:href="${frontendUrl}">verkkosivullamme</a>.</p>
+    <p>Ystävällisin terveisin,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>

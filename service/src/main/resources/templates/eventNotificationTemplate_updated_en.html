@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Updated Event Notification</title>
+</head>
+<body>
+    <p>Dear member,</p>
+    <p>The event: <strong th:text="${eventTitle}"></strong> scheduled for <strong th:text="${eventDate}"></strong> has been updated.</p>
+    <p>For more details, visit our <a th:href="${frontendUrl}">website</a>.</p>
+    <p>Best regards,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>

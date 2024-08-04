@@ -6,6 +6,12 @@ import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageRequest;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
+import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CLOSE_PAGE_GROUP_NOT_FOUND;
+import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CLOSE_PAGE_GROUP_OK;
+import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CLOSE_PAGE_GROUP_START;
+import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CLOSE_PAGE_NOT_FOUND;
+import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CLOSE_PAGE_OK;
+import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CLOSE_PAGE_START;
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CREATE_GROUP_NONE_CREATED;
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CREATE_GROUP_OK;
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CREATE_GROUP_START;
@@ -13,12 +19,6 @@ import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CREATE_PAGE
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CREATE_PAGE_NONE_UPDATED;
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CREATE_PAGE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_CREATE_PAGE_START;
-import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_DELETE_PAGE_GROUP_NOT_FOUND;
-import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_DELETE_PAGE_GROUP_OK;
-import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_DELETE_PAGE_GROUP_START;
-import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_DELETE_PAGE_NOT_FOUND;
-import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_DELETE_PAGE_OK;
-import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_DELETE_PAGE_START;
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_GET_NAVIGATION_ELEMENTS_OK;
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_GET_NAVIGATION_ELEMENTS_START;
 import static io.oxalate.backend.events.AppAuditMessages.MGMNT_PAGES_GET_PAGES_OK;
@@ -104,7 +104,7 @@ public class PageManagementController implements PageManagementAPI {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(MGMNT_PAGES_UPDATE_PAGE_GROUP_START, INFO, request, AUDIT_NAME, userId);
 
-        var navigationElementResponses = pageService.updatePath(pathRequests);
+        var navigationElementResponses = pageService.updatePageGroup(pathRequests);
 
         if (navigationElementResponses == null) {
             appEventPublisher.publishAuditEvent(MGMNT_PAGES_UPDATE_PAGE_GROUP_NONE_UPDATED + pathRequests, ERROR, request, AUDIT_NAME, userId, auditUuid);
@@ -119,16 +119,16 @@ public class PageManagementController implements PageManagementAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public ResponseEntity<HttpStatus> deletePath(long pageGroupId, HttpServletRequest request) {
+    public ResponseEntity<HttpStatus> closePageGroup(long pageGroupId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
-        var auditUuid = appEventPublisher.publishAuditEvent(MGMNT_PAGES_DELETE_PAGE_GROUP_START, INFO, request, AUDIT_NAME, userId);
+        var auditUuid = appEventPublisher.publishAuditEvent(MGMNT_PAGES_CLOSE_PAGE_GROUP_START, INFO, request, AUDIT_NAME, userId);
 
-        if (pageService.deletePageGroup(pageGroupId)) {
-            appEventPublisher.publishAuditEvent(MGMNT_PAGES_DELETE_PAGE_GROUP_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
+        if (pageService.closePageGroup(pageGroupId)) {
+            appEventPublisher.publishAuditEvent(MGMNT_PAGES_CLOSE_PAGE_GROUP_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
             return ResponseEntity.status(HttpStatus.OK)
                                  .body(null);
         } else {
-            appEventPublisher.publishAuditEvent(MGMNT_PAGES_DELETE_PAGE_GROUP_NOT_FOUND + pageGroupId, ERROR, request, AUDIT_NAME, userId, auditUuid);
+            appEventPublisher.publishAuditEvent(MGMNT_PAGES_CLOSE_PAGE_GROUP_NOT_FOUND + pageGroupId, ERROR, request, AUDIT_NAME, userId, auditUuid);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                                  .body(null);
         }
@@ -200,16 +200,16 @@ public class PageManagementController implements PageManagementAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<HttpStatus> deletePage(long pageId, HttpServletRequest request) {
+    public ResponseEntity<HttpStatus> closePage(long pageId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
-        var auditUuid = appEventPublisher.publishAuditEvent(MGMNT_PAGES_DELETE_PAGE_START, INFO, request, AUDIT_NAME, userId);
+        var auditUuid = appEventPublisher.publishAuditEvent(MGMNT_PAGES_CLOSE_PAGE_START, INFO, request, AUDIT_NAME, userId);
 
-        if (pageService.deletePage(pageId)) {
-            appEventPublisher.publishAuditEvent(MGMNT_PAGES_DELETE_PAGE_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
+        if (pageService.closePage(pageId)) {
+            appEventPublisher.publishAuditEvent(MGMNT_PAGES_CLOSE_PAGE_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
             return null;
 
         } else {
-            appEventPublisher.publishAuditEvent(MGMNT_PAGES_DELETE_PAGE_NOT_FOUND + pageId, ERROR, request, AUDIT_NAME, userId, auditUuid);
+            appEventPublisher.publishAuditEvent(MGMNT_PAGES_CLOSE_PAGE_NOT_FOUND + pageId, ERROR, request, AUDIT_NAME, userId, auditUuid);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                                  .body(null);
         }
