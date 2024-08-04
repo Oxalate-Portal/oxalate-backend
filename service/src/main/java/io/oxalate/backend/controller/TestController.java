@@ -1,5 +1,6 @@
 package io.oxalate.backend.controller;
 
+import io.oxalate.backend.api.EventStatusEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
 import io.oxalate.backend.api.RoleEnum;
@@ -234,7 +235,7 @@ public class TestController implements TestAPI {
                 .maxParticipants(eventSize)
                 .startTime(Timestamp.from(createInstant))
                 .organizerId(organizerId)
-                .published(true)
+                .status(EventStatusEnum.PUBLISHED)
                 .type(getEventType())
                 .build();
         var newEvent = eventService.save(event);

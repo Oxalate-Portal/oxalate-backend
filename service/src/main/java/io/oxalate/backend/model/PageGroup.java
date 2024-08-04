@@ -1,11 +1,14 @@
 package io.oxalate.backend.model;
 
+import io.oxalate.backend.api.PageStatusEnum;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageGroupVersionResponse;
 import io.oxalate.backend.api.response.PageResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,6 +38,10 @@ public class PageGroup {
     @Column(name = "id")
     private Long id;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private PageStatusEnum status;
+
     @Transient
     private List<PageGroupVersion> groupVersions;
 
@@ -51,6 +58,7 @@ public class PageGroup {
 
         return PageGroup.builder()
                         .id(null)
+                        .status(pageGroupRequest.getStatus())
                         .groupVersions(pathVersions)
                         .build();
     }
@@ -72,6 +80,7 @@ public class PageGroup {
 
         return PageGroupResponse.builder()
                                 .id(this.getId())
+                                .status(this.getStatus())
                                 .pages(pageResponses)
                                 .pageGroupVersions(pageGroupVersionResponses)
                                 .build();

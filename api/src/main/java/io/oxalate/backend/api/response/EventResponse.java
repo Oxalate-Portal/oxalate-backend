@@ -2,6 +2,7 @@ package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.AbstractEvent;
+import io.oxalate.backend.api.EventStatusEnum;
 import java.util.Set;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
@@ -10,8 +11,8 @@ import lombok.experimental.SuperBuilder;
 @Data
 public class EventResponse extends AbstractEvent {
 
-    @JsonProperty("published")
-    private boolean published;
+    @JsonProperty("status")
+    private EventStatusEnum status;
 
     @JsonProperty("organizer")
     private UserResponse organizer;

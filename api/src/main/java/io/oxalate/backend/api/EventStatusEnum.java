@@ -1,7 +1,8 @@
 package io.oxalate.backend.api;
 
-public enum PageStatusEnum {
+public enum EventStatusEnum {
     DRAFTED,
     PUBLISHED,
-    DELETED
+    HELD,
+    CANCELLED
 }
