@@ -168,7 +168,6 @@ public class StatsService {
         for (var i = firstYear; i <= lastYear; i++) {
             var queryString = "SELECT u.id, CONCAT(u.first_name, ' ', u.last_name)"
                     + "  , sum(ep.dive_count) AS diveCount "
-                    + " , privacy "
                     + "FROM users u , event_participants ep, events e "
                     + "WHERE u.id = ep.user_id "
                     + "  AND e.id = ep.event_id "
@@ -188,10 +187,9 @@ public class StatsService {
                 var userId = (Long) o[0];
                 var userName = (String) o[1];
                 var diveCount = (Long) o[2];
-                var privacy = (Boolean) o[3];
                 var diverListItemResponse = DiverListItemResponse.builder()
                                                                  .userId(userId)
-                                                                 .userName((privacy ? "Piilotettu" : userName))
+                                                                 .userName(userName)
                                                                  .diveCount(diveCount)
                                                                  .position(position)
                                                                  .build();

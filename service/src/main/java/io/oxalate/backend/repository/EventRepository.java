@@ -1,5 +1,6 @@
 package io.oxalate.backend.repository;
 
+import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.model.Event;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Repository;
 public interface EventRepository extends CrudRepository<Event, Long> {
     List<Event> findByStartTimeAfterOrderByStartTimeAsc(Timestamp timestamp);
 
-    List<Event> findByPublishedAndStartTimeAfterOrderByStartTimeAsc(boolean onlyPublished, Timestamp timestamp);
+    List<Event> findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum status, Timestamp timestamp);
 
     @Query(nativeQuery = true, value = "SELECT * FROM events e WHERE e.start_time < :until ORDER BY e.start_time ASC")
     List<Event> findAllEventsBefore(Instant until);
@@ -63,4 +64,10 @@ public interface EventRepository extends CrudRepository<Event, Long> {
             "ORDER BY dive_count DESC", nativeQuery = true)
     List<Object[]> getMemberDiveCount();
 
+    @Query(nativeQuery = true, value = "SELECT * FROM events WHERE status = 'PUBLISHED' AND (start_time + (event_duration * interval '1 hour')) < NOW()")
+    List<Event> findEventsToMarkAsHeld();
+
+    @Modifying
+    @Query("UPDATE Event e SET e.status = :status WHERE e.id = :eventId")
+    void updateEventStatus(@Param("eventId") long eventId, @Param("status") EventStatusEnum status);
 }

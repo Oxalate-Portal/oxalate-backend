@@ -1,9 +1,12 @@
 package io.oxalate.backend.model;
 
+import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -58,8 +61,9 @@ public class Event {
     @Column(name = "organizer_id")
     private long organizerId;
 
-    @Column(name = "published")
-    private boolean published;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private EventStatusEnum status;
 
     /**
      * Converts this Event to EventResponse. Note that organizer and participants are not populated.
@@ -77,7 +81,7 @@ public class Event {
                 .maxParticipants(this.maxParticipants)
                 .organizer(null)
                 .participants(null)
-                .published(this.published)
+                .status(this.status)
                 .startTime(this.startTime)
                 .title(this.title)
                 .type(this.type)

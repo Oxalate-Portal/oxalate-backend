@@ -47,6 +47,20 @@ public class AppAuditMessages {
     public static final String AUTH_RESET_PASSWORD_UNKNOWN_ERROR = "User password failed for unknown reason";
     public static final String AUTH_RESET_PASSWORD_OK = "User password updated";
 
+    // BlockedDateController
+    public static final String BLOCKED_DATE_GET_ALL_START = "Getting all blocked dates";
+    public static final String BLOCKED_DATE_GET_ALL_UNAUTHORIZED = "User not authorized to get list of blocked dates";
+    public static final String BLOCKED_DATE_GET_ALL_OK = "Return list of blocked dates";
+
+    public static final String BLOCKED_DATE_ADD_START = "Adding new blocked date";
+    public static final String BLOCKED_DATE_ADD_UNAUTHORIZED = "User not authorized to add new blocked date";
+    public static final String BLOCKED_DATE_ADD_OK = "New blocked date added";
+
+    public static final String BLOCKED_DATE_REMOVE_START = "Removing blocked date";
+    public static final String BLOCKED_DATE_REMOVE_UNAUTHORIZED = "User not authorized to remove blocked date";
+    public static final String BLOCKED_DATE_REMOVE_NOT_FOUND = "Blocked date not found";
+    public static final String BLOCKED_DATE_REMOVE_OK = "Blocked date removed";
+
     // CertificateController
     public static final String CERTIFICATES_GET_ALL_START = "Getting all certificates";
     public static final String CERTIFICATES_GET_ALL_UNAUTHORIZED = "User is not authorized to get certificates";
@@ -139,9 +153,9 @@ public class AppAuditMessages {
     public static final String EVENTS_UPDATE_DIVES_FAIL = "Updating dives failed for event with ID: ";
     public static final String EVENTS_UPDATE_DIVES_OK = "Dives updated for event with ID: ";
 
-    public static final String EVENTS_DELETE_START = "Deleting event with ID: ";
-    public static final String EVENTS_DELETE_FAIL = "Failed to delete event with ID: ";
-    public static final String EVENTS_DELETE_OK = "Event deleted with ID: ";
+    public static final String EVENTS_CANCEL_START = "Cancelling event with ID: ";
+    public static final String EVENTS_CANCEL_FAIL = "Failed to cancel event with ID: ";
+    public static final String EVENTS_CANCEL_OK = "Event cancelled with ID: ";
 
     public static final String EVENTS_SUBSCRIBE_START = "Subscribing to event with ID: ";
     public static final String EVENTS_SUBSCRIBE_TERMS_NOT_ACCEPTED = "User has not accepted terms and conditions";
@@ -288,10 +302,10 @@ public class AppAuditMessages {
     public static final String MGMNT_PAGES_UPDATE_PAGE_GROUP_NONE_UPDATED = "Failed to update existing page group: ";
     public static final String MGMNT_PAGES_UPDATE_PAGE_GROUP_OK = "Return updated page group";
 
-    public static final String MGMNT_PAGES_DELETE_PAGE_GROUP_START = "Delete existing page group";
-    public static final String MGMNT_PAGES_DELETE_PAGE_GROUP_UNAUTHORIZED = "User not authorized to delete page group";
-    public static final String MGMNT_PAGES_DELETE_PAGE_GROUP_NOT_FOUND = "Fail to delete non-existing page group: ";
-    public static final String MGMNT_PAGES_DELETE_PAGE_GROUP_OK = "page group deleted";
+    public static final String MGMNT_PAGES_CLOSE_PAGE_GROUP_START = "Close existing page group";
+    public static final String MGMNT_PAGES_CLOSE_PAGE_GROUP_UNAUTHORIZED = "User not authorized to close page group";
+    public static final String MGMNT_PAGES_CLOSE_PAGE_GROUP_NOT_FOUND = "Fail to close non-existing page group: ";
+    public static final String MGMNT_PAGES_CLOSE_PAGE_GROUP_OK = "page group closed";
 
     public static final String MGMNT_PAGES_GET_PAGES_START = "Fetching all pages of a page group for management";
     public static final String MGMNT_PAGES_GET_PAGES_UNAUTHORIZED = "User not authorized to get list of pages";
@@ -310,10 +324,26 @@ public class AppAuditMessages {
     public static final String MGMNT_PAGES_CREATE_PAGE_NONE_UPDATED = "Failed to update existing page";
     public static final String MGMNT_PAGES_UPDATE_PAGE_OK = "Return updated page";
 
-    public static final String MGMNT_PAGES_DELETE_PAGE_START = "Delete existing page";
-    public static final String MGMNT_PAGES_DELETE_PAGE_UNAUTHORIZED = "User not authorized to delete page";
-    public static final String MGMNT_PAGES_DELETE_PAGE_NOT_FOUND = "Fail to delete non-existing page: ";
-    public static final String MGMNT_PAGES_DELETE_PAGE_OK = "Page deleted";
+    public static final String MGMNT_PAGES_CLOSE_PAGE_START = "Closing existing page";
+    public static final String MGMNT_PAGES_CLOSE_PAGE_UNAUTHORIZED = "User not authorized to close page";
+    public static final String MGMNT_PAGES_CLOSE_PAGE_NOT_FOUND = "Fail to close non-existing page: ";
+    public static final String MGMNT_PAGES_CLOSE_PAGE_OK = "Page closed";
+
+    // EmailNotificationSubscriptionController
+    public static final String EMAIL_SUBSCRIPTION_GET_ALL_START = "";
+    public static final String EMAIL_SUBSCRIPTION_GET_ALL_UNAUTHORIZED = "";
+    public static final String EMAIL_SUBSCRIPTION_GET_ALL_NOT_FOUND = "";
+    public static final String EMAIL_SUBSCRIPTION_GET_ALL_OK = "";
+
+    public static final String EMAIL_SUBSCRIPTION_SAVE_START = "";
+    public static final String EMAIL_SUBSCRIPTION_SAVE_UNAUTHORIZED = "";
+    public static final String EMAIL_SUBSCRIPTION_SAVE_NOT_FOUND = "";
+    public static final String EMAIL_SUBSCRIPTION_SAVE_OK = "";
+
+    public static final String EMAIL_SUBSCRIPTION__START = "";
+    public static final String EMAIL_SUBSCRIPTION__UNAUTHORIZED = "";
+    public static final String EMAIL_SUBSCRIPTION__NOT_FOUND = "";
+    public static final String EMAIL_SUBSCRIPTION__OK = "";
 
     private AppAuditMessages() {
     }

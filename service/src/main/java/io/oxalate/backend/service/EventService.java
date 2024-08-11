@@ -1,5 +1,8 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.EmailNotificationDetailEnum;
+import io.oxalate.backend.api.EmailNotificationTypeEnum;
+import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.PaymentTypeEnum;
 import io.oxalate.backend.api.request.EventRequest;
@@ -33,6 +36,7 @@ public class EventService {
     private final EventParticipantsRepository eventParticipantsRepository;
     private final UserService userService;
     private final PaymentService paymentService;
+    private final EmailQueueService emailQueueService;
 
     public EventResponse findById(Long eventId) {
         var event = eventRepository.findById(eventId).orElse(null);
@@ -43,19 +47,6 @@ public class EventService {
         }
 
         var optionalEventResponse = getPopulatedEventResponse(event);
-        return optionalEventResponse.orElse(null);
-    }
-
-    @Transactional
-    public EventResponse saveToResponse(Event event) {
-        if (event == null) {
-            log.error("Event to be saved is null");
-            return null;
-        }
-
-        var newEvent = eventRepository.save(event);
-        var optionalEventResponse = getPopulatedEventResponse(newEvent);
-
         return optionalEventResponse.orElse(null);
     }
 
@@ -91,8 +82,13 @@ public class EventService {
         event.setMaxParticipants(eventRequest.getMaxParticipants());
         event.setDescription(eventRequest.getDescription());
         event.setOrganizerId(eventRequest.getOrganizerId());
-        event.setPublished(eventRequest.isPublished());
+        event.setStatus(eventRequest.getStatus());
         var updatedEvent = eventRepository.save(event);
+
+        // Do not send notification if the event is still in draft status
+        if (!updatedEvent.getStatus().equals(EventStatusEnum.DRAFTED)) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.UPDATED, updatedEvent.getId());
+        }
 
         return getPopulatedEventResponse(updatedEvent).orElse(null);
     }
@@ -164,7 +160,7 @@ public class EventService {
     }
 
     /**
-     * Returns all events that are published and have a start time after the given timestamp
+     * Returns all events that have status PUBLISHED and have a start time after the given timestamp
      *
      * @param timestamp Timestamp The timestamp after which the events should have started
      * @param allEvents boolean Whether to return all events or only published ones
@@ -176,7 +172,7 @@ public class EventService {
         if (allEvents) {
             events = eventRepository.findByStartTimeAfterOrderByStartTimeAsc(timestamp);
         } else {
-            events = eventRepository.findByPublishedAndStartTimeAfterOrderByStartTimeAsc(true, timestamp);
+            events = eventRepository.findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum.PUBLISHED, timestamp);
         }
 
         var eventResponses = new ArrayList<EventResponse>();
@@ -225,8 +221,10 @@ public class EventService {
     }
 
     @Transactional
-    public void delete(long eventId) {
-        eventRepository.deleteById(eventId);
+    public void cancel(long eventId) {
+        eventRepository.updateEventStatus(eventId, EventStatusEnum.CANCELLED);
+
+        emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, eventId);
     }
 
     private Optional<EventResponse> getRefreshedEventResponse(long eventId) {
@@ -307,7 +305,7 @@ public class EventService {
                 .maxDuration(eventRequest.getMaxDuration())
                 .maxDepth(eventRequest.getMaxDepth())
                 .maxParticipants(eventRequest.getMaxParticipants())
-                .published(eventRequest.isPublished())
+                .status(eventRequest.getStatus())
                 .organizerId(userId)
                 .type(eventRequest.getType())
                 .build();
@@ -337,6 +335,12 @@ public class EventService {
         var eventResponse = optionalEventResponse.get();
 
         log.debug("Created new event: title '{}', ID '{}'", eventResponse.getTitle(), eventResponse.getId());
+
+        // Do not send notification if the event is still in draft status
+        if (!newEvent.getStatus().equals(EventStatusEnum.DRAFTED)) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.NEW, eventResponse.getId());
+        }
+
         return eventResponse;
     }
 

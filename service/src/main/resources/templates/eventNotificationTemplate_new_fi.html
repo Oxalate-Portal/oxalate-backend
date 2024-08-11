@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Uusi tapahtumailmoitus</title>
+</head>
+<body>
+    <p>Hyvä jäsen,</p>
+    <p>Meillä on uusi tapahtuma: <strong th:text="${eventTitle}"></strong> ajankohtana <strong th:text="${eventDate}"></strong>.</p>
+    <p>Lisätietoja saat vierailemalla <a th:href="${frontendUrl}">verkkosivullamme</a>.</p>
+    <p>Ystävällisin terveisin,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
