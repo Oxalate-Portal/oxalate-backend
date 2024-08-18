@@ -28,7 +28,10 @@ spring:
       - override-me
   mail:
     host: override-me
-    port: override-me
+    port: 25 # Override me
+    username: override-me
+    password: override-me
+    default-encoding: UTF-8
   http:
     multipart:
       max-file-size: 50MB
@@ -97,11 +100,11 @@ oxalate:
     cors-pattern: '/**'
     max-age: 3600
   captcha:
-    enabled: override-me
+    enabled: false # Override me
     verification-url: https://www.google.com/recaptcha/api/siteverify
     site-key: override-me
     secret-key: override-me
-    threshold: override-me
+    threshold: 0.1  # Override me
   token:
     expires-after: 12
     maxRetryCount: 3

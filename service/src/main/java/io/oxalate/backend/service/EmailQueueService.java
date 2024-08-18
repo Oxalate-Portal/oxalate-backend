@@ -46,7 +46,7 @@ public class EmailQueueService {
     public void addNotification(EmailNotificationTypeEnum emailType, EmailNotificationDetailEnum detail, long typeId) {
         var subscriptions = emailNotificationSubscriptionRepository.findByEmailNotificationType(emailType);
 
-        // First we flush out of the queue any notifiations for the same type ID which have yet not been sent
+        // First we flush out of the queue any notifications for the same type ID which have yet not been sent
         emailQueueRepository.deleteByTypeIdAndStatus(typeId, EmailStatusEnum.QUEUED.name());
 
         for (var subscription : subscriptions) {
