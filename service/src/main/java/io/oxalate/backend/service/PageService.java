@@ -323,7 +323,9 @@ public class PageService {
             pageRoleAccessRepository.save(pageRoleAccess);
         }
 
-        emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.NEW, newPage.getId());
+        if (newPage.getStatus().equals(PageStatusEnum.PUBLISHED)) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.NEW, newPage.getId());
+        }
 
         populatePage(newPage, null);
         return newPage.toResponse();
@@ -424,10 +426,9 @@ public class PageService {
         page.setPageGroupId(pageRequest.getPageGroupId());
         var newPage = pageRepository.save(page);
 
-        // We don't send an email if the page is set back to draft or if it is still a draft
-        if (!newPage.getStatus().equals(PageStatusEnum.DRAFTED)) {
-            var detail = newPage.getStatus() == PageStatusEnum.DELETED ? EmailNotificationDetailEnum.DELETED : EmailNotificationDetailEnum.UPDATED;
-            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, detail, newPage.getId());
+        // The page may have been drafted, and now it is published
+        if (newPage.getStatus().equals(PageStatusEnum.PUBLISHED)) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.NEW, newPage.getId());
         }
 
         populatePage(newPage, null);
@@ -460,7 +461,6 @@ public class PageService {
         }
 
         pageRepository.updateStatus(pageId, PageStatusEnum.DELETED);
-        emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.DELETED, pageId);
 
         return true;
     }
@@ -557,8 +557,6 @@ public class PageService {
                                                         .writePermission(true)
                                                         .build());
             pageRepository.updateStatus(page.getId(), PageStatusEnum.DELETED);
-            // We send an email for each page that is closed
-            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.DELETED, page.getId());
         }
     }
 }
