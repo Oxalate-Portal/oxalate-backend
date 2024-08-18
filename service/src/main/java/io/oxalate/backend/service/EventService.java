@@ -39,7 +39,8 @@ public class EventService {
     private final EmailQueueService emailQueueService;
 
     public EventResponse findById(Long eventId) {
-        var event = eventRepository.findById(eventId).orElse(null);
+        var event = eventRepository.findById(eventId)
+                                   .orElse(null);
 
         if (event == null) {
             log.warn("Event {} not found", eventId);
@@ -52,7 +53,8 @@ public class EventService {
 
     @Transactional
     public EventResponse updateEvent(EventRequest eventRequest) {
-        var event = eventRepository.findById(eventRequest.getId()).orElse(null);
+        var event = eventRepository.findById(eventRequest.getId())
+                                   .orElse(null);
 
         if (event == null) {
             log.error("Event {} not found for updating", eventRequest.getId());
@@ -69,6 +71,7 @@ public class EventService {
                                   .name());
         }
 
+        var oldStatus = event.getStatus();
         // Finally add the event organizer, whether it is the current or a new one
         eventRepository.addParticipantToEvent(eventRequest.getOrganizerId(), eventRequest.getId(), ParticipantTypeEnum.ORGANIZER.name(),
                 PaymentTypeEnum.NONE.name());
@@ -84,10 +87,19 @@ public class EventService {
         event.setOrganizerId(eventRequest.getOrganizerId());
         event.setStatus(eventRequest.getStatus());
         var updatedEvent = eventRepository.save(event);
+        var newStatus = updatedEvent.getStatus();
 
-        // Do not send notification if the event is still in draft status
-        if (!updatedEvent.getStatus().equals(EventStatusEnum.DRAFTED)) {
+        // DRAFTED -> PUBLISHED = Send notification for new event
+        // PUBLISHED -> PUBLISHED = Send notification for updated event
+        // PUBLISHED -> DRAFTED = Send notification for cancelled event
+        // PUBLISHED -> CANCELLED = Send notification for cancelled event
+        if (oldStatus.equals(EventStatusEnum.DRAFTED) && newStatus.equals(EventStatusEnum.PUBLISHED)) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.NEW, updatedEvent.getId());
+        } else if (oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.PUBLISHED)) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.UPDATED, updatedEvent.getId());
+        } else if (oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.CANCELLED)
+                || oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.DRAFTED)) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, updatedEvent.getId());
         }
 
         return getPopulatedEventResponse(updatedEvent).orElse(null);
@@ -102,7 +114,8 @@ public class EventService {
             return null;
         }
 
-        if (eventResponse.getParticipants().size() >= eventResponse.getMaxParticipants()) {
+        if (eventResponse.getParticipants()
+                         .size() >= eventResponse.getMaxParticipants()) {
             log.warn("Event {} is full", eventResponse.getTitle());
             return null;
         }
@@ -222,13 +235,29 @@ public class EventService {
 
     @Transactional
     public void cancel(long eventId) {
-        eventRepository.updateEventStatus(eventId, EventStatusEnum.CANCELLED);
+        // Get the dive event data
+        var event = eventRepository.findById(eventId).orElse(null);
 
-        emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, eventId);
+        if (event == null) {
+            log.error("Event ID {} not found for cancelling", eventId);
+            throw new IllegalArgumentException("Event not found");
+        }
+
+        if (event.getStatus().equals(EventStatusEnum.CANCELLED)) {
+            log.error("Event ID {} is already cancelled", eventId);
+            throw new IllegalArgumentException("Event already cancelled");
+        }
+
+        if (event.getStatus().equals(EventStatusEnum.PUBLISHED)) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, eventId);
+        }
+
+        eventRepository.updateEventStatus(eventId, EventStatusEnum.CANCELLED);
     }
 
     private Optional<EventResponse> getRefreshedEventResponse(long eventId) {
-        var event = eventRepository.findById(eventId).orElse(null);
+        var event = eventRepository.findById(eventId)
+                                   .orElse(null);
 
         if (event == null) {
             log.error("Something went wrong when updating event participant list, the event can not be found anymore: {}", eventId);
@@ -264,7 +293,8 @@ public class EventService {
         }
 
         var eventResponse = event.toEventResponse();
-        eventResponse.setOrganizer(organizer.get().toUserResponse());
+        eventResponse.setOrganizer(organizer.get()
+                                            .toUserResponse());
         eventResponse.setParticipants(participantsSet);
 
         return Optional.of(eventResponse);
@@ -285,7 +315,9 @@ public class EventService {
         var participants = userService.findEventParticipants(event.getId());
 
         var eventListResponse = event.toEventListResponse();
-        eventListResponse.setOrganizerName(organizer.get().getFirstName() + " " + organizer.get().getLastName());
+        eventListResponse.setOrganizerName(organizer.get()
+                                                    .getFirstName() + " " + organizer.get()
+                                                                                     .getLastName());
         eventListResponse.setParticipantCount(participants.size());
 
         return Optional.of(eventListResponse);
@@ -298,17 +330,17 @@ public class EventService {
         }
 
         var event = Event.builder()
-                .title(eventRequest.getTitle())
-                .description(eventRequest.getDescription())
-                .startTime(eventRequest.getStartTime())
-                .eventDuration(eventRequest.getEventDuration())
-                .maxDuration(eventRequest.getMaxDuration())
-                .maxDepth(eventRequest.getMaxDepth())
-                .maxParticipants(eventRequest.getMaxParticipants())
-                .status(eventRequest.getStatus())
-                .organizerId(userId)
-                .type(eventRequest.getType())
-                .build();
+                         .title(eventRequest.getTitle())
+                         .description(eventRequest.getDescription())
+                         .startTime(eventRequest.getStartTime())
+                         .eventDuration(eventRequest.getEventDuration())
+                         .maxDuration(eventRequest.getMaxDuration())
+                         .maxDepth(eventRequest.getMaxDepth())
+                         .maxParticipants(eventRequest.getMaxParticipants())
+                         .status(eventRequest.getStatus())
+                         .organizerId(userId)
+                         .type(eventRequest.getType())
+                         .build();
 
         var newEvent = eventRepository.save(event);
 
@@ -336,8 +368,8 @@ public class EventService {
 
         log.debug("Created new event: title '{}', ID '{}'", eventResponse.getTitle(), eventResponse.getId());
 
-        // Do not send notification if the event is still in draft status
-        if (!newEvent.getStatus().equals(EventStatusEnum.DRAFTED)) {
+        // Send notification only if the event is in a published state
+        if (newEvent.getStatus().equals(EventStatusEnum.PUBLISHED)) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.NEW, eventResponse.getId());
         }
 
@@ -368,18 +400,22 @@ public class EventService {
             }
         }
 
-        return eventSet.stream().sorted(Comparator.comparing(EventListResponse::getStartTime)).toList();
+        return eventSet.stream()
+                       .sorted(Comparator.comparing(EventListResponse::getStartTime))
+                       .toList();
     }
 
     private boolean verifyEventRequest(EventRequest eventRequest) {
         var result = true;
 
-        if (eventRequest.getTitle() == null || eventRequest.getTitle().isEmpty()) {
+        if (eventRequest.getTitle() == null || eventRequest.getTitle()
+                                                           .isEmpty()) {
             log.error("Event verification: Title can not be empty");
             result = false;
         }
 
-        if (eventRequest.getDescription() == null || eventRequest.getDescription().isEmpty()) {
+        if (eventRequest.getDescription() == null || eventRequest.getDescription()
+                                                                 .isEmpty()) {
             log.error("Event verification: Description can not be empty");
             result = false;
         }
@@ -423,6 +459,7 @@ public class EventService {
     /**
      * This actually removes the member participation from all future events. The method is nonetheless called "anonymize" because it is used in anonymization
      * process.
+     *
      * @param userId The user ID to anonymize
      */
     @Transactional
@@ -443,11 +480,11 @@ public class EventService {
      * DO NOT USE THIS method! This save-method should _only_ be used by the test controller and is used as an alternative to createEvent.
      */
     @Transactional
-	public Event save(Event event) {
+    public Event save(Event event) {
         var newEvent = eventRepository.save(event);
         eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name());
         return newEvent;
-	}
+    }
 
     public EventDiveListResponse getEventDives(long eventId) {
         var eventDives = eventParticipantsRepository.findEventDives(eventId);
@@ -463,8 +500,11 @@ public class EventService {
                 return null;
             }
 
-            var eventDiveResponse = eventsParticipant.toEventDiveResponse(optionalUser.get().getLastName() + " " + optionalUser.get().getFirstName());
-            eventDiveListResponse.getDives().add(eventDiveResponse);
+            var eventDiveResponse = eventsParticipant.toEventDiveResponse(optionalUser.get()
+                                                                                      .getLastName() + " " + optionalUser.get()
+                                                                                                                         .getFirstName());
+            eventDiveListResponse.getDives()
+                                 .add(eventDiveResponse);
         }
 
         return eventDiveListResponse;

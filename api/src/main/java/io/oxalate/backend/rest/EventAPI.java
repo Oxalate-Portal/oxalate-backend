@@ -124,10 +124,10 @@ public interface EventAPI {
     ResponseEntity<EventDiveListResponse> updateEventDives(@PathVariable("eventId") long eventId, @RequestBody EventDiveListRequest eventDiveListRequest,
             HttpServletRequest request);
 
-    @Operation(description = "Remove the event", tags = "EventAPI")
-    @Parameter(name = "eventId", description = "ID of the event to be removed", example = "123", required = true)
+    @Operation(description = "Cancel the event", tags = "EventAPI")
+    @Parameter(name = "eventId", description = "ID of the event to be cancelled", example = "123", required = true)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Event removed successfully"),
+            @ApiResponse(responseCode = "200", description = "Event cancelled successfully"),
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
