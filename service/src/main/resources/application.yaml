@@ -29,6 +29,10 @@ spring:
   mail:
     host: override-me
     port: override-me
+  http:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 51MB
 
 actuator:
   enabled: true
@@ -107,6 +111,9 @@ oxalate:
   audit:
     retention:
       days: 30
+  upload:
+    files: /oxalate/files
+    certificates: /oxalate/certificates
 
 ---
 ### Local machine ###
