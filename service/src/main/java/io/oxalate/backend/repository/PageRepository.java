@@ -1,8 +1,8 @@
 package io.oxalate.backend.repository;
 
-import io.oxalate.backend.api.PageStatusEnum;
 import io.oxalate.backend.model.Page;
 import java.util.List;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +16,7 @@ public interface PageRepository extends CrudRepository<Page, Long> {
 
     List<Page> findAllByIdInOrderByIdAsc(List<Long> pageIdList);
 
+    @Modifying
     @Query(nativeQuery = true, value = "UPDATE pages SET status = :pageStatusEnum WHERE id = :pageId")
-    void updateStatus(@Param("pageId") long pageId, @Param("pageStatusEnum") PageStatusEnum pageStatusEnum);
+    void updateStatus(@Param("pageId") long pageId, @Param("pageStatusEnum") String pageStatusEnum);
 }
