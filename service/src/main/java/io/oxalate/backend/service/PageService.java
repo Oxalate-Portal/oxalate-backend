@@ -460,7 +460,7 @@ public class PageService {
             return false;
         }
 
-        pageRepository.updateStatus(pageId, PageStatusEnum.DELETED);
+        pageRepository.updateStatus(pageId, PageStatusEnum.DELETED.name());
 
         return true;
     }
@@ -556,7 +556,7 @@ public class PageService {
                                                         .readPermission(true)
                                                         .writePermission(true)
                                                         .build());
-            pageRepository.updateStatus(page.getId(), PageStatusEnum.DELETED);
+            pageRepository.updateStatus(page.getId(), PageStatusEnum.DELETED.name());
         }
     }
 }
