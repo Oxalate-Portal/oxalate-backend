@@ -32,6 +32,10 @@ spring:
     username: override-me
     password: override-me
     default-encoding: UTF-8
+  http:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 51MB
 
 actuator:
   enabled: true
@@ -110,6 +114,8 @@ oxalate:
   audit:
     retention:
       days: 30
+  upload:
+    directory: /oxalate/files
 
 ---
 ### Local machine ###

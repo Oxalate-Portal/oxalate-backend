@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -59,6 +60,8 @@ public class WebSecurityConfig {
                             .requestMatchers("/api/auth/**")
                             .permitAll()
                             .requestMatchers("/api/pages/**") // We check the permissions in the calls as some pages may not require authentication
+                            .permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/files/download/**") // We check the permissions in the calls as some downloads may not require authentication
                             .permitAll()
                             .requestMatchers("/actuator/**")
                             .permitAll()

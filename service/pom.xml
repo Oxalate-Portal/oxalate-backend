@@ -124,7 +124,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.2.1-jre</version>
+            <version>33.3.0-jre</version>
         </dependency>
 
         <!-- Test dependencies -->
@@ -155,7 +155,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.174</version>
+                <version>4.8.175</version>
             </dependency>
             <dependency>
                 <groupId>org.checkerframework</groupId>

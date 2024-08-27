@@ -231,7 +231,6 @@ public class AppAuditMessages {
     public static final String USERS_RESET_TERM_OK = "Terms and conditions reset";
 
     // AuditController
-
     public static final String AUDIT_GET_START = "Getting audit logs";
     public static final String AUDIT_GET_OK = "Audit logs retrieved";
 
@@ -344,6 +343,12 @@ public class AppAuditMessages {
     public static final String EMAIL_SUBSCRIPTION__UNAUTHORIZED = "";
     public static final String EMAIL_SUBSCRIPTION__NOT_FOUND = "";
     public static final String EMAIL_SUBSCRIPTION__OK = "";
+
+    // UploadController
+    public static final String UPLOAD_FILE_START = "Uploading file";
+    public static final String UPLOAD_FILE_UNAUTHORIZED = "User not authorized to upload file";
+    public static final String UPLOAD_FILE_FAIL = "Failed to upload file";
+    public static final String UPLOAD_FILE_OK = "File uploaded";
 
     private AppAuditMessages() {
     }

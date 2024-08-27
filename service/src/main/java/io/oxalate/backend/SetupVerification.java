@@ -44,7 +44,8 @@ class SetupVerification implements ApplicationContextAware {
             { "oxalate.captcha.enabled", "boolean" },
             { "oxalate.captcha.site-key", "string" },
             { "oxalate.captcha.secret-key", "string" },
-            { "oxalate.captcha.threshold", "number" }
+            { "oxalate.captcha.threshold", "number" },
+            { "oxalate.upload.directory", "string" }
     };
 
     @Value("${oxalate.app.env:false}")
@@ -52,10 +53,42 @@ class SetupVerification implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
 
+    @Override
+    public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+
     @EventListener
-    public void checkEssentialConfigurations(ContextRefreshedEvent event) {
+    public void printAllConfiguration(ContextRefreshedEvent event) {
         final Environment env = event.getApplicationContext()
                                      .getEnvironment();
+
+        if (!oxalateEnvironment.equals("prod")) {
+            log.info("====== Environment and configuration for {} ======", oxalateEnvironment);
+            log.info("Active profiles: {}", Arrays.toString(env.getActiveProfiles()));
+            final MutablePropertySources sources = ((AbstractEnvironment) env).getPropertySources();
+            StreamSupport.stream(sources.spliterator(), false)
+                         .filter(ps -> ps instanceof EnumerablePropertySource)
+                         .map(ps -> ((EnumerablePropertySource<?>) ps).getPropertyNames())
+                         .flatMap(Arrays::stream)
+                         .distinct()
+                         .filter(prop -> !(prop.contains("credentials") || prop.contains("password")))
+                         .forEach(prop -> printProperty(env, prop));
+            log.info("===========================================");
+        } else {
+            log.info("Skipping printing of all configuration in {} environment", oxalateEnvironment);
+        }
+    }
+
+    @EventListener
+    public void startupChecks(ContextRefreshedEvent event) {
+        final Environment env = event.getApplicationContext()
+                                     .getEnvironment();
+        checkEssentialConfigurations(env);
+        checkEssentialDirectories(env);
+    }
+
+    public void checkEssentialConfigurations(Environment env) {
         for (String[] keyPair : requiredKeys) {
             log.info("Verifying that key {} is defined and not empty", keyPair[0]);
             String value = env.getProperty(keyPair[0]);
@@ -97,32 +130,45 @@ class SetupVerification implements ApplicationContextAware {
         }
     }
 
+    private void checkEssentialDirectories(Environment env) {
+        // Get the upload directory and check if it exists
+        String uploadDir = env.getProperty("oxalate.upload.directory");
+
+        if (uploadDir == null || uploadDir.isEmpty()) {
+            closeApplication("Missing configuration value for key: oxalate.upload.directory");
+        }
+
+        // Check if the following sub-directories exist under the main directory: page-files, upload-files and certificates
+        Path pageFilesDir = Paths.get(uploadDir, "page-files");
+        Path uploadFilesDir = Paths.get(uploadDir, "upload-files");
+        Path certificatesDir = Paths.get(uploadDir, "certificates");
+
+        verifyDirectory(pageFilesDir);
+        verifyDirectory(uploadFilesDir);
+        verifyDirectory(certificatesDir);
+    }
+
+    private void verifyDirectory(Path fileDir) {
+        log.debug("Verifying directory: {}", fileDir);
+
+        if (!Files.exists(fileDir)) {
+            // If the sub-directory of them are missing, then create them
+            try {
+                Files.createDirectories(fileDir);
+            } catch (Exception e) {
+                closeApplication("Could not create directory: " + fileDir);
+            }
+            // Check whether the directory is writable
+            if (!Files.isWritable(fileDir)) {
+                closeApplication("No write access to directory: " + fileDir);
+            }
+        }
+    }
+
     private void closeApplication(String message) {
         log.error(message);
         log.error("Shutting down application");
         ((ConfigurableApplicationContext) applicationContext).close();
-    }
-
-    @EventListener
-    public void printAllConfiguration(ContextRefreshedEvent event) {
-        final Environment env = event.getApplicationContext()
-                                     .getEnvironment();
-
-        if (!oxalateEnvironment.equals("prod")) {
-            log.info("====== Environment and configuration for {} ======", oxalateEnvironment);
-            log.info("Active profiles: {}", Arrays.toString(env.getActiveProfiles()));
-            final MutablePropertySources sources = ((AbstractEnvironment) env).getPropertySources();
-            StreamSupport.stream(sources.spliterator(), false)
-                         .filter(ps -> ps instanceof EnumerablePropertySource)
-                         .map(ps -> ((EnumerablePropertySource<?>) ps).getPropertyNames())
-                         .flatMap(Arrays::stream)
-                         .distinct()
-                         .filter(prop -> !(prop.contains("credentials") || prop.contains("password")))
-                         .forEach(prop -> printProperty(env, prop));
-            log.info("===========================================");
-        } else {
-            log.info("Skipping printing of all configuration in {} environment", oxalateEnvironment);
-        }
     }
 
     private void printProperty(Environment env, String key) {
@@ -131,10 +177,5 @@ class SetupVerification implements ApplicationContextAware {
         } catch (Exception e) {
             log.error("Failed to fetch property value for {}", key);
         }
-    }
-
-    @Override
-    public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 }
