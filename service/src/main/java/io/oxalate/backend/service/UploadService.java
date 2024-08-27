@@ -28,19 +28,20 @@ import org.springframework.web.server.ResponseStatusException;
 public class UploadService {
 
     private final PageFileRepository pageFileRepository;
-    @Value("${oxalate.upload.files}")
-    private String uploadDir;
-
+    @Value("${oxalate.upload.directory}")
+    private String uploadMainDirectory;
+    private String pageDirectory;
     @Value("${oxalate.app.backend-url}")
     private String backendUrl;
 
     public UploadService(PageFileRepository pageFileRepository) {
         this.pageFileRepository = pageFileRepository;
+        this.pageDirectory = uploadMainDirectory + "/page-files";
     }
 
     public UploadResponse uploadFile(MultipartFile file, String language, long pageId, long userId) {
         // Base structure of the upload directory is: BaseDir/pageId/language under which the filename is then placed
-        var uploadPath = Paths.get(uploadDir, String.valueOf(pageId), language);
+        var uploadPath = Paths.get(pageDirectory, String.valueOf(pageId), language);
 
         // If the upload path does not exist, create it
         if (!Files.exists(uploadPath)) {
@@ -137,7 +138,7 @@ public class UploadService {
         var sanitizedFileName = FileTools.sanitizeFileName(pageFile.getFileName());
 
         try {
-            var filePath = Paths.get(uploadDir, String.valueOf(pageId), language, sanitizedFileName);
+            var filePath = Paths.get(pageDirectory, String.valueOf(pageId), language, sanitizedFileName);
             var file = filePath.toFile();
 
             if (!file.exists()) {

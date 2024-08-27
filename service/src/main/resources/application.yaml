@@ -115,8 +115,7 @@ oxalate:
     retention:
       days: 30
   upload:
-    files: /oxalate/files
-    certificates: /oxalate/certificates
+    directory: /oxalate/files
 
 ---
 ### Local machine ###

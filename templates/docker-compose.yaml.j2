@@ -47,11 +47,13 @@ services:
       - oxalate.first-time={{ oxalate_installation_first_time }}
       - oxalate.admin.username={{ oxalate_admin_email }}
       - oxalate.admin.hashed-password={{ oxalate_admin_password }}
+    volumes:
+      - ${OXALATE_BACKEND_UPLOAD_DIRECTORY}:/oxalate/files
 
   db:
     hostname: oxalate-db
     container_name: {{ item.name }}_oxalate_db
-    image: "postgres:15"
+    image: "postgres:16"
     restart: always
     ports:
       - "{{ item.ext_db_port }}:5432"
