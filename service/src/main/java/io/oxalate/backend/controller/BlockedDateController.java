@@ -2,6 +2,7 @@ package io.oxalate.backend.controller;
 
 import static io.oxalate.backend.api.AuditLevel.INFO;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
+import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import io.oxalate.backend.api.request.BlockedDateRequest;
 import io.oxalate.backend.api.response.BlockedDateResponse;
 import static io.oxalate.backend.events.AppAuditMessages.BLOCKED_DATE_ADD_OK;
@@ -35,12 +36,12 @@ public class BlockedDateController implements BlockedDateAPI {
     private static final String AUDIT_NAME = "BlockedDateController";
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<List<BlockedDateResponse>> getAllBlockedDates(HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(BLOCKED_DATE_GET_ALL_START, INFO, request, AUDIT_NAME, userId);
 
-        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
             appEventPublisher.publishAuditEvent(BLOCKED_DATE_GET_ALL_UNAUTHORIZED, INFO, request, AUDIT_NAME, userId, auditUuid);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
