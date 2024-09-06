@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -24,24 +25,23 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class UploadService {
 
     private final PageFileRepository pageFileRepository;
     @Value("${oxalate.upload.directory}")
     private String uploadMainDirectory;
-    private String pageDirectory;
+    private String pageDirectory = "/page-files";
     @Value("${oxalate.app.backend-url}")
     private String backendUrl;
 
-    public UploadService(PageFileRepository pageFileRepository) {
-        this.pageFileRepository = pageFileRepository;
-        this.pageDirectory = uploadMainDirectory + "/page-files";
-    }
 
     public UploadResponse uploadFile(MultipartFile file, String language, long pageId, long userId) {
+        log.debug("Uploading file: {} for page: {} in language: {}", file.getOriginalFilename(), pageId, language);
         // Base structure of the upload directory is: BaseDir/pageId/language under which the filename is then placed
-        var uploadPath = Paths.get(pageDirectory, String.valueOf(pageId), language);
+        var uploadPath = Paths.get(uploadMainDirectory, pageDirectory, String.valueOf(pageId), language);
+        log.debug("Upload path: {}", uploadPath);
 
         // If the upload path does not exist, create it
         if (!Files.exists(uploadPath)) {
@@ -64,15 +64,18 @@ public class UploadService {
         try {
             // Save the file to the specified directory
             fileName = FileTools.sanitizeFileName(file.getOriginalFilename());
+            log.debug("Sanitized file name: {} from {}", fileName, file.getOriginalFilename());
         } catch (IllegalArgumentException e) {
             log.error("Invalid file name: {}", file.getOriginalFilename(), e);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Filename could not be sanitized");
         }
 
+        log.debug("Resolving file path: {}", fileName);
         Path filePath = uploadPath.resolve(fileName);
 
         try {
             Files.copy(file.getInputStream(), filePath);
+            log.info("File saved: {}", filePath);
         } catch (IOException e) {
             log.error("Could not save file: {}", filePath, e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "File could not be stored");
@@ -138,7 +141,7 @@ public class UploadService {
         var sanitizedFileName = FileTools.sanitizeFileName(pageFile.getFileName());
 
         try {
-            var filePath = Paths.get(pageDirectory, String.valueOf(pageId), language, sanitizedFileName);
+            var filePath = Paths.get(uploadMainDirectory, pageDirectory, String.valueOf(pageId), language, sanitizedFileName);
             var file = filePath.toFile();
 
             if (!file.exists()) {
@@ -150,6 +153,7 @@ public class UploadService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+            headers.add(HttpHeaders.CONTENT_TYPE, pageFile.getMimeType());
 
             return ResponseEntity.ok()
                                  .headers(headers)
