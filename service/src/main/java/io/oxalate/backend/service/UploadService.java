@@ -153,6 +153,7 @@ public class UploadService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+            headers.add(HttpHeaders.CONTENT_TYPE, pageFile.getMimeType());
 
             return ResponseEntity.ok()
                                  .headers(headers)
