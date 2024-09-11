@@ -1,5 +1,8 @@
 package io.oxalate.backend.security;
 
+import static io.oxalate.backend.api.UrlConstants.API;
+import static io.oxalate.backend.api.UrlConstants.DOWNLOAD_URL;
+import static io.oxalate.backend.api.UrlConstants.PAGES_URL;
 import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.security.jwt.AuthEntryPointJwt;
 import io.oxalate.backend.security.jwt.AuthTokenFilter;
@@ -57,17 +60,17 @@ public class WebSecurityConfig {
                 .cors(withDefaults())
                 .authorizeHttpRequests(auth -> {
                     auth
-                            .requestMatchers("/api/auth/**")
+                            .requestMatchers(API + "/auth/**")
                             .permitAll()
-                            .requestMatchers("/api/pages/**") // We check the permissions in the calls as some pages may not require authentication
+                            .requestMatchers(PAGES_URL + "/**") // We check the permissions in the calls as some pages may not require authentication
                             .permitAll()
-                            .requestMatchers(HttpMethod.GET, "/api/files/download/**") // We check the permissions in the calls as some downloads may not require authentication
+                            .requestMatchers(HttpMethod.GET, DOWNLOAD_URL + "/**") // We check the permissions in the calls as some downloads may not require authentication
                             .permitAll()
                             .requestMatchers("/actuator/**")
                             .permitAll()
                             .requestMatchers("/v3/api-docs/**")
                             .permitAll()
-                            .requestMatchers("/api/test/**") // This is only available in development environment
+                            .requestMatchers(API + "/test/**") // This is only available in development environment
                             .permitAll()
                             .anyRequest()
                             .authenticated();

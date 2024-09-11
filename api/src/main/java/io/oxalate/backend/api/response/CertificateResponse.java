@@ -28,4 +28,6 @@ public class CertificateResponse {
     @JsonProperty("certificationDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "UTC")
     private Instant certificationDate;
+    @JsonProperty("certificatePhotoUrl")
+    private String certificatePhotoUrl;
 }

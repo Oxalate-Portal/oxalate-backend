@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageRequest;
 import io.oxalate.backend.api.response.PageGroupResponse;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "PageManagementAPI", description = "Page management REST endpoints")
 public interface PageManagementAPI {
-    String BASE_PATH = "/api/page-management";
+    String BASE_PATH = API + "/page-management";
 
     // Page groups
     @Operation(description = "Get list of all paths", tags = "PageManagementAPI")

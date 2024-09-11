@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.EventDiveListRequest;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "EventAPI", description = "Event REST endpoints")
 public interface EventAPI {
-    String BASE_PATH = "/api/events";
+    String BASE_PATH = API + "/events";
 
     @Operation(description = "Get a list of all future events. Note that the result depend on the role of the user. ORGANIZER and ADMIN will see all events,"
             + "the USER will only see published events", tags = "EventAPI")

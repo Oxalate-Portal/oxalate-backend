@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.response.download.DownloadCertificateResponse;
 import io.oxalate.backend.api.response.download.DownloadDiveResponse;
 import io.oxalate.backend.api.response.download.DownloadPaymentResponse;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Tag(name = "DataDownloadAPI", description = "Data download REST endpoints")
 public interface DataDownloadAPI {
-    String BASE_PATH = "/api/data-download";
+    String BASE_PATH = API + "/data-download";
 
     @Operation(description = "Download dive certificate data", tags = "DataDownloadAPI")
     @ApiResponses(value = {

@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 public class FileTools {
@@ -76,5 +77,17 @@ public class FileTools {
         }
 
         return null;
+    }
+
+    public static String getFileSuffix(MultipartFile file) {
+        // Get the original file suffix
+        var fileSuffix = switch (file.getContentType()) {
+            case "image/jpeg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/gif" -> ".gif";
+            default ->  null;
+        };
+
+        return fileSuffix;
     }
 }

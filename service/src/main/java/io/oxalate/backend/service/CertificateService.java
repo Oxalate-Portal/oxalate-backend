@@ -1,10 +1,14 @@
 package io.oxalate.backend.service;
 
+import static io.oxalate.backend.api.UploadDirectoryConstants.CERTIFICATES;
+import static io.oxalate.backend.api.UrlConstants.DOWNLOAD_URL;
 import io.oxalate.backend.api.request.CertificateRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
 import io.oxalate.backend.model.Certificate;
+import io.oxalate.backend.repository.CertificateDocumentRepository;
 import io.oxalate.backend.repository.CertificateRepository;
 import jakarta.transaction.Transactional;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -12,7 +16,10 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -20,14 +27,22 @@ import org.springframework.stereotype.Service;
 public class CertificateService {
 
     private final CertificateRepository certificateRepository;
-    private final UserService userService;
+    private final CertificateDocumentRepository certificateDocumentRepository;
+
+    @Value("${oxalate.app.backend-url}")
+    private String backendUrl;
+    @Value("${oxalate.upload.directory}")
+    private String uploadMainDirectory;
 
     public List<CertificateResponse> findAll() {
         var certificates = certificateRepository.findAll();
         var certificateResponses = new ArrayList<CertificateResponse>();
 
-        for (Certificate certificate : certificates) {
-            certificateResponses.add(certificate.toCertificateResponse());
+        for (var certificate : certificates) {
+            var userId = certificate.getUserId();
+            var certificateResponse = certificate.toCertificateResponse();
+            attachCertificateUrl(certificate.getId(), certificateResponse);
+            certificateResponses.add(certificateResponse);
         }
 
         return certificateResponses;
@@ -38,7 +53,9 @@ public class CertificateService {
         var certificateResponses = new ArrayList<CertificateResponse>();
 
         for (Certificate certificate : certificates) {
-            certificateResponses.add(certificate.toCertificateResponse());
+            var certificateResponse = certificate.toCertificateResponse();
+            attachCertificateUrl(certificate.getId(), certificateResponse);
+            certificateResponses.add(certificateResponse);
         }
 
         return certificateResponses;
@@ -93,9 +110,11 @@ public class CertificateService {
         return savedCertificate.toCertificateResponse();
     }
 
+    @Transactional
     public boolean deleteCertificate(long certificateId) {
         try {
             certificateRepository.deleteById(certificateId);
+            certificateDocumentRepository.deleteByCertificateId(certificateId);
             return true;
         } catch (Exception e) {
             log.warn("Failed to delete certificate: {}", e.getMessage());
@@ -147,6 +166,29 @@ public class CertificateService {
 
         if (certificateRequest.getCertificationDate() == null) {
             throw new IllegalArgumentException("Certification date cannot be empty");
+        }
+    }
+
+    private void attachCertificateUrl(long certificateId, CertificateResponse certificateResponse) {
+        // Check if there is a certificate document related to this certificate
+        var optionalCertificateDocument = certificateDocumentRepository.findByCertificateId(certificateId);
+
+        if (optionalCertificateDocument.isPresent()) {
+            var certificateDocument = optionalCertificateDocument.get();
+            // Url path only contains the certificate ID, as user ID is pulled from the session data
+            var urlPath = backendUrl + DOWNLOAD_URL + "/" + CERTIFICATES + "/" + certificateDocument.getCertificate().getId();
+            // Physical path on the other hand contains the user ID as a path segment while the filename is the certificate ID
+            var physicalPath = Paths.get(uploadMainDirectory, CERTIFICATES, String.valueOf(certificateDocument.getUser().getId()), certificateDocument.getFileName());
+            log.info("XXXXX: url: {} physical: {}", urlPath, physicalPath);
+
+            var file = physicalPath.toFile();
+
+            if (!file.exists()) {
+                log.error("File not found on filesystem to be attached: {}", file);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+            }
+
+            certificateResponse.setCertificatePhotoUrl(urlPath);
         }
     }
 }

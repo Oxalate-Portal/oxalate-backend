@@ -345,10 +345,30 @@ public class AppAuditMessages {
     public static final String EMAIL_SUBSCRIPTION__OK = "";
 
     // UploadController
-    public static final String UPLOAD_FILE_START = "Uploading file";
-    public static final String UPLOAD_FILE_UNAUTHORIZED = "User not authorized to upload file";
-    public static final String UPLOAD_FILE_FAIL = "Failed to upload file";
-    public static final String UPLOAD_FILE_OK = "File uploaded";
+    public static final String UPLOAD_PAGE_FILE_START = "Uploading page file";
+    public static final String UPLOAD_PAGE_FILE_UNAUTHORIZED = "User not authorized to upload page file";
+    public static final String UPLOAD_PAGE_FILE_FAIL = "Failed to upload page file";
+    public static final String UPLOAD_PAGE_FILE_OK = "Page file uploaded";
+
+    public static final String UPLOAD_CERTIFICATE_START = "Uploading certificate";
+    public static final String UPLOAD_CERTIFICATE_UNAUTHORIZED = "User not authorized to upload certificate";
+    public static final String UPLOAD_CERTIFICATE_FAIL = "Failed to upload certificate";
+    public static final String UPLOAD_CERTIFICATE_OK = "Certificate uploaded";
+
+    public static final String UPLOAD_DOCUMENT_START = "Uploading document";
+    public static final String UPLOAD_DOCUMENT_UNAUTHORIZED = "User not authorized to upload document";
+    public static final String UPLOAD_DOCUMENT_FAIL = "Failed to upload document";
+    public static final String UPLOAD_DOCUMENT_OK = "Document uploaded";
+
+    public static final String UPLOAD_DIVE_PLAN_START = "Uploading dive plan";
+    public static final String UPLOAD_DIVE_PLAN_UNAUTHORIZED = "User not authorized to upload dive plan";
+    public static final String UPLOAD_DIVE_PLAN_FAIL = "Failed to upload dive plan";
+    public static final String UPLOAD_DIVE_PLAN_OK = "Dive plan uploaded";
+
+    public static final String UPLOAD_AVATAR_START = "Uploading avatar";
+    public static final String UPLOAD_AVATAR_UNAUTHORIZED = "User not authorized to upload avatar";
+    public static final String UPLOAD_AVATAR_FAIL = "Failed to upload avatar";
+    public static final String UPLOAD_AVATAR_OK = "Avatar uploaded";
 
     private AppAuditMessages() {
     }

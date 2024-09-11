@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.CertificateRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "CertificateAPI", description = "Dive certificate REST endpoints")
 public interface CertificateAPI {
-    String BASE_PATH = "/api/certificates";
+    String BASE_PATH = API + "/certificates";
 
     @Operation(description = "Get all dive certificates", tags = "CertificateAPI")
     @ApiResponses(value = {
@@ -40,7 +41,7 @@ public interface CertificateAPI {
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping(value = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<CertificateResponse>> getCertificates(@PathVariable("userId") long userId, HttpServletRequest request);
+    ResponseEntity<List<CertificateResponse>> getUserCertificates(@PathVariable("userId") long userId, HttpServletRequest request);
 
     @Operation(description = "Get specific certificate", tags = "CertificateAPI")
     @Parameter(name = "certificateId", description = "Certificate ID that should be retrieved", example = "123", required = true)

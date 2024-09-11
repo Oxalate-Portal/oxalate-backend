@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.BlockedDateRequest;
 import io.oxalate.backend.api.response.BlockedDateResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "BlockedDateAPI", description = "Date blocking REST endpoints")
 public interface BlockedDateAPI {
-    String BASE_PATH = "/api/blocked-dates";
+    String BASE_PATH = API + "/blocked-dates";
 
     @Operation(description = "Get all blocked dates", tags = "BlockedDateAPI")
     @ApiResponses(value = {

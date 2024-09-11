@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.response.AuditEntryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Tag(name = "AuditAPI", description = "Audit REST endpoints")
 public interface AuditAPI {
 
-    String BASE_PATH = "/api/audits";
+    String BASE_PATH = API + "/audits";
 
     @Operation(description = "Get all audit entries", tags = "AuditAPI")
     @Parameter(name = "page", description = "Index of page to be retrieved", example = "3")

@@ -22,8 +22,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "certificate_documents")
-public class CertificateDocument {
+@Table(name = "certificate_files")
+public class CertificateFile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,13 +33,22 @@ public class CertificateDocument {
     @Column(name = "file_name", nullable = false, length = 255)
     private String fileName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "certificate_id", nullable = false)
     private Certificate certificate;
+
+    @Column(name = "mime_type", nullable = false)
+    private String mimeType;
+
+    @Column(name = "file_size", nullable = false)
+    private long fileSize;
+
+    @Column(name = "file_checksum", nullable = false)
+    private String fileChecksum;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

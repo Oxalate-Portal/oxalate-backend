@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Profile("local")
 @Tag(name = "TestAPI", description = "Test REST endpoints, this is only available in the local profile")
 public interface TestAPI {
-    String BASE_PATH = "/api/test";
+    String BASE_PATH = API + "/test";
 
     @Operation(description = "Generate users", tags = "TestAPI")
     @Parameter(name = "numberOfUsers", description = "How many users should be generated", example = "100")

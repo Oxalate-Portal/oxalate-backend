@@ -74,7 +74,7 @@ public class UserController implements UserAPI {
     private final AppEventPublisher appEventPublisher;
 
     @Override
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ORGANIZER') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<AdminUserResponse> getUserDetails(long userId, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(USERS_GET_DETAILS_START + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
@@ -106,7 +106,7 @@ public class UserController implements UserAPI {
      * @return HTTP response
      */
     @Override
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ORGANIZER') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<AdminUserResponse> updateUser(UserUpdateRequest updateRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(USERS_UPDATE_START + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
@@ -265,7 +265,7 @@ public class UserController implements UserAPI {
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ORGANIZER') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<Void> recordTermAnswer(TermRequest termRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(USERS_SET_TERM_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
         var userId = AuthTools.getCurrentUserId();

@@ -1,6 +1,7 @@
 package io.oxalate.backend.rest;
 
 import io.oxalate.backend.api.RoleEnum;
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.TermRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.request.UserUpdateRequest;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "UserAPI", description = "User REST endpoints")
 public interface UserAPI {
-    String BASE_PATH = "/api/users";
+    String BASE_PATH = API + "/users";
 
     @Operation(description = "Get a list of all users", tags = "UserAPI")
     @ApiResponses(value = {

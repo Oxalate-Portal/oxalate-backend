@@ -1,5 +1,6 @@
 package io.oxalate.backend;
 
+import io.oxalate.backend.api.UploadDirectoryConstants;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -131,21 +132,16 @@ class SetupVerification implements ApplicationContextAware {
     }
 
     private void checkEssentialDirectories(Environment env) {
-        // Get the upload directory and check if it exists
-        String uploadDir = env.getProperty("oxalate.upload.directory");
+        String uploadDir = env.getProperty("oxalate.upload.directory", String.class, "");
 
-        if (uploadDir == null || uploadDir.isEmpty()) {
+        if (uploadDir.isEmpty()) {
             closeApplication("Missing configuration value for key: oxalate.upload.directory");
         }
 
-        // Check if the following sub-directories exist under the main directory: page-files, upload-files and certificates
-        Path pageFilesDir = Paths.get(uploadDir, "page-files");
-        Path uploadFilesDir = Paths.get(uploadDir, "upload-files");
-        Path certificatesDir = Paths.get(uploadDir, "certificates");
-
-        verifyDirectory(pageFilesDir);
-        verifyDirectory(uploadFilesDir);
-        verifyDirectory(certificatesDir);
+        for (var subDir : UploadDirectoryConstants.getAllDirectories()) {
+            Path dirPath = Paths.get(uploadDir, subDir);
+            verifyDirectory(dirPath);
+        }
     }
 
     private void verifyDirectory(Path fileDir) {
