@@ -24,8 +24,10 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -161,9 +163,13 @@ public class FileTransferService {
 
             var fileContent = FileCopyUtils.copyToByteArray(new FileInputStream(file));
             var headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
-            headers.add(HttpHeaders.CONTENT_TYPE, pageFile.getMimeType());
+            headers.setContentType(MediaType.parseMediaType(pageFile.getMimeType()));
 
+            if (pageFile.getMimeType().startsWith("image/")) {
+                headers.setContentDisposition(ContentDisposition.inline().filename(fileName).build());
+            } else {
+                headers.setContentDisposition(ContentDisposition.attachment().filename(fileName).build());
+            }
             return ResponseEntity.ok()
                                  .headers(headers)
                                  .body(fileContent);
