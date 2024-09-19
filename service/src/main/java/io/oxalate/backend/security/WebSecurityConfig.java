@@ -1,7 +1,7 @@
 package io.oxalate.backend.security;
 
 import static io.oxalate.backend.api.UrlConstants.API;
-import static io.oxalate.backend.api.UrlConstants.DOWNLOAD_URL;
+import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import static io.oxalate.backend.api.UrlConstants.PAGES_URL;
 import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.security.jwt.AuthEntryPointJwt;
@@ -64,7 +64,7 @@ public class WebSecurityConfig {
                             .permitAll()
                             .requestMatchers(PAGES_URL + "/**") // We check the permissions in the calls as some pages may not require authentication
                             .permitAll()
-                            .requestMatchers(HttpMethod.GET, DOWNLOAD_URL + "/**") // We check the permissions in the calls as some downloads may not require authentication
+                            .requestMatchers(HttpMethod.GET, FILES_URL + "/**") // The GET to files are all download, and we check the permissions in the calls
                             .permitAll()
                             .requestMatchers("/actuator/**")
                             .permitAll()

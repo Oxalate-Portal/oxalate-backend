@@ -345,30 +345,80 @@ public class AppAuditMessages {
     public static final String EMAIL_SUBSCRIPTION__OK = "";
 
     // UploadController
-    public static final String UPLOAD_PAGE_FILE_START = "Uploading page file";
-    public static final String UPLOAD_PAGE_FILE_UNAUTHORIZED = "User not authorized to upload page file";
-    public static final String UPLOAD_PAGE_FILE_FAIL = "Failed to upload page file";
-    public static final String UPLOAD_PAGE_FILE_OK = "Page file uploaded";
+    public static final String FILE_AVATAR_GET_ALL_START = "Start fetching all avatar files";
+    public static final String FILE_AVATAR_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all avatar files";
+    public static final String FILE_AVATAR_GET_ALL_FAIL = "Failed to fetch all avatar files";
+    public static final String FILE_AVATAR_GET_ALL_OK = "Avatar files retrieved";
 
-    public static final String UPLOAD_CERTIFICATE_START = "Uploading certificate";
-    public static final String UPLOAD_CERTIFICATE_UNAUTHORIZED = "User not authorized to upload certificate";
-    public static final String UPLOAD_CERTIFICATE_FAIL = "Failed to upload certificate";
-    public static final String UPLOAD_CERTIFICATE_OK = "Certificate uploaded";
+    public static final String FILE_AVATAR_UPLOAD_START = "Uploading avatar";
+    public static final String FILE_AVATAR_UPLOAD_UNAUTHORIZED = "User not authorized to upload avatar";
+    public static final String FILE_AVATAR_UPLOAD_FAIL = "Failed to upload avatar";
+    public static final String FILE_AVATAR_UPLOAD_OK = "Avatar uploaded";
 
-    public static final String UPLOAD_DOCUMENT_START = "Uploading document";
-    public static final String UPLOAD_DOCUMENT_UNAUTHORIZED = "User not authorized to upload document";
-    public static final String UPLOAD_DOCUMENT_FAIL = "Failed to upload document";
-    public static final String UPLOAD_DOCUMENT_OK = "Document uploaded";
+    public static final String FILE_AVATAR_REMOVE_START = "Removing avatar";
+    public static final String FILE_AVATAR_REMOVE_UNAUTHORIZED = "User not authorized to remove avatar";
+    public static final String FILE_AVATAR_REMOVE_FAIL = "Failed to remove avatar";
+    public static final String FILE_AVATAR_REMOVE_OK = "Avatar removed";
 
-    public static final String UPLOAD_DIVE_PLAN_START = "Uploading dive plan";
-    public static final String UPLOAD_DIVE_PLAN_UNAUTHORIZED = "User not authorized to upload dive plan";
-    public static final String UPLOAD_DIVE_PLAN_FAIL = "Failed to upload dive plan";
-    public static final String UPLOAD_DIVE_PLAN_OK = "Dive plan uploaded";
+    public static final String FILE_CERTIFICATE_GET_ALL_START = "Start fetching all certificate files";
+    public static final String FILE_CERTIFICATE_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all certificate files";
+    public static final String FILE_CERTIFICATE_GET_ALL_FAIL = "Failed to fetch all certificate files";
+    public static final String FILE_CERTIFICATE_GET_ALL_OK = "Certificate files retrieved";
 
-    public static final String UPLOAD_AVATAR_START = "Uploading avatar";
-    public static final String UPLOAD_AVATAR_UNAUTHORIZED = "User not authorized to upload avatar";
-    public static final String UPLOAD_AVATAR_FAIL = "Failed to upload avatar";
-    public static final String UPLOAD_AVATAR_OK = "Avatar uploaded";
+    public static final String FILE_CERTIFICATE_DOWNLOAD_START = "Downloading certificate";
+    public static final String FILE_CERTIFICATE_DOWNLOAD_UNAUTHORIZED = "User not authorized to download certificate";
+    public static final String FILE_CERTIFICATE_DOWNLOAD_FAIL = "Failed to download certificate";
+    public static final String FILE_CERTIFICATE_DOWNLOAD_OK = "Certificate downloaded";
+
+    public static final String FILE_CERTIFICATE_UPLOAD_START = "Uploading certificate";
+    public static final String FILE_CERTIFICATE_UPLOAD_UNAUTHORIZED = "User not authorized to upload certificate";
+    public static final String FILE_CERTIFICATE_UPLOAD_FAIL = "Failed to upload certificate";
+    public static final String FILE_CERTIFICATE_UPLOAD_OK = "Certificate uploaded";
+
+    public static final String FILE_CERTIFICATE_REMOVE_START = "Removing certificate";
+    public static final String FILE_CERTIFICATE_REMOVE_UNAUTHORIZED = "User not authorized to remove certificate";
+    public static final String FILE_CERTIFICATE_REMOVE_FAIL = "Failed to remove certificate";
+    public static final String FILE_CERTIFICATE_REMOVE_OK = "Certificate removed";
+
+    public static final String FILE_DIVE_FILE_GET_ALL_START = "Start fetching all dive plan files";
+    public static final String FILE_DIVE_FILE_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all dive plan files";
+    public static final String FILE_DIVE_FILE_GET_ALL_FAIL = "Failed to fetch all dive plan files";
+    public static final String FILE_DIVE_FILE_GET_ALL_OK = "Dive plan files retrieved";
+
+    public static final String FILE_DIVE_FILE_UPLOAD_START = "Uploading dive plan";
+    public static final String FILE_DIVE_FILE_UPLOAD_UNAUTHORIZED = "User not authorized to upload dive plan";
+    public static final String FILE_DIVE_FILE_UPLOAD_FAIL = "Failed to upload dive plan";
+    public static final String FILE_DIVE_FILE_UPLOAD_OK = "Dive plan uploaded";
+
+    public static final String FILE_DOCUMENT_GET_ALL_START = "Start fetching all document files";
+    public static final String FILE_DOCUMENT_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all document files";
+    public static final String FILE_DOCUMENT_GET_ALL_FAIL = "Failed to fetch all document files";
+    public static final String FILE_DOCUMENT_GET_ALL_OK = "Document files retrieved";
+
+    public static final String FILE_DOCUMENT_UPLOAD_START = "Uploading document";
+    public static final String FILE_DOCUMENT_UPLOAD_UNAUTHORIZED = "User not authorized to upload document";
+    public static final String FILE_DOCUMENT_UPLOAD_FAIL = "Failed to upload document";
+    public static final String FILE_DOCUMENT_UPLOAD_OK = "Document uploaded";
+
+    public static final String FILE_DOCUMENT_REMOVE_START = "Removing document";
+    public static final String FILE_DOCUMENT_REMOVE_UNAUTHORIZED = "User not authorized to remove document";
+    public static final String FILE_DOCUMENT_REMOVE_FAIL = "Failed to remove document";
+    public static final String FILE_DOCUMENT_REMOVE_OK = "Document removed";
+
+    public static final String FILE_PAGE_FILE_GET_ALL_START = "Start fetching all page files";
+    public static final String FILE_PAGE_FILE_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all page files";
+    public static final String FILE_PAGE_FILE_GET_ALL_FAIL = "Failed to fetch all page files";
+    public static final String FILE_PAGE_FILE_GET_ALL_OK = "Page files retrieved";
+
+    public static final String FILE_PAGE_FILE_UPLOAD_START = "Uploading page file";
+    public static final String FILE_PAGE_FILE_UPLOAD_UNAUTHORIZED = "User not authorized to upload page file";
+    public static final String FILE_PAGE_FILE_UPLOAD_FAIL = "Failed to upload page file";
+    public static final String FILE_PAGE_FILE_UPLOAD_OK = "Page file uploaded";
+
+    public static final String FILE_PAGE_FILE_REMOVE_START = "Removing page file";
+    public static final String FILE_PAGE_FILE_REMOVE_UNAUTHORIZED = "User not authorized to remove page file";
+    public static final String FILE_PAGE_FILE_REMOVE_FAIL = "Failed to remove page file";
+    public static final String FILE_PAGE_FILE_REMOVE_OK = "Page file removed";
 
     private AppAuditMessages() {
     }

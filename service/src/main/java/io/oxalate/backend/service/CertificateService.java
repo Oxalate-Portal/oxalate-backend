@@ -1,12 +1,12 @@
 package io.oxalate.backend.service;
 
 import static io.oxalate.backend.api.UploadDirectoryConstants.CERTIFICATES;
-import static io.oxalate.backend.api.UrlConstants.DOWNLOAD_URL;
+import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import io.oxalate.backend.api.request.CertificateRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
 import io.oxalate.backend.model.Certificate;
-import io.oxalate.backend.repository.CertificateDocumentRepository;
 import io.oxalate.backend.repository.CertificateRepository;
+import io.oxalate.backend.repository.filetransfer.CertificateDocumentRepository;
 import jakarta.transaction.Transactional;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
@@ -176,10 +176,9 @@ public class CertificateService {
         if (optionalCertificateDocument.isPresent()) {
             var certificateDocument = optionalCertificateDocument.get();
             // Url path only contains the certificate ID, as user ID is pulled from the session data
-            var urlPath = backendUrl + DOWNLOAD_URL + "/" + CERTIFICATES + "/" + certificateDocument.getCertificate().getId();
+            var urlPath = backendUrl + FILES_URL + "/" + CERTIFICATES + "/" + certificateDocument.getCertificate().getId();
             // Physical path on the other hand contains the user ID as a path segment while the filename is the certificate ID
-            var physicalPath = Paths.get(uploadMainDirectory, CERTIFICATES, String.valueOf(certificateDocument.getUser().getId()), certificateDocument.getFileName());
-            log.info("XXXXX: url: {} physical: {}", urlPath, physicalPath);
+            var physicalPath = Paths.get(uploadMainDirectory, CERTIFICATES, String.valueOf(certificateDocument.getCreator().getId()), certificateDocument.getFileName());
 
             var file = physicalPath.toFile();
 

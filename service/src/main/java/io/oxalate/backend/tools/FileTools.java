@@ -6,12 +6,21 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 public class FileTools {
@@ -82,12 +91,61 @@ public class FileTools {
     public static String getFileSuffix(MultipartFile file) {
         // Get the original file suffix
         var fileSuffix = switch (file.getContentType()) {
+            case "application/pdf" -> ".pdf";
+            case "application/zip" -> ".zip";
+            case "image/gif" -> ".gif";
             case "image/jpeg" -> ".jpg";
             case "image/png" -> ".png";
-            case "image/gif" -> ".gif";
+            case "image/webp" -> ".webp";
+            case "text/plain" -> ".txt";
+            case "x-zip-compressed" -> ".zip"; // Buggy Windows MIME type
+            case null -> null;
             default ->  null;
         };
 
         return fileSuffix;
     }
+
+    public static void verifyUploadPath(Path uploadPath) {
+        // If the upload path does not exist, create it
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath);
+            } catch (IOException ex) {
+                log.error("Could not create upload directory: {}", uploadPath, ex);
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not create upload directory", ex);
+            }
+        }
+
+        // Make sure we have write access to the upload path
+        if (!Files.isWritable(uploadPath)) {
+            log.error("Can not create files in directory: {}", uploadPath);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No write access to upload directory");
+        }
+    }
+
+    public static void removeFile(Path filePath, String filetype) {
+        try {
+            Files.delete(filePath);
+            log.info("{} deleted: {}", filetype, filePath);
+        } catch (IOException e) {
+            log.error("Could not delete {}: {}", filetype, filePath, e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not delete file");
+        }
+    }
+
+    public static ResponseEntity<byte[]> readFileToResponseEntity(File file, String mimetype, String filename) throws IOException {
+        var fileContent = FileCopyUtils.copyToByteArray(new FileInputStream(file));
+        var headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(mimetype));
+
+        if (mimetype.startsWith("image/")) {
+            headers.setContentDisposition(ContentDisposition.inline().filename(filename).build());
+        } else {
+            headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        }
+
+        return ResponseEntity.ok()
+                             .headers(headers)
+                             .body(fileContent);    }
 }

@@ -45,4 +45,16 @@ public class RoleService {
     public void deleteUserRoles(long userId) {
         roleRepository.deleteAllUserRolesByUserId(userId);
     }
+
+    public boolean userHasRole(long userId, RoleEnum roleEnum) {
+        var roles = findRolesForUser(userId);
+
+        for (Role role : roles) {
+            if (role.getName().equals(roleEnum)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
