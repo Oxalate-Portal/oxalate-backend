@@ -50,7 +50,7 @@ public class PaymentController implements PaymentAPI {
     private final AppEventPublisher appEventPublisher;
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatus(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_GET_ALL_ACTIVE_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
@@ -100,7 +100,7 @@ public class PaymentController implements PaymentAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentStatusResponse> addPaymentForUser(PaymentRequest paymentRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_ADD_START + paymentRequest.getUserId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
@@ -118,7 +118,7 @@ public class PaymentController implements PaymentAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentStatusResponse> updatePaymentForUser(PaymentRequest paymentRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_UPDATE_START + paymentRequest.getUserId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
@@ -141,7 +141,7 @@ public class PaymentController implements PaymentAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> resetAllPeriodicPayments(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_RESET_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 

@@ -29,7 +29,7 @@ public class AuditController implements AuditAPI {
     private final AppEventPublisher appEventPublisher;
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<AuditEntryResponse>> getAuditEvents(int page, int pageSize, String sorting, String filter, String filterColumn,
             HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(AUDIT_GET_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
@@ -80,7 +80,7 @@ public class AuditController implements AuditAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<AuditEntryResponse>> getAuditEventsByUserId(long userId, int page, int pageSize, String sorting, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(AUDIT_GET_USER_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
