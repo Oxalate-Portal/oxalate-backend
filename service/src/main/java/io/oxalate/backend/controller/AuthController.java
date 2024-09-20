@@ -246,7 +246,7 @@ public class AuthController implements AuthAPI {
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ORGANIZER') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<UserUpdateStatus> updateUserPassword(long userId, UserUpdatePasswordRequest updatePasswordRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(AUTH_UPDATE_PASSWORD_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
         // Only the user can change their own password

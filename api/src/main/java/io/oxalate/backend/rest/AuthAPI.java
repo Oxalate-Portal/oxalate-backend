@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.EmailRequest;
 import io.oxalate.backend.api.request.LoginRequest;
 import io.oxalate.backend.api.request.SignupRequest;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "AuthAPI", description = "Authentication REST endpoints")
 public interface AuthAPI {
-    String BASE_PATH = "/api/auth";
+    String BASE_PATH = API + "/auth";
 
     @Operation(description = "Login endpoint", tags = "AuthAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Login request", required = true)

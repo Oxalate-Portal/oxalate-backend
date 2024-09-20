@@ -2,6 +2,7 @@ package io.oxalate.backend.security;
 
 import static io.oxalate.backend.api.AuditLevel.INFO;
 import static io.oxalate.backend.api.AuditLevel.WARN;
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.client.api.response.RecaptchaResponse;
 import static io.oxalate.backend.events.AppAuditMessages.RECAPTCHA_FILTER_DISABLED;
 import static io.oxalate.backend.events.AppAuditMessages.RECAPTCHA_FILTER_EMPTY;
@@ -37,7 +38,7 @@ public class RecaptchaFilter extends OncePerRequestFilter {
         // after this filter which is not what we want.
         if (request.getMethod()
                    .equals("POST") && request.getRequestURI()
-                                             .equals("/api/auth/login")) {
+                                             .equals(API + "/auth/login")) {
             var auditUuid = appEventPublisher.publishAuditEvent(RECAPTCHA_FILTER_START, INFO, request, AUDIT_NAME, -1L);
 
             var recaptchaToken = request.getHeader("X-Captcha-Token");

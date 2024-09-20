@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
 import io.oxalate.backend.api.response.stats.MultiYearValue;
 import io.oxalate.backend.api.response.stats.YearlyDiversListResponse;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Tag(name = "StatsAPI", description = "Statistics REST endpoints")
 public interface StatsAPI {
-    String BASE_PATH = "/api/stats";
+    String BASE_PATH = API + "/stats";
 
     @Operation(description = "Produces a multivalue (registrations, cumulative) yearly table for number of registrations as well as cumulative number", tags = "StatsAPI")
     @ApiResponses(value = {

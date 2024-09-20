@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.UrlConstants.PAGES_URL;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "PageAPI", description = "Page REST endpoints")
 public interface PageAPI {
-    String BASE_PATH = "/api/pages";
+    String BASE_PATH = PAGES_URL;
 
     @Operation(description = "Get list of all paths", tags = "PageAPI")
     @Parameter(name = "language", description = "Language", example = "fi")

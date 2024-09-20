@@ -1,6 +1,5 @@
 package io.oxalate.backend.security.jwt;
 
-import io.oxalate.backend.security.service.UserDetailsImpl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
@@ -11,6 +10,7 @@ import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.oxalate.backend.security.service.UserDetailsImpl;
 import java.security.Key;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -65,7 +65,8 @@ public class JwtUtils {
         } catch (MalformedJwtException e) {
             log.error("Invalid JWT token: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
-            log.error("JWT token is expired: {}", e.getMessage());
+            // This is such a common exception that we log it as debug
+            log.debug("JWT token is expired: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
             log.error("JWT token is unsupported: {}", e.getMessage());
         } catch (IllegalArgumentException e) {

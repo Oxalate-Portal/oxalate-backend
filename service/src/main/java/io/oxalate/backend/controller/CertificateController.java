@@ -67,7 +67,7 @@ public class CertificateController implements CertificateAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<CertificateResponse>> getCertificates(long userId, HttpServletRequest request) {
+    public ResponseEntity<List<CertificateResponse>> getUserCertificates(long userId, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_USER_START + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         // Check if user is allowed to see this user's certificates. ADMIN and ORGANIZER can see any, USER can see only their own
