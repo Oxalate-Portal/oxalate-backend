@@ -1,6 +1,13 @@
 package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.EmailNotificationDetailEnum;
+import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
+import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_ENABLED;
+import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.SUPPORT_EMAIL;
+import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.SYSTEM_EMAIL;
+import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.DEFAULT_LANGUAGE;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.ORG_NAME;
 import io.oxalate.backend.exception.EmailNotificationException;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.PageVersion;
@@ -29,6 +36,7 @@ public class EmailService {
 
     private final JavaMailSender javaMailSender;
     private final TemplateEngine templateEngine;
+    private final PortalConfigurationService portalConfigurationService;
 
     @Autowired
     private MessageSource messageSource;
@@ -39,15 +47,6 @@ public class EmailService {
     @Value("${oxalate.app.env}")
     private String env;
 
-    @Value("${oxalate.app.org-name}")
-    private String orgName;
-
-    @Value("${oxalate.mail.system-email}")
-    private String systemEmail;
-
-    @Value("${oxalate.mail.support-email}")
-    private String supportEmail;
-
     @Value("${oxalate.token.expires-after}")
     private String tokenTtl;
 
@@ -57,28 +56,26 @@ public class EmailService {
     @Value("${oxalate.token.lost-password-url}")
     private String lostPasswordUrl;
 
-    @Value("${oxalate.language.default}")
-    private String defaultLanguage;
-
     @Value("${oxalate.app.frontend-url}")
     private String frontendUrl;
 
     public void sendConfirmationEmail(User user, String token) {
         var confirmationUrlWithToken = confirmationUrl + "?token=" + token;
-        var userLanguage = user.getLanguage() != null ? user.getLanguage() : defaultLanguage;
+        var userLanguage = user.getLanguage() != null ? user.getLanguage() : portalConfigurationService.getStringConfiguration(GENERAL.group, DEFAULT_LANGUAGE.key);
         var locale = Locale.forLanguageTag(userLanguage);
-        var subject = messageSource.getMessage("email.confirmation.subject", new Object[] { orgName }, locale);
+        var organizationName = portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key);
+        var subject = messageSource.getMessage("email.confirmation.subject", new Object[] { organizationName }, locale);
 
         Context context = new Context(locale);
         context.setVariable("name", user.getFirstName());
         context.setVariable("url", confirmationUrlWithToken);
-        context.setVariable("supportEmail", supportEmail);
-        context.setVariable("orgName", orgName);
+        context.setVariable("supportEmail", portalConfigurationService.getStringConfiguration(EMAIL.group, SUPPORT_EMAIL.key));
+        context.setVariable("orgName", organizationName);
         context.setVariable("tokenTtl", tokenTtl);
         String body = templateEngine.process("confirmationTemplate_" + locale.getLanguage(), context);
 
         try {
-            sendHtmlMail(systemEmail, user.getUsername(), subject, body);
+            sendHtmlMail(portalConfigurationService.getStringConfiguration(EMAIL.group, SYSTEM_EMAIL.key), user.getUsername(), subject, body);
         } catch (MailException e) {
             log.error("Sending user confirmation email failed: ", e);
         }
@@ -86,20 +83,20 @@ public class EmailService {
 
     public boolean sendForgottenPassword(User user, String token) {
         var lostPasswordUrlWithToken = lostPasswordUrl + "/" + token;
-        var userLanguage = user.getLanguage() != null ? user.getLanguage() : defaultLanguage;
+        var userLanguage = user.getLanguage() != null ? user.getLanguage() : portalConfigurationService.getStringConfiguration(GENERAL.group, DEFAULT_LANGUAGE.key);
         var locale = Locale.forLanguageTag(userLanguage);
         var subject = messageSource.getMessage("email.forgotten-password.subject", null, locale);
 
         Context context = new Context(locale);
         context.setVariable("name", user.getFirstName());
         context.setVariable("url", lostPasswordUrlWithToken);
-        context.setVariable("supportEmail", supportEmail);
-        context.setVariable("orgName", orgName);
+        context.setVariable("supportEmail", portalConfigurationService.getStringConfiguration(EMAIL.group, SUPPORT_EMAIL.key));
+        context.setVariable("orgName", portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key));
         context.setVariable("tokenTtl", tokenTtl);
         String body = templateEngine.process("lostPasswordTemplate_" + locale.getLanguage(), context);
 
         try {
-            sendHtmlMail(systemEmail, user.getUsername(), subject, body);
+            sendHtmlMail(portalConfigurationService.getStringConfiguration(EMAIL.group, SYSTEM_EMAIL.key), user.getUsername(), subject, body);
             return true;
         } catch (MailException e) {
             log.error("Sending forgotten password email failed: ", e);
@@ -116,7 +113,7 @@ public class EmailService {
         log.debug("Event: {}", event);
 
         Context context = new Context(locale);
-        context.setVariable("orgName", orgName);
+        context.setVariable("orgName", portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key));
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("eventTitle", event.getTitle());
         context.setVariable("eventDate", event.getStartTime());
@@ -124,7 +121,7 @@ public class EmailService {
         String body = templateEngine.process(templateName, context);
 
         try {
-            sendHtmlMail(systemEmail, emailAddress, subject, body);
+            sendHtmlMail(portalConfigurationService.getStringConfiguration(EMAIL.group, SYSTEM_EMAIL.key), emailAddress, subject, body);
         } catch (MailException e) {
             log.error("Sending event notification email failed: ", e);
             throw new EmailNotificationException("Failed to send event notification email", e);
@@ -139,7 +136,7 @@ public class EmailService {
         log.debug("Page version: {}", pageVersion);
 
         Context context = new Context(locale);
-        context.setVariable("orgName", orgName);
+        context.setVariable("orgName", portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key));
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("pageTitle", pageVersion.getTitle());
         context.setVariable("pageId", pageVersion.getPageId());
@@ -148,7 +145,7 @@ public class EmailService {
         String body = templateEngine.process(templateName, context);
 
         try {
-            sendHtmlMail(systemEmail, emailAddress, subject, body);
+            sendHtmlMail(portalConfigurationService.getStringConfiguration(EMAIL.group, SYSTEM_EMAIL.key), emailAddress, subject, body);
         } catch (MailException e) {
             log.error("Sending page notification email failed: ", e);
             throw new EmailNotificationException("Failed to send page notification email", e);
@@ -158,7 +155,7 @@ public class EmailService {
     @Async
     protected void sendHtmlMail(String sender, String recipient, String subject, String body) {
 
-        if (!smtpEnabled) {
+        if (!portalConfigurationService.getBooleanConfiguration(EMAIL.group, EMAIL_ENABLED.key)) {
             log.info("Not sending email. Email service disabled!");
             log.info("Logging email details: from:{}, to:{}, subject:{} body: {}", sender, recipient, subject, body.replace("\n", " "));
             return;
@@ -167,7 +164,7 @@ public class EmailService {
         MimeMessage mail = javaMailSender.createMimeMessage();
 
         var subjectPrefix = "prod".equals(env) ? "" : String.format("[env=%s] ", env);
-        subjectPrefix += "[" + orgName + "] ";
+        subjectPrefix += "[" + portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key) + "] ";
 
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mail, true);
@@ -184,7 +181,7 @@ public class EmailService {
 
     @Async
     protected void sendTextMail(String sender, String recipient, String subject, String text) throws MailException {
-        if (!smtpEnabled) {
+        if (!portalConfigurationService.getBooleanConfiguration(EMAIL.group, EMAIL_ENABLED.key)) {
             log.info("Not sending email. Email service disabled!");
             log.info("Logging email details: from:{}, to:{}, subject:{}, text:{}",
                     sender, recipient, subject, text);
@@ -192,7 +189,7 @@ public class EmailService {
         }
 
         var subjectPrefix = "prod".equals(env) ? "" : String.format("[env=%s] ", env);
-        subjectPrefix += "[" + orgName + "] ";
+        subjectPrefix += "[" + portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key) + "] ";
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(sender);
         message.setTo(recipient);
