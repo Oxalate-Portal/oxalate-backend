@@ -272,4 +272,14 @@ public class CertificateFileTransferService {
     private String getCertificateFileUrl(long certificateId) {
         return backendUrl + FILES_URL + "/" + UploadDirectoryConstants.CERTIFICATES + "/" + certificateId;
     }
+
+    @Transactional
+    public void anonymize(long userId) {
+        var certificateDocuments = certificateDocumentRepository.findByCreator(userId);
+
+        for (var certificateDocument : certificateDocuments) {
+            removeCertificateFile(certificateDocument.getCertificate()
+                                                      .getId(), userId);
+        }
+    }
 }
