@@ -77,24 +77,11 @@ server:
 
 oxalate:
   app:
-    org-name: override-me
     env: override-me
     backend-url: override-me
     frontend-url: override-me
     jwt-secret: override-me
     jwt-expiration-ms: override-me
-  language:
-    default: en
-  mail:
-    enabled: override-me
-    system-email: override-me
-    org-email: override-me
-    support-email: override-me
-    notification:
-      retry-times: 5
-  payment:
-    period-start-month: override-me # 1 = January, 12 = December
-    event-requires-payment: override-me
   cors:
     allowed-origins: ${oxalate.app.frontend-url}
     cors-pattern: '/**'

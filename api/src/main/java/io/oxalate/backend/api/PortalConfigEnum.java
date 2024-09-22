@@ -18,6 +18,7 @@ public enum PortalConfigEnum {
     public enum EmailConfigEnum {
         EMAIL_ENABLED("email-enabled"),
         EMAIL_NOTIFICATIONS("email-notifications"),
+        EMAIL_NOTIFICATION_RETRIES("email-notification-retries"),
         ORG_EMAIL("org-email"),
         SUPPORT_EMAIL("support-email"),
         SYSTEM_EMAIL("system-email");

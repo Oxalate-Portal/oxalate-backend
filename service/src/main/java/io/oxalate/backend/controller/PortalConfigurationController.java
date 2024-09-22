@@ -4,7 +4,6 @@ import static io.oxalate.backend.api.AuditLevel.INFO;
 import io.oxalate.backend.api.request.PortalConfigurationRequest;
 import io.oxalate.backend.api.response.FrontendConfigurationResponse;
 import io.oxalate.backend.api.response.PortalConfigurationResponse;
-import io.oxalate.backend.api.response.PortalConfigurationStatusResponse;
 import static io.oxalate.backend.events.AppAuditMessages.PORTAL_CONFIG_GET_ALL_OK;
 import static io.oxalate.backend.events.AppAuditMessages.PORTAL_CONFIG_GET_ALL_START;
 import static io.oxalate.backend.events.AppAuditMessages.PORTAL_CONFIG_GET_FRONTEND_OK;
@@ -70,18 +69,15 @@ public class PortalConfigurationController implements PortalConfigurationAPI {
     }
 
     @Override
-    public ResponseEntity<PortalConfigurationStatusResponse> reloadPortalConfigurations(HttpServletRequest request) {
+    public ResponseEntity<List<PortalConfigurationResponse>> reloadPortalConfigurations(HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(PORTAL_CONFIG_RELOAD_START, INFO, request, AUDIT_NAME, userId);
 
         portalConfigurationService.reloadPortalConfigurations();
 
-        var status = PortalConfigurationStatusResponse.builder()
-                                                      .success(true)
-                                                      .message("Portal configurations reloaded successfully")
-                                                      .build();
+        var updatedConfigurations = portalConfigurationService.reloadPortalConfigurations();
 
         appEventPublisher.publishAuditEvent(PORTAL_CONFIG_RELOAD_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
-        return ResponseEntity.ok(status);
+        return ResponseEntity.ok(updatedConfigurations);
     }
 }

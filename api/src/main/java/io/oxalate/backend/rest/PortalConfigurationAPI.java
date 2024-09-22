@@ -4,7 +4,6 @@ import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.PortalConfigurationRequest;
 import io.oxalate.backend.api.response.FrontendConfigurationResponse;
 import io.oxalate.backend.api.response.PortalConfigurationResponse;
-import io.oxalate.backend.api.response.PortalConfigurationStatusResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -58,6 +57,6 @@ public interface PortalConfigurationAPI {
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping(path = BASE_PATH + "/reload", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PortalConfigurationStatusResponse> reloadPortalConfigurations(HttpServletRequest request);
+    ResponseEntity<List<PortalConfigurationResponse>> reloadPortalConfigurations(HttpServletRequest request);
 
 }

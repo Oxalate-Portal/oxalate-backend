@@ -3,6 +3,10 @@ package io.oxalate.backend.service;
 import io.oxalate.backend.api.EmailNotificationDetailEnum;
 import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.EmailStatusEnum;
+import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
+import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATION_RETRIES;
+import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.DEFAULT_LANGUAGE;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.UserStatus;
 import io.oxalate.backend.model.EmailQueueEntry;
@@ -18,7 +22,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,12 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class EmailQueueService {
-
-    @Value("${oxalate.mail.notification.retry-times}")
-    private int retryLimit;
-
-    @Value("${oxalate.language.default}")
-    private String defaultLanguage;
 
     final private EmailQueueRepository emailQueueRepository;
     final private EmailService emailService;
@@ -41,6 +38,7 @@ public class EmailQueueService {
     final private PageVersionRepository pageVersionRepository;
     final private PageRoleAccessRepository pageRoleAccessRepository;
     final private RoleRepository roleRepository;
+    final private PortalConfigurationService portalConfigurationService;
 
     @Transactional
     public void addNotification(EmailNotificationTypeEnum emailType, EmailNotificationDetailEnum detail, long typeId) {
@@ -96,6 +94,8 @@ public class EmailQueueService {
         var counter = 0;
 
         for (var emailQueueEntry : queuedEmails) {
+            var retryLimit = portalConfigurationService.getNumericConfiguration(EMAIL.group, EMAIL_NOTIFICATION_RETRIES.key);
+
             if (emailQueueEntry.getCounter() >= retryLimit) {
                 log.info("Email with ID {} for user ID {} has reached retry limit({}), removing from queue", emailQueueEntry.getId(),
                         emailQueueEntry.getUserId(), retryLimit);
@@ -159,6 +159,7 @@ public class EmailQueueService {
             var optionalPageVersion = pageVersionRepository.findByPageIdAndLanguage(sendingMessage.getTypeId(), user.getLanguage());
 
             if (optionalPageVersion.isEmpty()) {
+                var defaultLanguage = portalConfigurationService.getStringConfiguration(GENERAL.group, DEFAULT_LANGUAGE.key);
                 log.warn("Could not find language {} of page version {} for user ID {}, fetching with default language {}",
                         user.getLanguage(), sendingMessage.getTypeId(), user.getId(), defaultLanguage);
 

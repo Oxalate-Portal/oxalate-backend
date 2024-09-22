@@ -31,18 +31,19 @@ public class PortalConfigurationService {
     public List<PortalConfigurationResponse> getAllConfigurations() {
         var responses = new ArrayList<PortalConfigurationResponse>();
 
-        for (var config : portalConfigurations) {
+        for (var config : this.portalConfigurations) {
             responses.add(config.toResponse());
         }
 
         return responses;
     }
 
-    public void reloadPortalConfigurations() {
+    public List<PortalConfigurationResponse> reloadPortalConfigurations() {
         log.debug("Reloading portal configurations");
         var newConfig = portalConfigurationRepository.findAll();
         log.debug("New configuration: {} portal configurations: {}", newConfig.size(), newConfig);
         this.portalConfigurations = newConfig;
+        return getAllConfigurations();
     }
 
     public String getStringConfiguration(String group, String key) {

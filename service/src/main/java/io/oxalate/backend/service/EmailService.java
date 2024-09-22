@@ -41,9 +41,6 @@ public class EmailService {
     @Autowired
     private MessageSource messageSource;
 
-    @Value("${oxalate.mail.enabled}")
-    private boolean smtpEnabled;
-
     @Value("${oxalate.app.env}")
     private String env;
 

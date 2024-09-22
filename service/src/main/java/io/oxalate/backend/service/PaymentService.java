@@ -3,6 +3,8 @@ package io.oxalate.backend.service;
 import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
+import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.START_MONTH;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.api.response.PaymentResponse;
@@ -18,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -26,9 +27,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class PaymentService {
     private final PaymentRepository paymentRepository;
-
-    @Value("${oxalate.payment.period-start-month}")
-    private int periodStartMonth;
+    private final PortalConfigurationService portalConfigurationService;
 
     public List<PaymentStatusResponse> getAllActivePaymentStatus() {
         var paymentStatusResponses = new ArrayList<PaymentStatusResponse>();
@@ -94,6 +93,7 @@ public class PaymentService {
         return activePayments;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public PaymentStatusResponse savePayment(long userId, PaymentRequest paymentRequest) {
         switch (paymentRequest.getPaymentType()) {
         case ONE_TIME -> saveOneTimePayment(userId, paymentRequest.getPaymentCount());
@@ -128,6 +128,7 @@ public class PaymentService {
         var localDate = now.atZone(ZoneOffset.UTC).toLocalDate();
         var currentMonth = localDate.getMonthValue();
         var endYear = localDate.getYear();
+        var periodStartMonth = portalConfigurationService.getNumericConfiguration(PAYMENT.group, START_MONTH.key);
 
         if (currentMonth >= periodStartMonth) {
             endYear++;

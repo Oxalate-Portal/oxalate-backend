@@ -3,6 +3,8 @@ package io.oxalate.backend.controller;
 import io.oxalate.backend.api.EventStatusEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
+import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.START_MONTH;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.UserStatus.ACTIVE;
 import io.oxalate.backend.api.request.CertificateRequest;
@@ -16,6 +18,7 @@ import io.oxalate.backend.rest.TestAPI;
 import io.oxalate.backend.service.AuthService;
 import io.oxalate.backend.service.CertificateService;
 import io.oxalate.backend.service.EventService;
+import io.oxalate.backend.service.PortalConfigurationService;
 import io.oxalate.backend.service.RoleService;
 import io.oxalate.backend.service.UserService;
 import jakarta.persistence.EntityManager;
@@ -33,7 +36,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -55,12 +57,11 @@ public class TestController implements TestAPI {
     private static final String PASSWORD = "aA1^WWWWWWWWW";
     // We also use the repository in order to circumvent some business logic as well as temporal assumptions in the service
     private final PaymentRepository paymentRepository;
+    private final PortalConfigurationService portalConfigurationService;
 
     private static final long DAYS_BACK = 2000L;
     private final EntityManager entityManager;
     private final List<RandomUserInfo> userData = new ArrayList<>();
-    @Value("${oxalate.payment.period-start-month}")
-    private int periodStartMonth;
 
     @Override
     public ResponseEntity<Void> generateRandomUsers(int numberOfUsers) {
@@ -89,7 +90,7 @@ public class TestController implements TestAPI {
         while (pinDate.isBefore(Instant.now())) {
             // While there are less than 5 registered users, we don't generate an event nor forward the pin
             if (users < 5) {
-                generateRandomUser(userData.remove(0), pinDate);
+                generateRandomUser(userData.removeFirst(), pinDate);
                 users++;
                 continue;
             }
@@ -98,7 +99,7 @@ public class TestController implements TestAPI {
 
             if (fate < 6) {
                 // New user
-                generateRandomUser(userData.remove(0), pinDate);
+                generateRandomUser(userData.removeFirst(), pinDate);
                 users++;
             } else if (fate < 9) {
                 // New event
@@ -366,7 +367,7 @@ public class TestController implements TestAPI {
             var localDate = createInstant.atZone(ZoneOffset.UTC).toLocalDate();
             var currentMonth = localDate.getMonthValue();
             var endYear = localDate.getYear();
-
+            var periodStartMonth = portalConfigurationService.getNumericConfiguration(PAYMENT.group, START_MONTH.key);
             if (currentMonth >= periodStartMonth) {
                 endYear++;
             }
