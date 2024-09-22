@@ -1,5 +1,6 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.PortalConfigEnum;
 import io.oxalate.backend.api.request.PortalConfigurationRequest;
 import io.oxalate.backend.api.response.FrontendConfigurationResponse;
 import io.oxalate.backend.api.response.PortalConfigurationResponse;
@@ -124,15 +125,6 @@ public class PortalConfigurationService {
         reloadPortalConfigurations();
     }
 
-    protected Optional<PortalConfiguration> getPortalConfiguration(String group, String key) {
-        return portalConfigurations.stream()
-                                   .filter(c -> c.getGroupKey()
-                                                 .equals(group)
-                                           && c.getSettingKey()
-                                               .equals(key))
-                                   .findFirst();
-    }
-
     public List<FrontendConfigurationResponse> getFrontendConfigurations() {
         var frontendConfigurations = new ArrayList<FrontendConfigurationResponse>();
 
@@ -149,5 +141,27 @@ public class PortalConfigurationService {
         }
 
         return frontendConfigurations;
+    }
+
+    /**
+     * Check if the given configuration is in effect. This only works for array configurations where the value is searched in the array.
+     * @param portalConfigEnum
+     * @param emailConfigEnum
+     * @param setting
+     * @return
+     */
+    public boolean isEnabled(PortalConfigEnum portalConfigEnum, PortalConfigEnum.EmailConfigEnum emailConfigEnum, String setting) {
+        // Get the configuration value for the given group and key
+        var configArray = getArrayConfiguration(portalConfigEnum.group, emailConfigEnum.key);
+        return configArray.contains(setting);
+    }
+
+    protected Optional<PortalConfiguration> getPortalConfiguration(String group, String key) {
+        return portalConfigurations.stream()
+                                   .filter(c -> c.getGroupKey()
+                                                 .equals(group)
+                                           && c.getSettingKey()
+                                               .equals(key))
+                                   .findFirst();
     }
 }

@@ -5,6 +5,8 @@ import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.PaymentTypeEnum;
+import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
+import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
@@ -37,6 +39,7 @@ public class EventService {
     private final UserService userService;
     private final PaymentService paymentService;
     private final EmailQueueService emailQueueService;
+    private final PortalConfigurationService portalConfigurationService;
 
     public EventResponse findById(Long eventId) {
         var event = eventRepository.findById(eventId)
@@ -93,12 +96,17 @@ public class EventService {
         // PUBLISHED -> PUBLISHED = Send notification for updated event
         // PUBLISHED -> DRAFTED = Send notification for cancelled event
         // PUBLISHED -> CANCELLED = Send notification for cancelled event
-        if (oldStatus.equals(EventStatusEnum.DRAFTED) && newStatus.equals(EventStatusEnum.PUBLISHED)) {
+        if (oldStatus.equals(EventStatusEnum.DRAFTED)
+                && newStatus.equals(EventStatusEnum.PUBLISHED)
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "event-new")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.NEW, updatedEvent.getId());
-        } else if (oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.PUBLISHED)) {
+        } else if (oldStatus.equals(EventStatusEnum.PUBLISHED)
+                && newStatus.equals(EventStatusEnum.PUBLISHED)
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "event-updated")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.UPDATED, updatedEvent.getId());
-        } else if (oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.CANCELLED)
-                || oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.DRAFTED)) {
+        } else if ((oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.CANCELLED)
+                || oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.DRAFTED))
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "event-removed")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, updatedEvent.getId());
         }
 
@@ -236,19 +244,22 @@ public class EventService {
     @Transactional
     public void cancel(long eventId) {
         // Get the dive event data
-        var event = eventRepository.findById(eventId).orElse(null);
+        var event = eventRepository.findById(eventId)
+                                   .orElse(null);
 
         if (event == null) {
             log.error("Event ID {} not found for cancelling", eventId);
             throw new IllegalArgumentException("Event not found");
         }
 
-        if (event.getStatus().equals(EventStatusEnum.CANCELLED)) {
+        if (event.getStatus()
+                 .equals(EventStatusEnum.CANCELLED)) {
             log.error("Event ID {} is already cancelled", eventId);
             throw new IllegalArgumentException("Event already cancelled");
         }
 
-        if (event.getStatus().equals(EventStatusEnum.PUBLISHED)) {
+        if (event.getStatus()
+                 .equals(EventStatusEnum.PUBLISHED)) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, eventId);
         }
 
@@ -369,7 +380,8 @@ public class EventService {
         log.debug("Created new event: title '{}', ID '{}'", eventResponse.getTitle(), eventResponse.getId());
 
         // Send notification only if the event is in a published state
-        if (newEvent.getStatus().equals(EventStatusEnum.PUBLISHED)) {
+        if (newEvent.getStatus()
+                    .equals(EventStatusEnum.PUBLISHED)) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.NEW, eventResponse.getId());
         }
 

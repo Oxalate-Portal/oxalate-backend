@@ -174,6 +174,7 @@ public class EmailQueueService {
             var pageVersion = optionalPageVersion.get();
 
             emailService.sendPageNotificationEmail(user.getUsername(), user.getLanguage(), sendingMessage.getEmailDetail(), pageVersion);
+            break;
         default:
             log.error("Unknown email type {}", sendingMessage.getEmailType());
             break;
