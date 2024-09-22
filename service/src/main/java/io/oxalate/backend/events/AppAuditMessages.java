@@ -420,6 +420,21 @@ public class AppAuditMessages {
     public static final String FILE_PAGE_FILE_REMOVE_FAIL = "Failed to remove page file";
     public static final String FILE_PAGE_FILE_REMOVE_OK = "Page file removed";
 
+    // PortalConfigurationController
+    public static final String PORTAL_CONFIG_GET_ALL_START = "Getting all portal configurations";
+    public static final String PORTAL_CONFIG_GET_ALL_OK = "Return list of portal configurations";
+
+    public static final String PORTAL_CONFIG_RELOAD_START = "Reloading portal configurations";
+    public static final String PORTAL_CONFIG_RELOAD_FAIL = "Failed reloading portal configurations";
+    public static final String PORTAL_CONFIG_RELOAD_OK = "Portal configurations reloaded";
+
+    public static final String PORTAL_CONFIG_UPDATE_START = "Updating portal configuration";
+    public static final String PORTAL_CONFIG_UPDATE_FAIL = "Failed updating portal configuration";
+    public static final String PORTAL_CONFIG_UPDATE_OK = "Portal configuration updated";
+
+    public static final String PORTAL_CONFIG_GET_FRONTEND_START = "Getting frontend configurations";
+    public static final String PORTAL_CONFIG_GET_FRONTEND_OK = "Return frontend configurations";
+
     private AppAuditMessages() {
     }
 }

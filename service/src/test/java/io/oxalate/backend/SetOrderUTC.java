@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @Slf4j
-class SetOrderUnitTest {
+class SetOrderUTC {
 
     private static final int MAX_ITEMS = 10_000;
     private final List<Tupolev> itemList = new ArrayList<>();
