@@ -240,7 +240,7 @@ public class FileTransferController implements FileTransferAPI {
         return response;
     }
 
-    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER')")
     @Override
     public ResponseEntity<FileRemovalResponse> removeCertificateFile(long certificateId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
