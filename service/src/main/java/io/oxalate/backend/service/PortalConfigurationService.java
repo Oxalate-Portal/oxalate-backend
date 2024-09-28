@@ -128,10 +128,12 @@ public class PortalConfigurationService {
     public List<FrontendConfigurationResponse> getFrontendConfigurations() {
         var frontendConfigurations = new ArrayList<FrontendConfigurationResponse>();
 
-        // Get all configurations which are in group frontend
+        // Get all configurations which are in group frontend and general
         for (var config : portalConfigurations) {
             if (config.getGroupKey()
-                      .equals("frontend")) {
+                      .equals("frontend")
+            || config.getGroupKey()
+                    .equals("general")) {
                 var effectiveValue = config.getRuntimeValue() != null ? config.getRuntimeValue() : config.getDefaultValue();
                 frontendConfigurations.add(FrontendConfigurationResponse.builder()
                                                                         .key(config.getSettingKey())

@@ -57,7 +57,6 @@ public class PortalConfigurationController implements PortalConfigurationAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER', 'USER')")
     public ResponseEntity<List<FrontendConfigurationResponse>> getFrontendConfigurations(HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(PORTAL_CONFIG_GET_FRONTEND_START, INFO, request, AUDIT_NAME, userId);

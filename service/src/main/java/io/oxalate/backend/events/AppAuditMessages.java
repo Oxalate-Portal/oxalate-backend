@@ -8,6 +8,9 @@ public class AppAuditMessages {
     public static final String AUTH_AUTHENTICATION_NO_ROLES = "User has no defined roles: ";
     public static final String AUTH_AUTHENTICATION_OK = "User logged in: ";
 
+    public static final String AUTH_LOGOUT_START = "User will log out";
+    public static final String AUTH_LOGOUT_OK = "User has logged out";
+
     public static final String AUTH_REGISTRATION_START = "Registering username: ";
     public static final String AUTH_REGISTRATION_TAKEN = "Username is already registered: ";
     public static final String AUTH_REGISTRATION_OK = "Username was registered: ";
