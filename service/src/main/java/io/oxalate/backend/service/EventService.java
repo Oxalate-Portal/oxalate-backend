@@ -98,15 +98,15 @@ public class EventService {
         // PUBLISHED -> CANCELLED = Send notification for cancelled event
         if (oldStatus.equals(EventStatusEnum.DRAFTED)
                 && newStatus.equals(EventStatusEnum.PUBLISHED)
-                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "event-new")) {
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "event-new")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.NEW, updatedEvent.getId());
         } else if (oldStatus.equals(EventStatusEnum.PUBLISHED)
                 && newStatus.equals(EventStatusEnum.PUBLISHED)
-                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "event-updated")) {
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "event-updated")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.UPDATED, updatedEvent.getId());
         } else if ((oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.CANCELLED)
                 || oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.DRAFTED))
-                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "event-removed")) {
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "event-removed")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, updatedEvent.getId());
         }
 

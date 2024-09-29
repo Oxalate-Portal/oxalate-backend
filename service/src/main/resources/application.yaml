@@ -11,7 +11,6 @@ spring:
     hikari:
       schema: override-me
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: validate
     show-sql: false

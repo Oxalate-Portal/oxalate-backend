@@ -14,7 +14,8 @@ CREATE TABLE portal_configuration
 INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime,description)
     VALUES
     ('string',  'general',  'org-name', 'Oxalate', NULL, false, 'Name of the organization'),
-    ('string',  'general',  'default-language', 'en', NULL, false,'Default language for the portal, ISO-639 format'),
+    ('string',  'general',  'default-language', 'en', NULL, false,'Default language for the portal, must be one fo the enabled languages, ISO-639 format'),
+    ('array',   'general',  'enabled-language', 'de,en,fi,sv', NULL, false,'Which languages are enabled, ISO-639 format'),
     ('email',   'email',    'org-email', 'org@non-existing.tld', NULL, true, 'Organization email address'),
     ('email',   'email',    'support-email', 'support@non-existing.tld', NULL, true, 'Support email address'),
     ('email',   'email',    'system-email', 'system@non-existing.tld', NULL, true, 'System email adddress, usually a no-reply address'),
@@ -30,7 +31,8 @@ INSERT INTO portal_configuration (value_type, group_key, setting_key, default_va
     ('number',  'frontend', 'min-participants', '3', NULL, false, 'Minimum number of simultaneous participants for an dive event to take place'),
     ('number',  'frontend', 'max-participants', '30', NULL, false, 'Maximum number of simultaneous participants'),
     ('number',  'frontend', 'max-depth', '60', NULL, false, 'Maximum depth of dives'),
-    ('array',   'frontend', 'types-of-event', 'open-water,cave,open-and-cave,surface,boat,current', NULL, false, 'Maximum depth of dives')
+    ('array',   'frontend', 'types-of-event', 'open-water,cave,open-and-cave,surface,boat,current', NULL, false, 'Maximum depth of dives'),
+    ('number',  'frontend', 'max-certificates', '50', NULL, false, 'Maximum number of certificates a diver can add')
     ;
 
 UPDATE events SET type = 'open-water' WHERE type = 'Avo';

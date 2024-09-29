@@ -335,7 +335,7 @@ public class PageService {
 
         if (newPage.getStatus()
                    .equals(PageStatusEnum.PUBLISHED)
-                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "page-new")) {
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-new")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.NEW, newPage.getId());
         }
 
@@ -442,15 +442,15 @@ public class PageService {
 
         if (oldStatus.equals(PageStatusEnum.DRAFTED)
                 && newPageStatus.equals(PageStatusEnum.PUBLISHED)
-                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "page-new")) {
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-new")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.NEW, newPage.getId());
         } else if (oldStatus.equals(PageStatusEnum.PUBLISHED)
                 && newPageStatus.equals(PageStatusEnum.PUBLISHED)
-                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "page-updated")) {
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-updated")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.UPDATED, newPage.getId());
         } else if (oldStatus.equals(PageStatusEnum.PUBLISHED)
                 && newPageStatus.equals(PageStatusEnum.DELETED)
-                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "page-removed")) {
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-removed")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.DELETED, newPage.getId());
         }
 
@@ -487,7 +487,7 @@ public class PageService {
                                     .getStatus();
 
         if (oldStatus.equals(PageStatusEnum.PUBLISHED)
-                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS, "page-removed")) {
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-removed")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.DELETED, pageId);
         }
 

@@ -38,7 +38,8 @@ public enum PortalConfigEnum {
         MAX_PARTICIPANTS("max-participants"),
         MIN_EVENT_LENGTH("min-event-length"),
         MIN_PARTICIPANTS("min-participants"),
-        TYPES_OF_EVENT("types-of-event");
+        TYPES_OF_EVENT("types-of-event"),
+        MAX_CERTIFICATES("max-certificates");
 
         public final String key;
 
@@ -50,6 +51,7 @@ public enum PortalConfigEnum {
     // Sub-enum for general-related settings
     public enum GeneralConfigEnum {
         DEFAULT_LANGUAGE("default-language"),
+        ENABLED_LANGUAGES("enabled-language"),
         ORG_NAME("org-name");
 
         public final String key;
