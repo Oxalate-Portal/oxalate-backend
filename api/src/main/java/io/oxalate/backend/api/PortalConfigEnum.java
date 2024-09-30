@@ -52,7 +52,8 @@ public enum PortalConfigEnum {
     public enum GeneralConfigEnum {
         DEFAULT_LANGUAGE("default-language"),
         ENABLED_LANGUAGES("enabled-language"),
-        ORG_NAME("org-name");
+        ORG_NAME("org-name"),
+        TOP_DIVER_LIST_SIZE("top-divers-list-size");
 
         public final String key;
 

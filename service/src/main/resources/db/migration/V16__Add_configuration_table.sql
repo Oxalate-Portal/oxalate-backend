@@ -16,6 +16,7 @@ INSERT INTO portal_configuration (value_type, group_key, setting_key, default_va
     ('string',  'general',  'org-name', 'Oxalate', NULL, false, 'Name of the organization'),
     ('string',  'general',  'default-language', 'en', NULL, false,'Default language for the portal, must be one fo the enabled languages, ISO-639 format'),
     ('array',   'general',  'enabled-language', 'de,en,fi,sv', NULL, false,'Which languages are enabled, ISO-639 format'),
+    ('number',  'general',  'top-divers-list-size', '100', NULL, false,'What is the count of top divers (counted by dives)'),
     ('email',   'email',    'org-email', 'org@non-existing.tld', NULL, true, 'Organization email address'),
     ('email',   'email',    'support-email', 'support@non-existing.tld', NULL, true, 'Support email address'),
     ('email',   'email',    'system-email', 'system@non-existing.tld', NULL, true, 'System email adddress, usually a no-reply address'),
