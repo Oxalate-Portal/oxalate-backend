@@ -7,6 +7,8 @@ services:
     container_name: {{ item.name }}_oxalate_backend
     image: "ghcr.io/oxalate-portal/oxalate-portal/oxalate-backend:${OXALATE_BACKEND_VERSION}"
     restart: always
+    volumes:
+      - ${OXALATE_BACKEND_UPLOAD_DIRECTORY}:/oxalate/files
     ports:
       - "{{ item.ext_app_port }}:8080"
     depends_on:
@@ -39,8 +41,6 @@ services:
       - oxalate.first-time={{ oxalate_installation_first_time }}
       - oxalate.admin.username={{ oxalate_admin_email }}
       - oxalate.admin.hashed-password={{ oxalate_admin_password }}
-    volumes:
-      - ${OXALATE_BACKEND_UPLOAD_DIRECTORY}:/oxalate/files
 
   db:
     hostname: oxalate-db
