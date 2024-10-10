@@ -1,6 +1,8 @@
 package io.oxalate.backend.security;
 
 import static io.oxalate.backend.api.UrlConstants.API;
+import static io.oxalate.backend.api.UrlConstants.DIVE_PLANS_URL;
+import static io.oxalate.backend.api.UrlConstants.DOCUMENTS_URL;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import static io.oxalate.backend.api.UrlConstants.PAGES_URL;
 import io.oxalate.backend.events.AppEventPublisher;
@@ -64,7 +66,13 @@ public class WebSecurityConfig {
                             .permitAll()
                             .requestMatchers(PAGES_URL + "/**") // We check the permissions in the calls as some pages may not require authentication
                             .permitAll()
-                            .requestMatchers(HttpMethod.GET, FILES_URL + "/**") // The GET to files are all download, and we check the permissions in the calls
+                            .requestMatchers(HttpMethod.GET, FILES_URL + "/**")
+                            .permitAll()
+                            .requestMatchers(HttpMethod.GET, DOCUMENTS_URL + "/**")
+                            .permitAll()
+                            .requestMatchers(HttpMethod.GET, DIVE_PLANS_URL + "/**")
+                            .permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/configurations/frontend") // Allow fetching of frontend configurations
                             .permitAll()
                             .requestMatchers("/actuator/**")
                             .permitAll()

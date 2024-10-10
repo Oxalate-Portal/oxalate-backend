@@ -25,7 +25,6 @@ logging:
 
 oxalate:
   app:
-    org-name: Oxalate Portal
     env: local
     backend-url: http://localhost:8080
     frontend-url: http://localhost:3000
@@ -34,14 +33,6 @@ oxalate:
   cors:
     allowed-origins: ${oxalate.app.frontend-url},http://localhost:3001
   first-time: false
-  mail:
-    enabled: false
-    system-email: noreply@nonexisting.tld
-    org-email: org@nonexisting.tld
-    support-email: support@nonexisting.tld
-  payment:
-    period-start-month: 1 # 1 = January, 12 = December
-    event-requires-payment: false
   captcha:
     enabled: true
     site-key: <Set your Google captcha site key>

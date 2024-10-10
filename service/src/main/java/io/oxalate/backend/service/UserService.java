@@ -12,6 +12,7 @@ import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -105,6 +106,17 @@ public class UserService {
         user.setOrganizedEvents(organizedEvents);
         user.setPayments(paymentService.getActivePaymentsByUser(user.getId()));
         user.setDiveCount(eventRepository.countDivesByUserId(user.getId()));
+    }
+
+    @Transactional
+    public void logoutUser(long userId) {
+        var optionalUser = userRepository.findById(userId);
+
+        if (optionalUser.isPresent()) {
+            var user = optionalUser.get();
+            user.setLastSeen(Instant.now());
+            userRepository.save(user);
+        }
     }
 
     @Transactional

@@ -80,7 +80,7 @@ public class PageManagementController implements PageManagementAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageGroupResponse> createPageGroup(PageGroupRequest pathRequests, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(MGMNT_PAGES_CREATE_GROUP_START, INFO, request, AUDIT_NAME, userId);
@@ -99,7 +99,7 @@ public class PageManagementController implements PageManagementAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageGroupResponse> updatePageGroup(PageGroupRequest pathRequests, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(MGMNT_PAGES_UPDATE_PAGE_GROUP_START, INFO, request, AUDIT_NAME, userId);
@@ -118,7 +118,7 @@ public class PageManagementController implements PageManagementAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<HttpStatus> closePageGroup(long pageGroupId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(MGMNT_PAGES_CLOSE_PAGE_GROUP_START, INFO, request, AUDIT_NAME, userId);

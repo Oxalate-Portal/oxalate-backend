@@ -3,6 +3,8 @@ package io.oxalate.backend.service;
 import io.oxalate.backend.api.EmailNotificationDetailEnum;
 import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.PageStatusEnum;
+import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
+import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageRequest;
@@ -42,6 +44,7 @@ public class PageService {
     private final PageRoleAccessRepository pageRoleAccessRepository;
     private final PageVersionRepository pageVersionRepository;
     private final EmailQueueService emailQueueService;
+    private final PortalConfigurationService portalConfigurationService;
 
     private final long RESERVED_PAGE_GROUP_ID = 1;
 
@@ -53,8 +56,11 @@ public class PageService {
             return null;
         }
 
-        if (!optionalPage.get().getStatus().equals(PageStatusEnum.PUBLISHED)) {
-            log.info("Attempted to fetch page with ID {} which was not public {}", pageId, optionalPage.get().getStatus());
+        if (!optionalPage.get()
+                         .getStatus()
+                         .equals(PageStatusEnum.PUBLISHED)) {
+            log.info("Attempted to fetch page with ID {} which was not public {}", pageId, optionalPage.get()
+                                                                                                       .getStatus());
             return null;
         }
 
@@ -105,7 +111,8 @@ public class PageService {
             for (var page : pageGroup.getPages()) {
                 var permissionList = pageRoleAccessRepository.findByPageIdAndRoleIn(page.getId(), roles);
                 // In addition to access, the page must be public
-                if (!permissionList.isEmpty() && page.getStatus().equals(PageStatusEnum.PUBLISHED)) {
+                if (!permissionList.isEmpty() && page.getStatus()
+                                                     .equals(PageStatusEnum.PUBLISHED)) {
                     pageListFiltered.add(page);
                 }
             }
@@ -203,8 +210,10 @@ public class PageService {
 
             if (newPageGroupVersionRequest.isPresent()) {
                 // Update the page group
-                existingPageGroupVersion.setTitle(newPageGroupVersionRequest.get().getTitle());
-                existingPageGroupVersion.setLanguage(newPageGroupVersionRequest.get().getLanguage());
+                existingPageGroupVersion.setTitle(newPageGroupVersionRequest.get()
+                                                                            .getTitle());
+                existingPageGroupVersion.setLanguage(newPageGroupVersionRequest.get()
+                                                                               .getLanguage());
                 pageGroupVersionRepository.save(existingPageGroupVersion);
 
                 // Remove the request from the list
@@ -223,7 +232,8 @@ public class PageService {
         }
 
         // If the new status of the page group is DELETE, then update also all the pages in the group
-        if (pageGroupRequest.getStatus().equals(PageStatusEnum.DELETED)) {
+        if (pageGroupRequest.getStatus()
+                            .equals(PageStatusEnum.DELETED)) {
             var pages = pageRepository.findAllByPageGroupIdOrderByIdAsc(pageGroupRequest.getId());
             closePages(pages);
         }
@@ -323,7 +333,9 @@ public class PageService {
             pageRoleAccessRepository.save(pageRoleAccess);
         }
 
-        if (newPage.getStatus().equals(PageStatusEnum.PUBLISHED)) {
+        if (newPage.getStatus()
+                   .equals(PageStatusEnum.PUBLISHED)
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-new")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.NEW, newPage.getId());
         }
 
@@ -418,6 +430,7 @@ public class PageService {
             pageRoleAccessRepository.save(newPageRoleAccess);
         }
 
+        var oldStatus = page.getStatus();
         // Finally update the page
         page.setStatus(pageRequest.getStatus());
         page.setPageGroupId(pageRequest.getPageGroupId());
@@ -425,10 +438,20 @@ public class PageService {
         page.setModifiedAt(Instant.now());
         page.setPageGroupId(pageRequest.getPageGroupId());
         var newPage = pageRepository.save(page);
+        var newPageStatus = newPage.getStatus();
 
-        // The page may have been drafted, and now it is published
-        if (newPage.getStatus().equals(PageStatusEnum.PUBLISHED)) {
+        if (oldStatus.equals(PageStatusEnum.DRAFTED)
+                && newPageStatus.equals(PageStatusEnum.PUBLISHED)
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-new")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.NEW, newPage.getId());
+        } else if (oldStatus.equals(PageStatusEnum.PUBLISHED)
+                && newPageStatus.equals(PageStatusEnum.PUBLISHED)
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-updated")) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.UPDATED, newPage.getId());
+        } else if (oldStatus.equals(PageStatusEnum.PUBLISHED)
+                && newPageStatus.equals(PageStatusEnum.DELETED)
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-removed")) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.DELETED, newPage.getId());
         }
 
         populatePage(newPage, null);
@@ -458,6 +481,14 @@ public class PageService {
 
         if (optionalPage.isEmpty()) {
             return false;
+        }
+
+        var oldStatus = optionalPage.get()
+                                    .getStatus();
+
+        if (oldStatus.equals(PageStatusEnum.PUBLISHED)
+                && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "page-removed")) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.PAGE, EmailNotificationDetailEnum.DELETED, pageId);
         }
 
         pageRepository.updateStatus(pageId, PageStatusEnum.DELETED.name());

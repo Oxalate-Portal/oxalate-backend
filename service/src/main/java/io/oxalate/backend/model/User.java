@@ -98,6 +98,9 @@ public class User {
     @Column(name = "language")
     private String language;
 
+    @Column(name = "last_seen")
+    private Instant lastSeen;
+
     @Transient
     private Set<Role> roles;
 
@@ -131,6 +134,7 @@ public class User {
         this.approvedTerms = signupRequest.isApprovedTerms();
         this.language = signupRequest.getLanguage();
         this.diveCount = 0L;
+        this.lastSeen = Instant.now();
     }
 
     public EventUserResponse toEventUserResponse() {
@@ -143,11 +147,11 @@ public class User {
         }
 
         return EventUserResponse.builder()
-                .id(this.id)
-                .name(this.lastName + " " + this.firstName)
-                .eventDiveCount(this.diveCount)
-                .payments(paymentResponses)
-                .build();
+                                .id(this.id)
+                                .name(this.lastName + " " + this.firstName)
+                                .eventDiveCount(this.diveCount)
+                                .payments(paymentResponses)
+                                .build();
     }
 
     public UserResponse toUserResponse() {
@@ -160,17 +164,17 @@ public class User {
         }
 
         return UserResponse.builder()
-                .id(this.id)
-                .firstName(this.firstName)
-                .lastName(this.lastName)
-                .username(this.username)
-                .phoneNumber(this.phoneNumber)
-                .registered(this.registered)
-                .diveCount(this.diveCount)
-                .payments(paymentResponses)
-                .approvedTerms(this.approvedTerms)
+                           .id(this.id)
+                           .firstName(this.firstName)
+                           .lastName(this.lastName)
+                           .username(this.username)
+                           .phoneNumber(this.phoneNumber)
+                           .registered(this.registered)
+                           .diveCount(this.diveCount)
+                           .payments(paymentResponses)
+                           .approvedTerms(this.approvedTerms)
                            .language(this.language)
-                .build();
+                           .build();
     }
 
     public AdminUserResponse toAdminUserResponse() {
@@ -185,24 +189,27 @@ public class User {
         var roleSet = new HashSet<String>();
 
         for (Role role : this.getRoles()) {
-            roleSet.add(role.getName().name());
+            roleSet.add(role.getName()
+                            .name());
         }
 
         return AdminUserResponse.builder()
-                .id(this.id)
-                .firstName(this.firstName)
-                .lastName(this.lastName)
-                .username(this.username)
-                .status(this.getStatus().name())
-                .phoneNumber(this.phoneNumber)
-                .privacy(this.isPrivacy())
-                .nextOfKin(this.getNextOfKin())
-                .registered(this.registered)
-                .approvedTerms(this.approvedTerms)
-                .diveCount(this.diveCount)
-                .payments(paymentResponses)
-                .roles(roleSet)
+                                .id(this.id)
+                                .firstName(this.firstName)
+                                .lastName(this.lastName)
+                                .username(this.username)
+                                .status(this.getStatus()
+                                            .name())
+                                .phoneNumber(this.phoneNumber)
+                                .privacy(this.isPrivacy())
+                                .nextOfKin(this.getNextOfKin())
+                                .registered(this.registered)
+                                .approvedTerms(this.approvedTerms)
+                                .diveCount(this.diveCount)
+                                .payments(paymentResponses)
+                                .roles(roleSet)
                                 .language(this.language)
-                .build();
+                                .lastSeen(this.lastSeen)
+                                .build();
     }
 }

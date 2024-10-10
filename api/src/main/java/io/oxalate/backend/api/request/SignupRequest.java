@@ -7,8 +7,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-@Schema(description = "Signup request")
 @Data
+@Schema(description = "Signup request")
 public class SignupRequest {
     @NotBlank
     @Size(max = 80)

@@ -1,6 +1,7 @@
 package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Instant;
 import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -25,4 +26,7 @@ public class AdminUserResponse extends UserResponse {
 
     @JsonProperty("nextOfKin")
     private String nextOfKin;
+
+    @JsonProperty("lastSeen")
+    protected Instant lastSeen;
 }

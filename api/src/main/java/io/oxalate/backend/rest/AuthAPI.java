@@ -40,6 +40,16 @@ public interface AuthAPI {
     @PostMapping(value = BASE_PATH + "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request);
 
+    @Operation(description = "Logout endpoint", tags = "AuthAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Authentication successful"),
+            @ApiResponse(responseCode = "403", description = "Authentication failed"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    @GetMapping(value = BASE_PATH + "/logout")
+    ResponseEntity<Void> logout(HttpServletRequest request);
+
     @Operation(description = "Registration endpoint", tags = "AuthAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Registration request", required = true)
     @ApiResponses(value = {

@@ -28,20 +28,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 class SetupVerification implements ApplicationContextAware {
     private final String[][] requiredKeys = {
-            { "oxalate.app.org-name", "string" },
             { "oxalate.app.env", "string" },
             { "oxalate.app.backend-url", "string" },
             { "oxalate.app.frontend-url", "string" },
             { "oxalate.app.jwt-secret", "string" },
             { "oxalate.app.jwt-expiration-ms", "number" },
-            { "oxalate.language.default", "string" },
             { "oxalate.cors.allowed-origins", "string" },
-            { "oxalate.mail.enabled", "boolean" },
-            { "oxalate.mail.system-email", "string" },
-            { "oxalate.mail.org-email", "string" },
-            { "oxalate.mail.support-email", "string" },
-            { "oxalate.payment.period-start-month", "number" },
-            { "oxalate.payment.event-requires-payment", "boolean" },
             { "oxalate.captcha.enabled", "boolean" },
             { "oxalate.captcha.site-key", "string" },
             { "oxalate.captcha.secret-key", "string" },

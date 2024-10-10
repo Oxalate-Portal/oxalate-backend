@@ -7,6 +7,8 @@ services:
     container_name: {{ item.name }}_oxalate_backend
     image: "ghcr.io/oxalate-portal/oxalate-portal/oxalate-backend:${OXALATE_BACKEND_VERSION}"
     restart: always
+    volumes:
+      - ${OXALATE_BACKEND_UPLOAD_DIRECTORY}:/oxalate/files
     ports:
       - "{{ item.ext_app_port }}:8080"
     depends_on:
@@ -26,19 +28,11 @@ services:
       - spring.mail.properties.mail.smtp.auth=true
       - spring.mail.properties.mail.smtp.starttls.enable=true
       - logging.level.io.oxalate=info
-      - oxalate.app.org-name={{ oxalate_app_org_name }}
       - oxalate.app.env={{ item.name }}
       - oxalate.app.backend-url=https://{{ item.hostname }}
       - oxalate.app.frontend-url=https://{{ item.hostname }}
       - oxalate.app.jwt-secret={{ oxalate_app_jwt_secret }}
       - oxalate.app.jwt-expiration-ms=86400000
-      - oxalate.language.default={{ oxalate_language_default }}
-      - oxalate.mail.enabled={{ item.mail_enabled }}
-      - oxalate.mail.system-email={{ oxalate_mail_system_email }}
-      - oxalate.mail.org-email={{ oxalate_mail_org_email }}
-      - oxalate.mail.support-email={{ oxalate_mail_support_email }}
-      - oxalate.payment.period-start-month=1
-      - oxalate.payment.event-require-payment=false
       - oxalate.captcha.enabled={{ item.captcha_enabled }}
       - oxalate.captcha.site-key={{ oxalate_captcha_site_key }}
       - oxalate.captcha.secret-key={{ oxalate_captcha_secret_key }}
@@ -47,8 +41,6 @@ services:
       - oxalate.first-time={{ oxalate_installation_first_time }}
       - oxalate.admin.username={{ oxalate_admin_email }}
       - oxalate.admin.hashed-password={{ oxalate_admin_password }}
-    volumes:
-      - ${OXALATE_BACKEND_UPLOAD_DIRECTORY}:/oxalate/files
 
   db:
     hostname: oxalate-db

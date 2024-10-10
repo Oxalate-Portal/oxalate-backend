@@ -22,6 +22,8 @@ import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_NON
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_NO_ROLES;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_OK;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_START;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOGOUT_OK;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOGOUT_START;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOST_PASSWORD_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOST_PASSWORD_INACTIVE_STATUS;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOST_PASSWORD_OK;
@@ -198,6 +200,16 @@ public class AuthController implements AuthAPI {
         appEventPublisher.publishAuditEvent(AUTH_AUTHENTICATION_OK + loginRequest.getUsername(), INFO, request, AUDIT_NAME, user.getId(), auditUuid);
         return ResponseEntity.status(HttpStatus.OK)
                              .body(jwtResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        var userId = AuthTools.getCurrentUserId();
+        var auditUuid = appEventPublisher.publishAuditEvent(AUTH_LOGOUT_START, INFO, request, AUDIT_NAME, userId);
+        userService.logoutUser(userId);
+        appEventPublisher.publishAuditEvent(AUTH_LOGOUT_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
+        return null;
     }
 
     @Override

@@ -1,5 +1,7 @@
 package io.oxalate.backend.service;
 
+import static io.oxalate.backend.api.PortalConfigEnum.FRONTEND;
+import static io.oxalate.backend.api.PortalConfigEnum.FrontendConfigEnum.MAX_CERTIFICATES;
 import static io.oxalate.backend.api.UploadDirectoryConstants.CERTIFICATES;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import io.oxalate.backend.api.request.CertificateRequest;
@@ -28,6 +30,7 @@ public class CertificateService {
 
     private final CertificateRepository certificateRepository;
     private final CertificateDocumentRepository certificateDocumentRepository;
+    private final PortalConfigurationService portalConfigurationService;
 
     @Value("${oxalate.app.backend-url}")
     private String backendUrl;
@@ -66,6 +69,14 @@ public class CertificateService {
             verifyCertificateRequest(certificateRequest);
         } catch (IllegalArgumentException e) {
             log.warn("Certificate request is invalid: {}", e.getMessage());
+            return null;
+        }
+
+        // Check first whether the user has already 50 certificates
+        var certificates = certificateRepository.findByUserIdOrderByCertificationDateAsc(userId);
+
+        if (certificates.size() >= portalConfigurationService.getNumericConfiguration(FRONTEND.group, MAX_CERTIFICATES.key)) {
+            log.warn("User ID {} attempted to add more than 50 certificates", userId);
             return null;
         }
 

@@ -148,7 +148,7 @@ public class FileTransferController implements FileTransferAPI {
         return avatarFileTransferService.downloadAvatarFile(avatarId);
     }
 
-    @PreAuthorize("hasAnyRole('USER')")
+    @PreAuthorize("hasRole('USER')")
     @Override
     public ResponseEntity<FileRemovalResponse> removeAvatarFile(long avatarId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
@@ -194,7 +194,7 @@ public class FileTransferController implements FileTransferAPI {
         return ResponseEntity.ok(allCertificateFiles);
     }
 
-    @PreAuthorize("hasAnyRole('USER')")
+    @PreAuthorize("hasRole('USER')")
     @Override
     public ResponseEntity<?> uploadCertificateFile(MultipartFile uploadFile, long certificateId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
@@ -240,7 +240,7 @@ public class FileTransferController implements FileTransferAPI {
         return response;
     }
 
-    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER')")
     @Override
     public ResponseEntity<FileRemovalResponse> removeCertificateFile(long certificateId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
@@ -285,7 +285,7 @@ public class FileTransferController implements FileTransferAPI {
         return ResponseEntity.ok(allDiveFiles);
     }
 
-    @PreAuthorize("hasAnyRole('USER')")
+    @PreAuthorize("hasRole('USER')")
     @Override
     public ResponseEntity<?> uploadDiveFile(MultipartFile uploadFile, long eventId, long diveGroupId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
@@ -343,7 +343,7 @@ public class FileTransferController implements FileTransferAPI {
         return ResponseEntity.ok(allDocumentFiles);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Override
     public ResponseEntity<?> uploadDocumentFile(MultipartFile uploadFile, HttpServletRequest request) {
         log.debug("Uploading document file: {}", uploadFile.getOriginalFilename());
@@ -371,7 +371,7 @@ public class FileTransferController implements FileTransferAPI {
         return documentFileTransferService.downloadDocumentFile(documentId);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Override
     public ResponseEntity<FileRemovalResponse> removeDocumentFile(long documentId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();

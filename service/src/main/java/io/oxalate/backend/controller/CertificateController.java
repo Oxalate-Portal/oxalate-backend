@@ -51,7 +51,7 @@ public class CertificateController implements CertificateAPI {
     private final AppEventPublisher appEventPublisher;
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<CertificateResponse>> getAllCertificates(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 

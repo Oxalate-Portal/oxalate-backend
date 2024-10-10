@@ -1,5 +1,6 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.PortalConfigEnum;
 import io.oxalate.backend.api.response.stats.DiverListItemResponse;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
 import io.oxalate.backend.api.response.stats.EventReportResponse;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class StatsService {
     private final EntityManager entityManager;
+    private final PortalConfigurationService portalConfigurationService;
 
     public List<MultiYearValue> getYearlyRegistrations() {
 
@@ -155,7 +157,7 @@ public class StatsService {
     public List<YearlyDiversListResponse> getYearlyDiversList() {
         var yearlyList = new ArrayList<YearlyDiversListResponse>();
         var firstYear = getOldestEventYear();
-
+        var diverListSize = portalConfigurationService.getNumericConfiguration(PortalConfigEnum.GENERAL.group, PortalConfigEnum.GeneralConfigEnum.TOP_DIVER_LIST_SIZE.key);
         // If we do not have any data, then we return empty list
         if (firstYear == 0L) {
             log.warn("No dives found for top 50 divers");
@@ -175,7 +177,7 @@ public class StatsService {
                     + "  AND EXTRACT('Year' FROM e.start_time) = " + i + " "
                     + "GROUP BY u.id "
                     + "ORDER BY diveCount DESC "
-                    + "LIMIT 50";
+                    + "LIMIT " + diverListSize;
 
             var query = entityManager.createNativeQuery(queryString);
             List<Object[]> results = query.getResultList();

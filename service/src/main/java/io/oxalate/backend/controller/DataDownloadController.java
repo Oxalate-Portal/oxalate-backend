@@ -37,7 +37,7 @@ public class DataDownloadController implements DataDownloadAPI {
     private final DataDownloadService dataDownloadService;
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<DownloadCertificateResponse>> downloadCertificates(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(DATA_DOWNLOAD_CERTIFICATES_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
@@ -66,7 +66,7 @@ public class DataDownloadController implements DataDownloadAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<DownloadPaymentResponse>> downloadPayments(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(DATA_DOWNLOAD_PAYMENTS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 

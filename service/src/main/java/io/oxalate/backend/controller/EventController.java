@@ -200,7 +200,7 @@ public class EventController implements EventAPI {
     }
 
     @Override
-    @PreAuthorize("hasRole('ORGANIZER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<EventResponse> createEvent(EventRequest eventRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(EVENTS_CREATE_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 

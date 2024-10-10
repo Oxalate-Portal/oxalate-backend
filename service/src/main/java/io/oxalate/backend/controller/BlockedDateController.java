@@ -53,7 +53,7 @@ public class BlockedDateController implements BlockedDateAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BlockedDateResponse> addBlockedDate(BlockedDateRequest blockedDateRequest, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(BLOCKED_DATE_ADD_START, INFO, request, AUDIT_NAME, userId);
@@ -70,7 +70,7 @@ public class BlockedDateController implements BlockedDateAPI {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> removeBlockedDate(long blockedDateId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(BLOCKED_DATE_REMOVE_START, INFO, request, AUDIT_NAME, userId);
