@@ -145,12 +145,12 @@
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging-annotations</artifactId>
-                <version>3.0.1.Final</version>
+                <version>3.0.2.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging-processor</artifactId>
-                <version>3.0.1.Final</version>
+                <version>3.0.2.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.github.classgraph</groupId>
@@ -160,7 +160,7 @@
             <dependency>
                 <groupId>org.checkerframework</groupId>
                 <artifactId>checker-qual</artifactId>
-                <version>3.48.0</version>
+                <version>3.48.1</version>
             </dependency>
             <dependency>
                 <groupId>io.swagger.core.v3</groupId>
