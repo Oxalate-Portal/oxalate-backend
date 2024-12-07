@@ -50,7 +50,8 @@ management:
     web:
       exposure:
         include: [ "openapi", "swagger-ui" ]
-    enabled-by-default: true
+    access:
+      default:
 
 #  These values come from Maven
 info:
