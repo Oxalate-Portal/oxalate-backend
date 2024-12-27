@@ -8,7 +8,6 @@ import io.oxalate.backend.api.response.stats.MultiYearValue;
 import io.oxalate.backend.api.response.stats.YearlyDiversListResponse;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.Year;
 import java.util.ArrayList;
@@ -267,14 +266,14 @@ public class StatsService {
 
         for (Object[] o : results) {
             var eventId = (Long) o[0];
-            var eventDateTime = (Timestamp) o[1];
+            var eventDateTime = (Instant) o[1];
             var organizerName = (String) o[2];
             var eventCount = (Long) o[3];
             var diveCount = (Long) o[4];
 
             var response = EventReportResponse.builder()
                                               .eventId(eventId)
-                                              .eventDateTime(eventDateTime.toInstant())
+                                              .eventDateTime(eventDateTime)
                                               .organizerName(organizerName)
                                               .participantCount(eventCount.intValue())
                                               .diveCount(diveCount.intValue())

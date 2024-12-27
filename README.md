@@ -4,7 +4,7 @@ If you're looking for installation or management documentation, see the [documen
 
 ## Structure
 
-The project is a multimodule project where we've separated the REST API to [`api`](api/) module, while the server code is in [`service`](service/) module.
+The project is a multi-module project where we've separated the REST API to [`api`](api/) module, while the server code is in [`service`](service/) module.
 
 ## Application documentation
 

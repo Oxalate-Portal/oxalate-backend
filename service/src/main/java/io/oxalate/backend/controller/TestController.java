@@ -22,7 +22,6 @@ import io.oxalate.backend.service.PortalConfigurationService;
 import io.oxalate.backend.service.RoleService;
 import io.oxalate.backend.service.UserService;
 import jakarta.persistence.EntityManager;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -159,7 +158,7 @@ public class TestController implements TestAPI {
                     .certificateName(getDiveCertificationPrefix() + " " + getDiveCertificationName())
                     .certificateId(RandomStringUtils.randomAlphabetic(7))
                     .diverId(RandomStringUtils.randomAlphabetic(7))
-                    .certificationDate(Timestamp.from(createDate.minus(RandomUtils.nextLong(100, 5000), ChronoUnit.DAYS)))
+                    .certificationDate(createDate.minus(RandomUtils.nextLong(100, 5000), ChronoUnit.DAYS))
                     .build();
             while (certificateService.findCertificateByUserOrgAndCertification(user.getId(), certificateRequest.getOrganization(),
                     certificateRequest.getCertificateName()) != null) {
@@ -168,7 +167,7 @@ public class TestController implements TestAPI {
                         .certificateName(getDiveCertificationPrefix() + " " + getDiveCertificationName())
                         .certificateId(RandomStringUtils.randomAlphabetic(7))
                         .diverId(RandomStringUtils.randomAlphabetic(7))
-                        .certificationDate(Timestamp.from(createDate.minus(RandomUtils.nextLong(100, 5000), ChronoUnit.DAYS)))
+                        .certificationDate(createDate.minus(RandomUtils.nextLong(100, 5000), ChronoUnit.DAYS))
                         .build();
             }
 
@@ -234,7 +233,7 @@ public class TestController implements TestAPI {
                 .maxDuration(RandomUtils.nextInt(30, 240))
                 .maxDepth(RandomUtils.nextInt(30, 180))
                 .maxParticipants(eventSize)
-                .startTime(Timestamp.from(createInstant))
+                .startTime(createInstant)
                 .organizerId(organizerId)
                 .status(EventStatusEnum.PUBLISHED)
                 .type(getEventType())
@@ -277,8 +276,8 @@ public class TestController implements TestAPI {
                 + "        OR (p.payment_type = 'ONE_TIME' AND p.payment_count > 0))";
 
         var query = entityManager.createNativeQuery(queryString);
-        query.setParameter("currentTime", Timestamp.from(createInstant));
-        List results = query.getResultList();
+        query.setParameter("currentTime", createInstant);
+        var results = query.getResultList();
 
         if (results.isEmpty()) {
             return;
@@ -427,7 +426,7 @@ public class TestController implements TestAPI {
             if (event.getType().equals("Vain pintatoimintaa")) {
                 addEventPaymentFromUser(participantId);
             } else {
-                deductEventPaymentFromUser(participantId, event.getStartTime().toInstant());
+                deductEventPaymentFromUser(participantId, event.getStartTime());
             }
 
             var optionalParticipant = userService.findUserById(participantId);

@@ -8,7 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.sql.Timestamp;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,7 +45,7 @@ public class Certificate {
     private String diverId;
 
     @Column(name = "certification_date")
-    private Timestamp certificationDate;
+    private Instant certificationDate;
 
     public CertificateResponse toCertificateResponse() {
         return CertificateResponse.builder()
@@ -55,7 +55,7 @@ public class Certificate {
                                   .certificateName(this.certificateName)
                                   .certificateId(this.certificateId)
                                   .diverId(this.diverId)
-                                  .certificationDate(this.certificationDate.toInstant())
+                                  .certificationDate(this.certificationDate)
                                   .build();
     }
 
@@ -67,7 +67,7 @@ public class Certificate {
                                           .certificateName(this.certificateName)
                                           .certificateId(this.certificateId)
                                           .diverId(this.diverId)
-                                          .certificationDate(this.certificationDate.toInstant())
+                                          .certificationDate(this.certificationDate)
                                           .memberName(null)
                                           .build();
     }
