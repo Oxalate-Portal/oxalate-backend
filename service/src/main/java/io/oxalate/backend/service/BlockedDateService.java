@@ -18,13 +18,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class BlockedDateService {
     private final BlockedDateRepository blockedDateRepository;
+    private final UserService userService;
 
     public List<BlockedDateResponse> getAllBlockedDates() {
         var blockedDates = blockedDateRepository.findAllByBlockedDateAfterOrderByBlockedDateAsc(Date.valueOf(LocalDate.now()));
         var blockedDateResponses = new ArrayList<BlockedDateResponse>();
 
         for (var blockedDate : blockedDates) {
-            blockedDateResponses.add(blockedDate.toResponse());
+            var blockedDateResponse = populateResponse(blockedDate);
+            blockedDateResponses.add(blockedDateResponse);
         }
 
         return blockedDateResponses;
@@ -35,9 +37,10 @@ public class BlockedDateService {
                                                             .blockedDate(blockedDateRequest.getBlockedDate())
                                                             .createdAt(Instant.now())
                                                             .creator(userId)
+                                                            .reason(blockedDateRequest.getReason())
                                                             .build());
 
-        return blocked.toResponse();
+        return populateResponse(blocked);
     }
 
     public void removeBlock(long blockId) {
@@ -48,5 +51,19 @@ public class BlockedDateService {
         var blockedDate = blockedDateRepository.findById(blockedDateId);
 
         return blockedDate.map(BlockedDate::toResponse).orElse(null);
+    }
+
+    private BlockedDateResponse populateResponse(BlockedDate blockedDate) {
+        var optionalUser = userService.findUserById(blockedDate.getCreator());
+        var username = "Unknown";
+
+        if (optionalUser.isPresent()) {
+            var user = optionalUser.get();
+            username = user.getFirstName() + " " + user.getLastName();
+        }
+
+        var blockedDateResponse = blockedDate.toResponse();
+        blockedDateResponse.setCreatorName(username);
+        return blockedDateResponse;
     }
 }
