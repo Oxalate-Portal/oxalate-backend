@@ -225,19 +225,19 @@ public class EventService {
 
     public List<EventResponse> findAllCurrentEvents() {
         var events = eventRepository.findAllCurrentEvents();
-        var eventSet = new ArrayList<EventResponse>();
+        var eventList = new ArrayList<EventResponse>();
 
         for (Event event : events) {
             var eventResponse = getPopulatedEventResponse(event);
 
             if (eventResponse.isPresent()) {
-                eventSet.add(eventResponse.get());
+                eventList.add(eventResponse.get());
             } else {
                 log.error("Event {} can not be populated to a EventResponse, the event may be in an incoherent state", event);
             }
         }
 
-        return eventSet;
+        return eventList;
     }
 
     @Transactional
