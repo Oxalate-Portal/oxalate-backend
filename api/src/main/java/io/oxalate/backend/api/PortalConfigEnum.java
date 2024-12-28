@@ -51,6 +51,7 @@ public enum PortalConfigEnum {
     // Sub-enum for general-related settings
     public enum GeneralConfigEnum {
         DEFAULT_LANGUAGE("default-language"),
+        TIMEZONE("timezone"),
         ENABLED_LANGUAGES("enabled-language"),
         ORG_NAME("org-name"),
         TOP_DIVER_LIST_SIZE("top-divers-list-size");

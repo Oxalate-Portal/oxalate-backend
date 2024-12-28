@@ -8,12 +8,15 @@ import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.SYSTEM_EMA
 import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
 import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.DEFAULT_LANGUAGE;
 import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.ORG_NAME;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.TIMEZONE;
 import io.oxalate.backend.exception.EmailNotificationException;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.PageVersion;
 import io.oxalate.backend.model.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -113,7 +116,9 @@ public class EmailService {
         context.setVariable("orgName", portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key));
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("eventTitle", event.getTitle());
-        context.setVariable("eventDate", event.getStartTime());
+        var timezoneString = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
+        var zoneId = ZoneId.of(timezoneString);
+        context.setVariable("eventDate", event.getStartTime().atZone(zoneId).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
 
         String body = templateEngine.process(templateName, context);
 
