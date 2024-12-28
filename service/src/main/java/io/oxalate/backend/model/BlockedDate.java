@@ -38,12 +38,16 @@ public class BlockedDate {
     @Column(name = "creator", nullable = false)
     private long creator;
 
+    @Column(name = "reason", nullable = false)
+    private String reason;
+
     public BlockedDateResponse toResponse() {
         return BlockedDateResponse.builder()
                                   .id(this.id)
                                   .blockedDate(this.blockedDate)
                                   .createdAt(this.createdAt)
-                                  .creator(this.creator)
+                                  .creatorName(null)
+                                  .reason(this.reason)
                                   .build();
     }
 }

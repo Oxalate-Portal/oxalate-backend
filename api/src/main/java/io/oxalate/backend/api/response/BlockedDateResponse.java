@@ -19,6 +19,8 @@ public class BlockedDateResponse {
     private Date blockedDate;
     @JsonProperty("createdAt")
     private Instant createdAt;
-    @JsonProperty("creator")
-    private long creator;
+    @JsonProperty("creatorName")
+    private String creatorName;
+    @JsonProperty("reason")
+    private String reason;
 }

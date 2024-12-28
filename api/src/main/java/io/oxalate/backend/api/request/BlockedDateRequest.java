@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BlockedDateRequest {
-    @JsonProperty("blockedDate")
+    @JsonProperty(value = "blockedDate", required = true)
     private Date blockedDate;
+    @JsonProperty(value = "reason", required = true)
+    private String reason;
 }
