@@ -3,7 +3,7 @@ package io.oxalate.backend.api.request;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.sql.Timestamp;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,5 +40,5 @@ public class CertificateRequest {
     @Schema(description = "Certification date in yyyy-mm-dd format", example = "2012-06-21", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("certificationDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private Timestamp certificationDate;
+    private Instant certificationDate;
 }

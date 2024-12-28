@@ -75,10 +75,7 @@ public class DiveFileTransferService {
         // Check that the event is in the future
         var event = eventService.findById(eventId);
         // If the event start time is in the past, then fail
-        // First convert the timestamp to an Instant
-        var eventStartTime = Instant.ofEpochMilli(event.getStartTime().getTime());
-
-        if (eventStartTime.isBefore(Instant.now())) {
+        if (event.getStartTime().isBefore(Instant.now())) {
             log.error("Event is in the past: {}", eventId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event is in the past");
         }

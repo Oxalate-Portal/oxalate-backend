@@ -12,7 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
-import java.sql.Timestamp;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -44,7 +44,7 @@ public class Event {
     private String description;
 
     @Column(name = "start_time")
-    private Timestamp startTime;
+    private Instant startTime;
 
     @Column(name = "event_duration")
     private int eventDuration;

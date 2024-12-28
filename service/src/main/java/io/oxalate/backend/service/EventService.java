@@ -18,7 +18,6 @@ import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
 import jakarta.transaction.Transactional;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -183,17 +182,17 @@ public class EventService {
     /**
      * Returns all events that have status PUBLISHED and have a start time after the given timestamp
      *
-     * @param timestamp Timestamp The timestamp after which the events should have started
+     * @param instant Instant The instant after which the events should have started
      * @param allEvents boolean Whether to return all events or only published ones
      * @return List<EventResponse>
      */
-    public List<EventResponse> findAllEventsAfter(Timestamp timestamp, boolean allEvents) {
+    public List<EventResponse> findAllEventsAfter(Instant instant, boolean allEvents) {
         List<Event> events;
 
         if (allEvents) {
-            events = eventRepository.findByStartTimeAfterOrderByStartTimeAsc(timestamp);
+            events = eventRepository.findByStartTimeAfterOrderByStartTimeAsc(instant);
         } else {
-            events = eventRepository.findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum.PUBLISHED, timestamp);
+            events = eventRepository.findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum.PUBLISHED, instant);
         }
 
         var eventResponses = new ArrayList<EventResponse>();

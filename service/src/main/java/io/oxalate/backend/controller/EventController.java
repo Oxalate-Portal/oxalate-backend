@@ -71,7 +71,6 @@ import io.oxalate.backend.service.EventService;
 import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
 import jakarta.servlet.http.HttpServletRequest;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -106,7 +105,7 @@ public class EventController implements EventAPI {
         }
 
         try {
-            var events = eventService.findAllEventsAfter(Timestamp.from(Instant.now()), AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN));
+            var events = eventService.findAllEventsAfter(Instant.now(), AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN));
 
             if (events.isEmpty()) {
                 log.debug("No future events found");
@@ -213,8 +212,7 @@ public class EventController implements EventAPI {
                                  .body(null);
         }
 
-        if (eventRequest.getStartTime()
-                        .before(Timestamp.from(Instant.now()))) {
+        if (eventRequest.getStartTime().isBefore(Instant.now())) {
             appEventPublisher.publishAuditEvent(EVENTS_CREATE_INVALID_DATETIME + eventRequest.getStartTime(), ERROR, request, AUDIT_NAME,
                     AuthTools.getCurrentUserId(), auditUuid);
             log.warn("Can not create an event {} with start time is set before present", eventRequest.getId());
@@ -271,9 +269,9 @@ public class EventController implements EventAPI {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
 
-        var calculatedEndTime = Timestamp.from(eventRequest.getStartTime().toInstant().plus(eventRequest.getEventDuration(), ChronoUnit.HOURS));
+        var calculatedEndTime = eventRequest.getStartTime().plus(eventRequest.getEventDuration(), ChronoUnit.HOURS);
         // We allow edit to an ongoing event, but not to an event that has already ended
-        if (Timestamp.from(Instant.now()).after(calculatedEndTime)) {
+        if (Instant.now().isAfter(calculatedEndTime)) {
             appEventPublisher.publishAuditEvent(EVENTS_UPDATE_INVALID_DATETIME + calculatedEndTime, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
                     auditUuid);
             log.warn("Can't update an event {} which calculated end time {} has passed", eventRequest.getId(), calculatedEndTime);

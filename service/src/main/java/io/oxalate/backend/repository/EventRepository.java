@@ -2,7 +2,6 @@ package io.oxalate.backend.repository;
 
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.model.Event;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.jpa.repository.Modifying;
@@ -13,9 +12,9 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EventRepository extends CrudRepository<Event, Long> {
-    List<Event> findByStartTimeAfterOrderByStartTimeAsc(Timestamp timestamp);
+    List<Event> findByStartTimeAfterOrderByStartTimeAsc(Instant instant);
 
-    List<Event> findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum status, Timestamp timestamp);
+    List<Event> findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum status, Instant instant);
 
     @Query(nativeQuery = true, value = "SELECT * FROM events e WHERE e.start_time < :until ORDER BY e.start_time DESC")
     List<Event> findAllEventsBefore(Instant until);

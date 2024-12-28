@@ -2,7 +2,7 @@ package io.oxalate.backend.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Size;
-import java.sql.Timestamp;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,7 +29,7 @@ public abstract class AbstractEvent {
     private String description;
 
     @JsonProperty("startTime")
-    private Timestamp startTime;
+    private Instant startTime;
 
     @JsonProperty("eventDuration")
     private int eventDuration;
