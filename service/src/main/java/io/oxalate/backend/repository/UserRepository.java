@@ -3,7 +3,6 @@ package io.oxalate.backend.repository;
 import io.oxalate.backend.model.User;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -23,8 +22,9 @@ public interface UserRepository extends ListCrudRepository<User, Long>, CrudRepo
     @Query(nativeQuery = true, value =
             "SELECT u.* FROM events e, event_participants ep, users u " +
                     "WHERE e.id = :eventId AND e.id = ep.event_id AND ep.user_id = u.id " +
-                    "AND ep.participant_type IN (:participantTypes)")
-    Set<User> findEventParticipantsByTypes(@Param("eventId") long eventId, @Param("participantTypes") List<String> participantTypes);
+                    "AND ep.participant_type IN (:participantTypes)" +
+                    "ORDER BY ep.created_at")
+    List<User> findEventParticipantsByTypesOrderByRegistrationTime(@Param("eventId") long eventId, @Param("participantTypes") List<String> participantTypes);
 
     @Query(nativeQuery = true, value =
             "SELECT DISTINCT u.* FROM user_roles ur, users u WHERE u.id = ur.user_id AND ur.role_id = :roleId AND u.status <> 'ANONYMIZED'")

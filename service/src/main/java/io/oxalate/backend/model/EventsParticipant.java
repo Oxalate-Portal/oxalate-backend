@@ -10,6 +10,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -41,6 +42,9 @@ public class EventsParticipant {
     @Column(name = "payment_type")
     @Enumerated(EnumType.STRING)
     private PaymentTypeEnum paymentType;
+
+    @Column(name = "created_at")
+    private Instant createdAt;
 
     public EventDiveResponse toEventDiveResponse(String name) {
         return EventDiveResponse.builder()

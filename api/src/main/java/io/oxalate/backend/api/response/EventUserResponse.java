@@ -1,6 +1,7 @@
 package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Instant;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +22,9 @@ public class EventUserResponse {
 
     @JsonProperty("eventDiveCount")
     protected long eventDiveCount;
+
+    @JsonProperty("createdAt")
+    protected Instant createdAt;
 
     @JsonProperty("payments")
     protected Set<PaymentResponse> payments;
