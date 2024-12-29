@@ -3,7 +3,7 @@ package io.oxalate.backend.api.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.AbstractEvent;
 import io.oxalate.backend.api.EventStatusEnum;
-import java.util.Set;
+import java.util.List;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
@@ -18,5 +18,5 @@ public class EventResponse extends AbstractEvent {
     private UserResponse organizer;
 
     @JsonProperty("participants")
-    private Set<EventUserResponse> participants;
+    private List<EventUserResponse> participants;
 }

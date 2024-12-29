@@ -1,6 +1,7 @@
 package io.oxalate.backend.repository;
 
 import io.oxalate.backend.model.EventsParticipant;
+import java.util.List;
 import java.util.Set;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -13,4 +14,8 @@ public interface EventParticipantsRepository extends CrudRepository<EventsPartic
 
     @Query(nativeQuery = true, value = "SELECT ep.dive_count FROM event_participants ep WHERE ep.user_id = :userId AND ep.event_id = :eventId")
     long countDivesByUserIdAndEventId(@Param("userId") long userId, @Param("eventId") long eventId);
+
+    EventsParticipant findByEventIdAndUserId(long eventId, Long userId);
+
+    List<EventsParticipant> findAllByEventId(long eventId);
 }

@@ -16,7 +16,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,8 +84,8 @@ public class UserService {
         return newUser;
     }
 
-    public Set<User> findEventParticipants(Long eventId) {
-        var participants = userRepository.findEventParticipantsByTypes(eventId, List.of(ParticipantTypeEnum.USER.name()));
+    public List<User> findEventParticipants(Long eventId) {
+        var participants = userRepository.findEventParticipantsByTypesOrderByRegistrationTime(eventId, List.of(ParticipantTypeEnum.USER.name()));
 
         for (User user : participants) {
             populateUser(user);

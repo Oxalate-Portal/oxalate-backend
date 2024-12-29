@@ -150,6 +150,7 @@ public class User {
                                 .id(this.id)
                                 .name(this.lastName + " " + this.firstName)
                                 .eventDiveCount(this.diveCount)
+                                .createdAt(null)
                                 .payments(paymentResponses)
                                 .build();
     }

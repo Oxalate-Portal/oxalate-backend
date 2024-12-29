@@ -102,17 +102,19 @@ public class UserController implements UserAPI {
     /**
      * Update user info
      *
-        * @param updateRequest Update request
+     * @param updateRequest Update request
      * @return HTTP response
      */
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<AdminUserResponse> updateUser(UserUpdateRequest updateRequest, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(USERS_UPDATE_START + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+        var auditUuid = appEventPublisher.publishAuditEvent(USERS_UPDATE_START + updateRequest.getId(), INFO, request, AUDIT_NAME,
+                AuthTools.getCurrentUserId());
 
         // Only admins can update other users
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN) && AuthTools.getCurrentUserId() != updateRequest.getId()) {
-            appEventPublisher.publishAuditEvent(USERS_UPDATE_UNAUTHORIZED + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            appEventPublisher.publishAuditEvent(USERS_UPDATE_UNAUTHORIZED + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
+                    auditUuid);
             log.error("User {} tried to update user {} info", AuthTools.getCurrentUserId(), updateRequest.getId());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                                  .body(null);
@@ -122,27 +124,34 @@ public class UserController implements UserAPI {
             Optional<User> optionalUser = userService.findUserById(updateRequest.getId());
 
             if (optionalUser.isEmpty()) {
-                appEventPublisher.publishAuditEvent(USERS_UPDATE_NOT_FOUND + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+                appEventPublisher.publishAuditEvent(USERS_UPDATE_NOT_FOUND + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
+                        auditUuid);
                 log.warn("Non-existing user {} tried to update their data with {}", updateRequest.getId(), updateRequest);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                     .body(null);
             }
 
             // Check first whether the new user status is ANONYMIZED, in which case we start an alternative process
             if (updateRequest.getStatus() == ANONYMIZED) {
                 anonymizeService.anonymize(updateRequest.getId());
-                appEventPublisher.publishAuditEvent(USERS_UPDATE_ANONYMIZED + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+                appEventPublisher.publishAuditEvent(USERS_UPDATE_ANONYMIZED + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
+                        auditUuid);
                 log.info("User {} anonymized", updateRequest.getId());
-                return ResponseEntity.status(HttpStatus.OK).body(null);
+                return ResponseEntity.status(HttpStatus.OK)
+                                     .body(null);
             }
 
             var user = optionalUser.get();
 
             // Currently we do not allow changing the username/email
-            if (!user.getUsername().equals(updateRequest.getUsername())) {
-                appEventPublisher.publishAuditEvent(USERS_UPDATE_USERNAME_CHANGED + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
+            if (!user.getUsername()
+                     .equals(updateRequest.getUsername())) {
+                appEventPublisher.publishAuditEvent(USERS_UPDATE_USERNAME_CHANGED + updateRequest.getId(), ERROR, request, AUDIT_NAME,
+                        AuthTools.getCurrentUserId(),
                         auditUuid);
                 log.error("User {} tried to change username from {} to {}", updateRequest.getId(), user.getUsername(), updateRequest.getUsername());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                     .body(null);
             }
 
             // Update user info from request
@@ -169,11 +178,13 @@ public class UserController implements UserAPI {
             var newUser = userService.updateUser(user);
 
             appEventPublisher.publishAuditEvent(USERS_UPDATE_OK + updateRequest.getId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            return ResponseEntity.status(HttpStatus.OK).body(newUser.toAdminUserResponse());
+            return ResponseEntity.status(HttpStatus.OK)
+                                 .body(newUser.toAdminUserResponse());
         } catch (Exception e) {
             appEventPublisher.publishAuditEvent(USERS_UPDATE_FAIL + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.error("Failed to update user ID {}: {}", updateRequest.getId(), e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                 .body(null);
         }
     }
 
@@ -251,17 +262,15 @@ public class UserController implements UserAPI {
         }
 
         for (User user : users) {
-            userIdNameResponses.add(EventUserResponse.builder()
-                                                     .id(user.getId())
-                                                     .name(user.getLastName() + " " + user.getFirstName())
-                                                     .eventDiveCount(user.getDiveCount())
-                                                     .build());
+            userIdNameResponses.add(user.toEventUserResponse());
         }
 
         var sortedList = userIdNameResponses.stream()
-                .sorted(Comparator.comparing(EventUserResponse::getName)).collect(Collectors.toCollection(ArrayList::new));
+                                            .sorted(Comparator.comparing(EventUserResponse::getName))
+                                            .collect(Collectors.toCollection(ArrayList::new));
         appEventPublisher.publishAuditEvent(USERS_GET_WITH_ROLE_OK + roleEnum, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return ResponseEntity.status(HttpStatus.OK).body(sortedList);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(sortedList);
     }
 
     @Override
@@ -281,7 +290,8 @@ public class UserController implements UserAPI {
                                                      .equalsIgnoreCase("yes"));
 
         appEventPublisher.publishAuditEvent(USERS_SET_TERM_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return ResponseEntity.status(HttpStatus.OK).body(null);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(null);
     }
 
     @Override
@@ -306,10 +316,12 @@ public class UserController implements UserAPI {
 
         for (User user : users) {
             var adminUserResponse = user.toAdminUserResponse();
-            adminUserResponse.setStatus(user.getStatus().name());
+            adminUserResponse.setStatus(user.getStatus()
+                                            .name());
             adminUserResponses.add(adminUserResponse);
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body(adminUserResponses);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(adminUserResponses);
     }
 }

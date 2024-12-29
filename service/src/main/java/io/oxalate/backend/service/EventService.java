@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -63,20 +62,54 @@ public class EventService {
             return null;
         }
 
-        // We need to recreate the list of participants as there may have been changes to the list
-        eventRepository.removeAllParticipantsFromEvent(eventRequest.getId(), ParticipantTypeEnum.USER.name());
-        eventRepository.removeAllParticipantsFromEvent(eventRequest.getId(), ParticipantTypeEnum.ORGANIZER.name());
+        // We need to recreate the list of participants as there may have been changes to the list, this means that we first need to store the current list
+        // as it contains the create time of the existing registrations
+        var currentParticipants = eventParticipantsRepository.findAllByEventId(eventRequest.getId());
 
+        // Go through the new list, and if it contains a participant that is in the current list, then we skip over it
         for (Long participantId : eventRequest.getParticipants()) {
+            var found = false;
+            for (EventsParticipant currentParticipant : currentParticipants) {
+                if (currentParticipant.getUserId() == participantId) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found) {
+                continue;
+            }
+
             eventRepository.addParticipantToEvent(participantId, eventRequest.getId(), ParticipantTypeEnum.USER.name(),
                     paymentService.getBestAvailablePaymentType(participantId)
-                                  .name());
+                                  .name(), Instant.now());
         }
 
+        // Next we go through the current list, and if a participant is not in the new list, then we remove it
+        for (EventsParticipant currentParticipant : currentParticipants) {
+            var found = false;
+            for (Long participantId : eventRequest.getParticipants()) {
+                if (currentParticipant.getUserId() == participantId) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found) {
+                continue;
+            }
+
+            eventRepository.removeParticipantFromEvent(currentParticipant.getUserId(), eventRequest.getId());
+        }
+
+        // Finally we remove the organizer from the list, as we will add it back later
+        eventRepository.removeAllParticipantsFromEvent(eventRequest.getId(), ParticipantTypeEnum.ORGANIZER.name());
+
+        // We need to store the old status to determine if we need to send a notification
         var oldStatus = event.getStatus();
         // Finally add the event organizer, whether it is the current or a new one
         eventRepository.addParticipantToEvent(eventRequest.getOrganizerId(), eventRequest.getId(), ParticipantTypeEnum.ORGANIZER.name(),
-                PaymentTypeEnum.NONE.name());
+                PaymentTypeEnum.NONE.name(), Instant.now());
 
         event.setType(eventRequest.getType());
         event.setTitle(eventRequest.getTitle());
@@ -127,19 +160,19 @@ public class EventService {
             return null;
         }
 
-        if (isUserInSet(user.getId(), eventResponse.getParticipants())) {
+        if (isUserInList(user.getId(), eventResponse.getParticipants())) {
             log.warn("User {} already in event {}", user.getId(), eventId);
             return null;
         }
 
         eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentService.getBestAvailablePaymentType(user.getId())
-                                                                                                                    .name());
+                                                                                                                    .name(), Instant.now());
 
         return getRefreshedEventResponse(eventId).orElse(null);
     }
 
-    public boolean isUserInSet(long userId, Set<EventUserResponse> userSet) {
-        for (EventUserResponse eventUserResponse : userSet) {
+    private boolean isUserInList(long userId, List<EventUserResponse> eventUserResponseList) {
+        for (EventUserResponse eventUserResponse : eventUserResponseList) {
             if (eventUserResponse.getId() == userId) {
                 return true;
             }
@@ -293,19 +326,20 @@ public class EventService {
         }
 
         var participants = userService.findEventParticipants(event.getId());
-        var participantsSet = new HashSet<EventUserResponse>();
+        var participantList = new ArrayList<EventUserResponse>();
 
         for (User participant : participants) {
             var eventUserResponse = participant.toEventUserResponse();
-
+            var eventParticipant = eventParticipantsRepository.findByEventIdAndUserId(event.getId(), participant.getId());
+            eventUserResponse.setCreatedAt(eventParticipant.getCreatedAt());
             eventUserResponse.setEventDiveCount(countDivesByUserAndEvent(participant.getId(), event.getId()));
-            participantsSet.add(eventUserResponse);
+            participantList.add(eventUserResponse);
         }
 
         var eventResponse = event.toEventResponse();
         eventResponse.setOrganizer(organizer.get()
                                             .toUserResponse());
-        eventResponse.setParticipants(participantsSet);
+        eventResponse.setParticipants(participantList);
 
         return Optional.of(eventResponse);
     }
@@ -315,19 +349,17 @@ public class EventService {
     }
 
     private Optional<EventListResponse> getPopulatedEventListResponse(Event event) {
-        var organizer = userService.findUserById(event.getOrganizerId());
+        var optionalOrganizer = userService.findUserById(event.getOrganizerId());
 
-        if (organizer.isEmpty()) {
+        if (optionalOrganizer.isEmpty()) {
             log.error("Event has an non-existing organizer: {}", event.getOrganizerId());
             return Optional.empty();
         }
-
+        var organizer = optionalOrganizer.get();
         var participants = userService.findEventParticipants(event.getId());
 
         var eventListResponse = event.toEventListResponse();
-        eventListResponse.setOrganizerName(organizer.get()
-                                                    .getFirstName() + " " + organizer.get()
-                                                                                     .getLastName());
+        eventListResponse.setOrganizerName(organizer.getFirstName() + " " + organizer.getLastName());
         eventListResponse.setParticipantCount(participants.size());
 
         return Optional.of(eventListResponse);
@@ -355,14 +387,14 @@ public class EventService {
         var newEvent = eventRepository.save(event);
 
         // Add organizer as event participant with ORGANIZER type
-        eventRepository.addParticipantToEvent(userId, newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name());
+        eventRepository.addParticipantToEvent(userId, newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now());
 
         // Add participants
         if (eventRequest.getParticipants() != null) {
             for (Long participantId : eventRequest.getParticipants()) {
                 eventRepository.addParticipantToEvent(participantId, newEvent.getId(), ParticipantTypeEnum.USER.name(),
                         paymentService.getBestAvailablePaymentType(participantId)
-                                      .name());
+                                      .name(), Instant.now());
             }
         }
 
@@ -493,7 +525,7 @@ public class EventService {
     @Transactional
     public Event save(Event event) {
         var newEvent = eventRepository.save(event);
-        eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name());
+        eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now());
         return newEvent;
     }
 
