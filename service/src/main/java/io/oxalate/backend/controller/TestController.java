@@ -1,10 +1,12 @@
 package io.oxalate.backend.controller;
 
+import io.oxalate.backend.api.DiveTypeEnum;
+import static io.oxalate.backend.api.DiveTypeEnum.SURFACE;
 import io.oxalate.backend.api.EventStatusEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
-import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.START_MONTH;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIOD_START_POINT;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.UserStatus.ACTIVE;
 import io.oxalate.backend.api.request.CertificateRequest;
@@ -80,7 +82,8 @@ public class TestController implements TestAPI {
 
     @Override
     public ResponseEntity<Void> generateYearsAgo(int yearsAgo) {
-        var pinDate = Instant.now().minus(yearsAgo * 365L, ChronoUnit.DAYS);
+        var pinDate = Instant.now()
+                             .minus(yearsAgo * 365L, ChronoUnit.DAYS);
         var users = 0L;
 
         // Prime the user data list with 50 users
@@ -94,7 +97,8 @@ public class TestController implements TestAPI {
                 continue;
             }
 
-            var fate = RandomUtils.nextInt(1, 11);
+            var fate = RandomUtils.secure()
+                                  .randomInt(1, 11);
 
             if (fate < 6) {
                 // New user
@@ -114,16 +118,19 @@ public class TestController implements TestAPI {
             }
 
             // Finally we move the pin forward 1-7 days
-            pinDate = pinDate.plus(RandomUtils.nextInt(1, 5), ChronoUnit.DAYS);
+            pinDate = pinDate.plus(RandomUtils.secure()
+                                              .randomInt(1, 5), ChronoUnit.DAYS);
         }
 
         log.info("Generated {} years worth of events and users", yearsAgo);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok()
+                             .build();
     }
 
     private void generateRandomCertificatesForUser(User user, Instant createDate) {
         // Generate 1-7 certificates for user, everyone has at least one,  1 in 600 has 7
-        var certificateCount = RandomUtils.nextInt(1, 601);
+        var certificateCount = RandomUtils.secure()
+                                          .randomInt(1, 601);
         if (certificateCount % 600 == 0) {
             certificateCount = 7;
         }
@@ -154,21 +161,23 @@ public class TestController implements TestAPI {
 
         for (int j = 0; j < certificateCount; j++) {
             var certificateRequest = CertificateRequest.builder()
-                    .organization(getCertificateOrganization())
-                    .certificateName(getDiveCertificationPrefix() + " " + getDiveCertificationName())
-                    .certificateId(RandomStringUtils.randomAlphabetic(7))
-                    .diverId(RandomStringUtils.randomAlphabetic(7))
-                    .certificationDate(createDate.minus(RandomUtils.nextLong(100, 5000), ChronoUnit.DAYS))
-                    .build();
+                                                       .organization(getCertificateOrganization())
+                                                       .certificateName(getDiveCertificationPrefix() + " " + getDiveCertificationName())
+                                                       .certificateId(RandomStringUtils.secure().nextAlphanumeric(7))
+                                                       .diverId(RandomStringUtils.secure().nextAlphanumeric(7))
+                                                       .certificationDate(createDate.minus(RandomUtils.secure()
+                                                                                                      .randomLong(100, 5000), ChronoUnit.DAYS))
+                                                       .build();
             while (certificateService.findCertificateByUserOrgAndCertification(user.getId(), certificateRequest.getOrganization(),
                     certificateRequest.getCertificateName()) != null) {
                 certificateRequest = CertificateRequest.builder()
-                        .organization(getCertificateOrganization())
-                        .certificateName(getDiveCertificationPrefix() + " " + getDiveCertificationName())
-                        .certificateId(RandomStringUtils.randomAlphabetic(7))
-                        .diverId(RandomStringUtils.randomAlphabetic(7))
-                        .certificationDate(createDate.minus(RandomUtils.nextLong(100, 5000), ChronoUnit.DAYS))
-                        .build();
+                                                       .organization(getCertificateOrganization())
+                                                       .certificateName(getDiveCertificationPrefix() + " " + getDiveCertificationName())
+                                                       .certificateId(RandomStringUtils.secure().nextAlphanumeric(7))
+                                                       .diverId(RandomStringUtils.secure().nextAlphanumeric(7))
+                                                       .certificationDate(createDate.minus(RandomUtils.secure()
+                                                                                                      .randomLong(100, 5000), ChronoUnit.DAYS))
+                                                       .build();
             }
 
             certificateService.addCertificate(user.getId(), certificateRequest);
@@ -196,27 +205,28 @@ public class TestController implements TestAPI {
         return userService.updateUser(user);
     }
 
-    private User createRandomUser(List<String> randoUser, int i, int randoCounter) {
-        var firstName = randoUser.get(randoCounter++);
-        var lastName = randoUser.get(randoCounter);
+    private User createRandomUser(List<String> randoUser, int i, int randomCounter) {
+        var firstName = randoUser.get(randomCounter++);
+        var lastName = randoUser.get(randomCounter);
         var username = firstName + "." + lastName + "_" + i + "@test.tld";
-        log.info("Generating user: " + username);
+        log.info("Generating user: {}", username);
         var password = authService.generatePasswordHash(PASSWORD);
-        var phoneNumber = String.valueOf(RandomUtils.nextLong(30000000000L, 99999999999L));
-        var nextOfKin = RandomStringUtils.randomAlphabetic(18) + " " + RandomUtils.nextLong(30000000000L, 99999999999L);
+        var phoneNumber = String.valueOf(RandomUtils.secure().randomLong(30000000000L, 99999999999L));
+        var nextOfKin = RandomStringUtils.secure().nextAlphabetic(18) + " " + RandomUtils.secure().randomLong(30000000000L, 99999999999L);
 
         var user = User.builder()
-                .username(username)
-                .firstName(firstName)
-                .lastName(lastName)
-                .status(ACTIVE)
-                .privacy(false)
-                .password(password)
-                .nextOfKin(nextOfKin)
-                .phoneNumber(phoneNumber)
-                .registered(Instant.now().minus(RandomUtils.nextLong(0, DAYS_BACK), ChronoUnit.DAYS))
-                .approvedTerms(true)
-                .build();
+                       .username(username)
+                       .firstName(firstName)
+                       .lastName(lastName)
+                       .status(ACTIVE)
+                       .privacy(false)
+                       .password(password)
+                       .nextOfKin(nextOfKin)
+                       .phoneNumber(phoneNumber)
+                       .registered(Instant.now()
+                                          .minus(RandomUtils.secure().randomLong(0, DAYS_BACK), ChronoUnit.DAYS))
+                       .approvedTerms(true)
+                       .build();
 
         return userService.save(user);
     }
@@ -224,20 +234,24 @@ public class TestController implements TestAPI {
     private void randomEvent(Instant createInstant) {
 
         var organizerId = getRandomOrganizerId();
-        var eventSize = RandomUtils.nextInt(3, 24);
+        var eventSize = RandomUtils.secure()
+                                   .randomInt(3, 24);
 
         var event = Event.builder()
-                .title("Event " + RandomStringUtils.randomAlphabetic(10))
-                .description("Event " + RandomStringUtils.randomAlphabetic(100))
-                .eventDuration(RandomUtils.nextInt(4, 24))
-                .maxDuration(RandomUtils.nextInt(30, 240))
-                .maxDepth(RandomUtils.nextInt(30, 180))
-                .maxParticipants(eventSize)
-                .startTime(createInstant)
-                .organizerId(organizerId)
-                .status(EventStatusEnum.PUBLISHED)
-                .type(getEventType())
-                .build();
+                         .title("Event " + RandomStringUtils.secure().nextAlphabetic(10))
+                         .description("Event " + RandomStringUtils.secure().nextAlphabetic(100))
+                         .eventDuration(RandomUtils.secure()
+                                                   .randomInt(4, 24))
+                         .maxDuration(RandomUtils.secure()
+                                                 .randomInt(30, 240))
+                         .maxDepth(RandomUtils.secure()
+                                              .randomInt(30, 180))
+                         .maxParticipants(eventSize)
+                         .startTime(createInstant)
+                         .organizerId(organizerId)
+                         .status(EventStatusEnum.PUBLISHED)
+                         .type(getEventType())
+                         .build();
         var newEvent = eventService.save(event);
 
         populateEventWithUsers(newEvent);
@@ -257,8 +271,12 @@ public class TestController implements TestAPI {
         var randomNameResponse = randomResponseMono.block();
 
         for (RandomNameResponse.Result result : randomNameResponse.getResults()) {
-            userInfos.add(result.getName().getFirst().replace(" ", "_"));
-            userInfos.add(result.getName().getLast().replace(" ", "_"));
+            userInfos.add(result.getName()
+                                .getFirst()
+                                .replace(" ", "_"));
+            userInfos.add(result.getName()
+                                .getLast()
+                                .replace(" ", "_"));
         }
 
         return userInfos;
@@ -283,7 +301,8 @@ public class TestController implements TestAPI {
             return;
         }
 
-        var userId = (Long) results.get(RandomUtils.nextInt(0, results.size()));
+        var userId = (Long) results.get(RandomUtils.secure()
+                                                   .randomInt(0, results.size()));
 
         var optionalUser = userService.findUserById(userId);
         if (optionalUser.isEmpty()) {
@@ -308,16 +327,19 @@ public class TestController implements TestAPI {
         assert randomNameResponse != null;
 
         for (RandomNameResponse.Result result : randomNameResponse.getResults()) {
-            userData.add(new RandomUserInfo(result.getName().getFirst(), result.getName().getLast(), result.getEmail()));
+            userData.add(new RandomUserInfo(result.getName()
+                                                  .getFirst(), result.getName()
+                                                                     .getLast(), result.getEmail()));
         }
     }
 
     private User generateRandomUser(RandomUserInfo userInfo, Instant createInstant) {
         var password = authService.generatePasswordHash(PASSWORD);
-        var phoneNumber = String.valueOf(RandomUtils.nextLong(30000000000L, 99999999999L));
-        var nextOfKin = "Next" + RandomStringUtils.randomAlphabetic(18) + " " + RandomUtils.nextLong(30000000000L, 99999999999L);
+        var phoneNumber = String.valueOf(RandomUtils.secure().randomLong(30000000000L, 99999999999L));
+        var nextOfKin = "Next" + RandomStringUtils.secure().nextAlphabetic(18) + " " + RandomUtils.secure().randomLong(30000000000L, 99999999999L);
         var language = List.of("de", "fi", "en", "sv")
-                           .get(RandomUtils.nextInt(0, 4));
+                           .get(RandomUtils.secure()
+                                           .randomInt(0, 4));
         // Make sure the username is unique
         while (true) {
             var user = userService.findByUsername(userInfo.getEmail());
@@ -326,22 +348,24 @@ public class TestController implements TestAPI {
                 break;
             }
 
-            userInfo.setEmail(RandomStringUtils.randomAlphabetic(4) + "_" + userInfo.getEmail());
+            userInfo.setEmail(RandomStringUtils.secure().nextAlphabetic (4) + "_" + userInfo.getEmail());
         }
 
         var user = User.builder()
-                .username(userInfo.getEmail())
-                .firstName(userInfo.getFirstName())
-                .lastName(userInfo.getLastName())
-                .status(ACTIVE)
-                .privacy(RandomUtils.nextInt(1, 13) < 2)
-                .password(password)
-                .nextOfKin(nextOfKin)
+                       .username(userInfo.getEmail())
+                       .firstName(userInfo.getFirstName())
+                       .lastName(userInfo.getLastName())
+                       .status(ACTIVE)
+                       .privacy(RandomUtils.secure()
+                                           .randomInt(1, 13) < 2)
+                       .password(password)
+                       .nextOfKin(nextOfKin)
                        .language(language)
-                .phoneNumber(phoneNumber)
-                .registered(createInstant)
-                .approvedTerms(RandomUtils.nextInt(1, 13) > 2)
-                .build();
+                       .phoneNumber(phoneNumber)
+                       .registered(createInstant)
+                       .approvedTerms(RandomUtils.secure()
+                                                 .randomInt(1, 13) > 2)
+                       .build();
 
         var newUser = userService.save(user);
         newUser = setRolesForRandomUser(newUser);
@@ -355,18 +379,21 @@ public class TestController implements TestAPI {
     private void generateRandomPaymentForUser(User user, Instant createInstant) {
         Payment payment;
 
-        if (RandomUtils.nextInt(1, 9) < 6) {
+        if (RandomUtils.secure()
+                       .randomInt(1, 9) < 6) {
             payment = Payment.builder()
-                    .paymentType(ONE_TIME)
-                    .userId(user.getId())
-                    .createdAt(createInstant)
-                    .paymentCount(RandomUtils.nextInt(1, 6))
-                    .build();
+                             .paymentType(ONE_TIME)
+                             .userId(user.getId())
+                             .createdAt(createInstant)
+                             .paymentCount(RandomUtils.secure()
+                                                      .randomInt(1, 6))
+                             .build();
         } else {
-            var localDate = createInstant.atZone(ZoneOffset.UTC).toLocalDate();
+            var localDate = createInstant.atZone(ZoneOffset.UTC)
+                                         .toLocalDate();
             var currentMonth = localDate.getMonthValue();
             var endYear = localDate.getYear();
-            var periodStartMonth = portalConfigurationService.getNumericConfiguration(PAYMENT.group, START_MONTH.key);
+            var periodStartMonth = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PERIOD_START_POINT.key);
             if (currentMonth >= periodStartMonth) {
                 endYear++;
             }
@@ -374,22 +401,25 @@ public class TestController implements TestAPI {
             var endDate = Instant.parse(endYear + "-" + String.format("%02d", periodStartMonth) + "-01T00:00:00.00Z");
 
             payment = Payment.builder()
-                    .paymentType(PERIOD)
-                    .userId(user.getId())
-                    .createdAt(createInstant)
-                    .expiresAt(endDate)
-                    .build();
+                             .paymentType(PERIOD)
+                             .userId(user.getId())
+                             .createdAt(createInstant)
+                             .expiresAt(endDate)
+                             .build();
         }
         paymentRepository.save(payment);
     }
 
     private void populateEventWithUsers(Event event) {
-        var participantAmount = RandomUtils.nextInt(3, event.getMaxParticipants());
+        var participantAmount = RandomUtils.secure()
+                                           .randomInt(3, event.getMaxParticipants());
 
         var userIdList = new ArrayList<Long>();
         // If the event is surface only, then we pick any active user
-        if (event.getType().equals("Vain pintatoimintaa")) {
-            userService.findAll().forEach(user -> userIdList.add(user.getId()));
+        if (event.getType()
+                 .equals(SURFACE)) {
+            userService.findAll()
+                       .forEach(user -> userIdList.add(user.getId()));
         } else {
             // Get user ID which has an active payment
             var queryString = "SELECT u.id "
@@ -403,7 +433,7 @@ public class TestController implements TestAPI {
 
             var query = entityManager.createNativeQuery(queryString);
             query.setParameter("currentTime", event.getStartTime());
-            List results = query.getResultList();
+            var results = query.getResultList();
 
             for (Object result : results) {
                 var resultLong = (Long) result;
@@ -420,10 +450,12 @@ public class TestController implements TestAPI {
         }
 
         for (int j = 0; j < participantAmount; j++) {
-            var participantId = userIdList.remove(RandomUtils.nextInt(0, userIdList.size()));
+            var participantId = userIdList.remove(RandomUtils.secure()
+                                                             .randomInt(0, userIdList.size()));
 
             // If the event is surface-only then instead of deducting payment, we add a one-time payment for the user
-            if (event.getType().equals("Vain pintatoimintaa")) {
+            if (event.getType()
+                     .equals(SURFACE)) {
                 addEventPaymentFromUser(participantId);
             } else {
                 deductEventPaymentFromUser(participantId, event.getStartTime());
@@ -434,7 +466,8 @@ public class TestController implements TestAPI {
             var participant = optionalParticipant.get();
 
             eventService.addUserToEvent(participant, event.getId());
-            var diveCount = RandomUtils.nextInt(1, 1000);
+            var diveCount = RandomUtils.secure()
+                                       .randomInt(1, 1000);
 
             if (diveCount % 499 == 0) {
                 diveCount = 3;
@@ -448,7 +481,8 @@ public class TestController implements TestAPI {
                 diveCount = 1;
             }
 
-            if (event.getType().equals("Vain pintatoimintaa")) {
+            if (event.getType()
+                     .equals(SURFACE)) {
                 diveCount = 0;
             }
 
@@ -459,13 +493,14 @@ public class TestController implements TestAPI {
     private void addEventPaymentFromUser(Long participantId) {
         var oneTimePayment = paymentRepository.findByUserIdAndAndPaymentType(participantId, ONE_TIME.name());
 
-        if (oneTimePayment.isEmpty() || oneTimePayment.get().getPaymentCount() < 1) {
+        if (oneTimePayment.isEmpty() || oneTimePayment.get()
+                                                      .getPaymentCount() < 1) {
             var payment = Payment.builder()
-                    .userId(participantId)
-                    .paymentType(ONE_TIME)
-                    .createdAt(Instant.now())
-                    .paymentCount(0)
-                    .build();
+                                 .userId(participantId)
+                                 .paymentType(ONE_TIME)
+                                 .createdAt(Instant.now())
+                                 .paymentCount(0)
+                                 .build();
             oneTimePayment = Optional.of(paymentRepository.save(payment));
         }
 
@@ -492,7 +527,8 @@ public class TestController implements TestAPI {
     }
 
     private String getDiveCertificationName() {
-        return switch (RandomUtils.nextInt(0, 36)) {
+        return switch (RandomUtils.secure()
+                                  .randomInt(0, 36)) {
             case 0 -> "Drysuit diver";
             case 1 -> "Elite drysuit diver";
             case 2 -> "OWD";
@@ -533,19 +569,16 @@ public class TestController implements TestAPI {
         };
     }
 
-    private String getEventType() {
-        return switch (RandomUtils.nextInt(0, 6)) {
-            case 0 -> "Sukellus";
-            case 1 -> "Luola";
-            case 2 -> "Luola / Avo";
-            case 3 -> "Avo";
-            case 4 -> "Vain pintatoimintaa";
-            default -> "Virtasukellus";
-        };
+    private DiveTypeEnum getEventType() {
+        DiveTypeEnum[] values = DiveTypeEnum.values();
+        int randomIndex = RandomUtils.secure()
+                                     .randomInt(0, values.length);
+        return values[randomIndex];
     }
 
     private String getDiveCertificationPrefix() {
-        return switch (RandomUtils.nextInt(0, 6)) {
+        return switch (RandomUtils.secure()
+                                  .randomInt(0, 6)) {
             case 0 -> "Beginner";
             case 1 -> "Intermediate";
             case 2 -> "Advanced";
@@ -557,7 +590,8 @@ public class TestController implements TestAPI {
     }
 
     private String getCertificateOrganization() {
-        return switch (RandomUtils.nextInt(0, 23)) {
+        return switch (RandomUtils.secure()
+                                  .randomInt(0, 23)) {
             case 0 -> "NAUI";
             case 1 -> "PADI";
             case 2 -> "RAID";
@@ -600,6 +634,8 @@ public class TestController implements TestAPI {
             return 1L;
         }
 
-        return organizers.get(RandomUtils.nextInt(0, organizers.size())).getId();
+        return organizers.get(RandomUtils.secure()
+                                         .randomInt(0, organizers.size()))
+                         .getId();
     }
 }

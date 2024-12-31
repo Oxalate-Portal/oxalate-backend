@@ -4,7 +4,7 @@ import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
-import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.START_MONTH;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIOD_START_POINT;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.api.response.PaymentResponse;
@@ -119,7 +119,7 @@ public class PaymentService {
     /**
      * Saves a period payment to the database, the payment will be saved for the current period
      *
-     * @param userId user id
+     * @param userId User ID
      */
 
     @Transactional
@@ -128,7 +128,7 @@ public class PaymentService {
         var localDate = now.atZone(ZoneOffset.UTC).toLocalDate();
         var currentMonth = localDate.getMonthValue();
         var endYear = localDate.getYear();
-        var periodStartMonth = portalConfigurationService.getNumericConfiguration(PAYMENT.group, START_MONTH.key);
+        var periodStartMonth = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PERIOD_START_POINT.key);
 
         if (currentMonth >= periodStartMonth) {
             endYear++;
