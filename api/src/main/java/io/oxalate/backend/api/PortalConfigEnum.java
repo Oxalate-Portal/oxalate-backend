@@ -4,6 +4,7 @@ public enum PortalConfigEnum {
     EMAIL("email", EmailConfigEnum.class),
     FRONTEND("frontend", FrontendConfigEnum.class),
     GENERAL("general", GeneralConfigEnum.class),
+    MEMBERSHIP("membership", MembershipConfigEnum.class),
     PAYMENT("payment", PaymentConfigEnum.class);
 
     public final String group;
