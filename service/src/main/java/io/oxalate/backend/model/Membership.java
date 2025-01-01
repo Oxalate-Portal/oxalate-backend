@@ -1,7 +1,12 @@
 package io.oxalate.backend.model;
 
+import io.oxalate.backend.api.MembershipStatusEnum;
+import io.oxalate.backend.api.MembershipTypeEnum;
+import io.oxalate.backend.api.response.MembershipResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,13 +15,19 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Builder
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "membership")
-@Data
-@NoArgsConstructor
 public class Membership {
 
     @Id
@@ -26,8 +37,9 @@ public class Membership {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false, length = 255)
-    private String type;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MembershipTypeEnum type;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -35,10 +47,22 @@ public class Membership {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(nullable = false, length = 255)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MembershipStatusEnum status;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", referencedColumnName = "id", insertable = false, updatable = false)
     private User user;
+
+    public MembershipResponse toResponse() {
+        return MembershipResponse.builder()
+                .id(this.id)
+                .userId(this.userId)
+                .type(this.type)
+                .status(this.status)
+                .createdAt(this.startDate)
+                .expiresAt(this.endDate)
+                .build();
+    }
 }

@@ -66,6 +66,7 @@ public enum PortalConfigEnum {
 
     public enum MembershipConfigEnum {
         MEMBERSHIP_PERIOD_LENGTH("membership-period-length"),
+        MEMBERSHIP_PERIOD_START("membership-period-start"),
         MEMBERSHIP_PERIOD_START_POINT("membership-period-start-point"),
         MEMBERSHIP_PERIOD_UNIT("membership-period-unit"),
         MEMBERSHIP_TYPE("membership-type");
@@ -82,11 +83,11 @@ public enum PortalConfigEnum {
         EVENT_REQUIRE_PAYMENT("event-require-payment"),
         PAYMENT_ENABLED("payment-enabled"),
         PAYMENT_PERIOD_LENGTH("payment-period-length"),
+        PAYMENT_PERIOD_START("payment-period-start"),
+        PAYMENT_PERIOD_START_POINT("payment-period-start-point"),
         PERIODICAL_PAYMENT_METHOD_TYPE("periodical-payment-method-type"),
         PERIODICAL_PAYMENT_METHOD_UNIT("periodical-payment-method-unit"),
-        PERIOD_START_POINT("period-start-point"),
-        SINGLE_PAYMENT_ENABLED("single-payment-enabled"),
-        PAYMENT_PERIOD_START("payment-period-start");
+        SINGLE_PAYMENT_ENABLED("single-payment-enabled");
 
         public final String key;
 

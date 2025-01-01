@@ -22,7 +22,7 @@ public class PeriodToolUTC {
     @ParameterizedTest
     void periodResultV2Ok(Instant nowInstant, LocalDate localDate, ChronoUnit calendarUnit, int periodStart, int unitCount, LocalDate startDate,
             LocalDate endDate) {
-        var periodResult = PeriodTool.calculatePeriodV2(nowInstant, localDate, calendarUnit, periodStart, unitCount);
+        var periodResult = PeriodTool.calculatePeriod(nowInstant, localDate, calendarUnit, periodStart, unitCount);
         assertEquals(startDate, periodResult.getStartDate());
         assertEquals(endDate, periodResult.getEndDate());
     }

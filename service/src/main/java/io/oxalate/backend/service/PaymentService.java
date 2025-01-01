@@ -3,17 +3,27 @@ package io.oxalate.backend.service;
 import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
+import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.TIMEZONE;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
-import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIOD_START_POINT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_LENGTH;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START_POINT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_TYPE;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_UNIT;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.PaymentStatusResponse;
 import io.oxalate.backend.model.Payment;
+import io.oxalate.backend.model.PeriodResult;
 import io.oxalate.backend.repository.PaymentRepository;
+import io.oxalate.backend.tools.PeriodTool;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -125,22 +135,38 @@ public class PaymentService {
     @Transactional
     public void savePeriodPayment(long userId) {
         var now = Instant.now();
-        var localDate = now.atZone(ZoneOffset.UTC).toLocalDate();
-        var currentMonth = localDate.getMonthValue();
-        var endYear = localDate.getYear();
-        var periodStartMonth = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PERIOD_START_POINT.key);
 
-        if (currentMonth >= periodStartMonth) {
-            endYear++;
+        // Get the type of period from the portal configuration
+        var periodTypeString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_TYPE.key);
+
+        if (periodTypeString == null) {
+            log.error("Could not find period type for key: {}", PAYMENT_PERIOD_START_POINT.key);
+            return;
         }
 
-        var endDate = Instant.parse(endYear + "-" + String.format("%02d", periodStartMonth) + "-01T00:00:00.00Z");
+        var periodResult = new PeriodResult();
 
+        var periodUnitString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_UNIT.key);
+        var periodUnit = ChronoUnit.valueOf(periodUnitString);
+        var unitCount = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_LENGTH.key);
+
+        if (periodTypeString.equals("periodical")) {
+            var periodStart = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
+            var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
+            var calculationStartDate = LocalDate.parse(calculationStart);
+            periodResult = PeriodTool.calculatePeriod(now, calculationStartDate, periodUnit, (int) periodStart, (int) unitCount);
+        } else {
+            periodResult.setStartDate(LocalDate.now());
+            periodResult.setEndDate(LocalDate.now().plus(unitCount, periodUnit));
+        }
+
+        var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
+        var zoneId = ZoneId.of(timezone);
         var payment = Payment.builder()
                 .userId(userId)
                 .paymentType(PERIOD)
                 .createdAt(Instant.now())
-                .expiresAt(endDate)
+                .expiresAt(periodResult.getEndDate().atStartOfDay(zoneId).toInstant())
                 .build();
 
         paymentRepository.save(payment);

@@ -1,5 +1,7 @@
 package io.oxalate.backend.api;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum DiveTypeEnum {
     BOAT("boat"),
     CAVE("cave"),
@@ -11,7 +13,12 @@ public enum DiveTypeEnum {
 
     public final String typeName;
 
-    private DiveTypeEnum(String typeName) {
+    DiveTypeEnum(String typeName) {
         this.typeName = typeName;
+    }
+
+    @JsonValue
+    public String getTypeName() {
+        return typeName;
     }
 }

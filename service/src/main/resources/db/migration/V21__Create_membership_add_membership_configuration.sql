@@ -24,6 +24,9 @@ INSERT INTO portal_configuration (value_type, group_key, setting_key, default_va
 VALUES ('number', 'membership', 'membership-period-start-point', '1', NULL, false,
         'If membership type is set to periodical, then this defines the nth calendar unit of the next period');
 
+INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
+VALUES ('date', 'membership', 'membership-period-start', CURRENT_DATE, NULL, false, 'Date when the periodical membership counting has started');
+
 -- Add single payment method as its own configuration as periodical and durational payments are not both supported simultaneously and are separate of single payments
 INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
 VALUES ('boolean', 'payment', 'single-payment-enabled', 'false', NULL, false, 'Is single payment enabled');
@@ -59,9 +62,9 @@ SET default_value = 'open-water,cave,open-and-cave,surface,boat,current,course'
 WHERE group_key = 'frontend'
   AND setting_key = 'types-of-event';
 
--- Rename payment start-month to period-start-point as the period can be other than a year
+-- Rename payment start-month to payment-period-start-point as the period can be other than a year
 UPDATE portal_configuration
-SET setting_key = 'period-start-point'
+SET setting_key = 'payment-period-start-point'
 WHERE group_key = 'payment'
   AND setting_key = 'start-month';
 -- Add calendar unit configuration for periodical payments
