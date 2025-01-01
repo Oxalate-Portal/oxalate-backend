@@ -85,7 +85,8 @@ public enum PortalConfigEnum {
         PERIODICAL_PAYMENT_METHOD_TYPE("periodical-payment-method-type"),
         PERIODICAL_PAYMENT_METHOD_UNIT("periodical-payment-method-unit"),
         PERIOD_START_POINT("period-start-point"),
-        SINGLE_PAYMENT_ENABLED("single-payment-enabled");
+        SINGLE_PAYMENT_ENABLED("single-payment-enabled"),
+        PAYMENT_PERIOD_START("payment-period-start");
 
         public final String key;
 
