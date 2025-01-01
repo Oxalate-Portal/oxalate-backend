@@ -75,3 +75,7 @@ VALUES ('number', 'payment', 'payment-period-length', '1', NULL, false,
 -- Add separate switch to control if payment handling is enabled
 INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
 VALUES ('boolean', 'payment', 'payment-enabled', 'true', NULL, false, 'Is payment handling enabled');
+
+-- Register when the periodical payment counting has started
+INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
+VALUES ('date', 'payment', 'payment-period-start', CURRENT_DATE, NULL, false, 'Date when the periodical payment counting has started');
