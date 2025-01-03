@@ -65,6 +65,7 @@ public enum PortalConfigEnum {
     }
 
     public enum MembershipConfigEnum {
+        EVENT_REQUIRE_MEMBERSHIP("event-require-membership"),
         MEMBERSHIP_PERIOD_LENGTH("membership-period-length"),
         MEMBERSHIP_PERIOD_START("membership-period-start"),
         MEMBERSHIP_PERIOD_START_POINT("membership-period-start-point"),

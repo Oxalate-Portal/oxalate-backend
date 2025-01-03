@@ -32,7 +32,7 @@ public interface PaymentAPI {
     @GetMapping(path = BASE_PATH + "/active", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatus(HttpServletRequest request);
 
-    @Operation(description = "Get the payment status a specific user", tags = "PaymentAPI")
+    @Operation(description = "Get the payment status for a specific user", tags = "PaymentAPI")
     @Parameter(name = "userId", description = "User ID for which current payment status should be fetched", example = "123")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Status retrieved successfully"),

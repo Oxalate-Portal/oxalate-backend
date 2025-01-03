@@ -27,6 +27,9 @@ VALUES ('number', 'membership', 'membership-period-start-point', '1', NULL, fals
 INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
 VALUES ('date', 'membership', 'membership-period-start', CURRENT_DATE, NULL, false, 'Date when the periodical membership counting has started');
 
+INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
+VALUES ('boolean', 'membership', 'event-require-membership', 'false', NULL, false, 'Must a user be a member to join an event');
+
 -- Add single payment method as its own configuration as periodical and durational payments are not both supported simultaneously and are separate of single payments
 INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
 VALUES ('boolean', 'payment', 'single-payment-enabled', 'false', NULL, false, 'Is single payment enabled');

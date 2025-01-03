@@ -118,7 +118,7 @@ public class MembershipService {
 
     private MembershipTypeEnum getMembershipTypeSetting() {
         var membershipTypeString = portalConfigurationService.getEnumConfiguration(PortalConfigEnum.MEMBERSHIP.group, MEMBERSHIP_TYPE.key);
-        var membershipType = MembershipTypeEnum.valueOf(membershipTypeString);
+        var membershipType = MembershipTypeEnum.fromString(membershipTypeString);
         return membershipType;
     }
 }

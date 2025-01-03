@@ -18,8 +18,8 @@ public class MembershipController implements MembershipAPI {
 
     @Override
     public ResponseEntity<List<MembershipResponse>> getAllActiveMemberships(HttpServletRequest request) {
-        var membershipResponse = membershipService.getAllActiveMemberships();
-        return ResponseEntity.ok(membershipResponse);
+        var membershipResponses = membershipService.getAllActiveMemberships();
+        return ResponseEntity.ok(membershipResponses);
     }
 
     @Override
