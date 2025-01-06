@@ -5,6 +5,8 @@ import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.PageStatusEnum;
 import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
 import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
+import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.ENABLED_LANGUAGES;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageRequest;
@@ -49,6 +51,13 @@ public class PageService {
     private final long RESERVED_PAGE_GROUP_ID = 1;
 
     public PageResponse getPage(long pageId, Set<RoleEnum> roles, String language) {
+        var supportedLanguages = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
+
+        if (language != null && !supportedLanguages.contains(language)) {
+            log.error("Requested language {} is not supported", language);
+            return null;
+        }
+
         // Check if the page exists
         var optionalPage = pageRepository.findById(pageId);
 
@@ -98,6 +107,13 @@ public class PageService {
 
     public List<PageGroupResponse> getPageGroups(String language, Set<RoleEnum> roles) {
         var pageGroupResponses = new ArrayList<PageGroupResponse>();
+
+        var supportedLanguages = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
+
+        if (!supportedLanguages.contains(language)) {
+            log.error("Requested language {} is not supported", language);
+            return pageGroupResponses;
+        }
 
         var pageGroups = pageGroupRepository.findAllExceptId(RESERVED_PAGE_GROUP_ID);
 
@@ -166,17 +182,21 @@ public class PageService {
 
     @Transactional
     public PageGroupResponse createPath(PageGroupRequest pageGroupRequest) {
+        var languageVersions = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
+
         if (!verifyPageGroupRequest(pageGroupRequest)) {
             return null;
         }
 
         var pageGroup = PageGroup.of(pageGroupRequest);
         var newPageGroup = pageGroupRepository.save(pageGroup);
-        // Save all PageGroupVersions
+        // Save all PageGroupVersions as per configured languages
         for (var pageGroupVersionRequest : pageGroupRequest.getPageGroupVersions()) {
-            var pageGroupVersion = PageGroupVersion.of(pageGroupVersionRequest);
-            pageGroupVersion.setPageGroupId(newPageGroup.getId());
-            pageGroupVersionRepository.save(pageGroupVersion);
+            if (languageVersions.contains(pageGroupVersionRequest.getLanguage())) {
+                var pageGroupVersion = PageGroupVersion.of(pageGroupVersionRequest);
+                pageGroupVersion.setPageGroupId(newPageGroup.getId());
+                pageGroupVersionRepository.save(pageGroupVersion);
+            }
         }
 
         populatePageGroup(newPageGroup, null);
@@ -186,6 +206,8 @@ public class PageService {
 
     @Transactional
     public PageGroupResponse updatePageGroup(PageGroupRequest pageGroupRequest) {
+        var languageVersions = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
+
         if (!verifyPageGroupRequest(pageGroupRequest)) {
             return null;
         }
@@ -203,22 +225,22 @@ public class PageService {
         // We update the ones we have
         for (var existingPageGroupVersion : existingPageGroupVersions) {
             // Find the page group in the list of request paths
-            var newPageGroupVersionRequest = pageGroupRequest.getPageGroupVersions()
+            var optionalPageGroupVersionRequest = pageGroupRequest.getPageGroupVersions()
                                                              .stream()
                                                              .filter(path -> Objects.equals(path.getId(), existingPageGroupVersion.getId()))
                                                              .findFirst();
 
-            if (newPageGroupVersionRequest.isPresent()) {
+            if (optionalPageGroupVersionRequest.isPresent()) {
+                var newPageGroupVersionRequest = optionalPageGroupVersionRequest.get();
                 // Update the page group
-                existingPageGroupVersion.setTitle(newPageGroupVersionRequest.get()
-                                                                            .getTitle());
-                existingPageGroupVersion.setLanguage(newPageGroupVersionRequest.get()
-                                                                               .getLanguage());
-                pageGroupVersionRepository.save(existingPageGroupVersion);
-
+                if (languageVersions.contains(newPageGroupVersionRequest.getLanguage())) {
+                    existingPageGroupVersion.setTitle(newPageGroupVersionRequest.getTitle());
+                    existingPageGroupVersion.setLanguage(newPageGroupVersionRequest.getLanguage());
+                    pageGroupVersionRepository.save(existingPageGroupVersion);
+                }
                 // Remove the request from the list
                 pageGroupRequest.getPageGroupVersions()
-                                .remove(newPageGroupVersionRequest.get());
+                                .remove(newPageGroupVersionRequest);
             } else {
                 // Delete the obsolete page group version
                 pageGroupVersionRepository.delete(existingPageGroupVersion);
@@ -227,8 +249,10 @@ public class PageService {
 
         // And if there is a new language entry, then we add it
         for (var pageGroupVersionRequest : pageGroupRequest.getPageGroupVersions()) {
-            var newPageGroupVersion = PageGroupVersion.of(pageGroupVersionRequest);
-            pageGroupVersionRepository.save(newPageGroupVersion);
+            if (languageVersions.contains(pageGroupVersionRequest.getLanguage())) {
+                var newPageGroupVersion = PageGroupVersion.of(pageGroupVersionRequest);
+                pageGroupVersionRepository.save(newPageGroupVersion);
+            }
         }
 
         // If the new status of the page group is DELETE, then update also all the pages in the group

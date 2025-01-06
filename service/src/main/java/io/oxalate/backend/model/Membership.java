@@ -20,10 +20,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Builder
 @Getter
 @Setter
+@ToString
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
@@ -59,6 +61,7 @@ public class Membership {
         return MembershipResponse.builder()
                 .id(this.id)
                 .userId(this.userId)
+                .username(this.user.getLastName() + " " + this.user.getFirstName())
                 .type(this.type)
                 .status(this.status)
                 .createdAt(this.startDate)

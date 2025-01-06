@@ -32,6 +32,16 @@ public interface MembershipAPI {
     @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<MembershipResponse>> getAllActiveMemberships(HttpServletRequest request);
 
+    @Operation(description = "Get the memberships by the id", tags = "MembershipAPI")
+    @Parameter(name = "id", description = "Membership ID for which the membership should be fetched", example = "123")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    @GetMapping(path = BASE_PATH + "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<MembershipResponse> getMembership(@PathVariable(name = "id") long membershipId, HttpServletRequest request);
+
     @Operation(description = "Get a list of all memberships for a specific user", tags = "MembershipAPI")
     @Parameter(name = "userId", description = "User ID for which all memberships should be fetched", example = "123")
     @ApiResponses(value = {

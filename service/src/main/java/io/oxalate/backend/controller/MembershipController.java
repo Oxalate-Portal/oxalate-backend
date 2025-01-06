@@ -23,9 +23,15 @@ public class MembershipController implements MembershipAPI {
     }
 
     @Override
-    public ResponseEntity<List<MembershipResponse>> getMembershipsForUser(long userId, HttpServletRequest request) {
-        var membershipResponse = membershipService.getMembershipsForUser(userId);
+    public ResponseEntity<MembershipResponse> getMembership(long membershipId, HttpServletRequest request) {
+        var membershipResponse = membershipService.findById(membershipId);
         return ResponseEntity.ok(membershipResponse);
+    }
+
+    @Override
+    public ResponseEntity<List<MembershipResponse>> getMembershipsForUser(long userId, HttpServletRequest request) {
+        var membershipResponses = membershipService.getMembershipsForUser(userId);
+        return ResponseEntity.ok(membershipResponses);
     }
 
     @Override

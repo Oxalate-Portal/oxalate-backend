@@ -24,6 +24,10 @@ public class MembershipResponse {
     @JsonProperty("userId")
     private long userId;
 
+    @Schema(description = "Clear text name of the user for whom the membership is", example = "Charlie Brown", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("username")
+    private String username;
+
     @Schema(description = "Membership status", example = "EXPIRED", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("status")
     private MembershipStatusEnum status;
