@@ -57,8 +57,7 @@ public class PeriodTool {
     }
 
     private static LocalDate calculatePeriodEnd(LocalDate periodStart, ChronoUnit unit, int unitCount) {
-        return periodStart.plus(unitCount, unit)
-                          .minusDays(1);
+        return periodStart.plus(unitCount, unit);
     }
 
     private static int getMaxUnitValue(ChronoUnit unit) {
