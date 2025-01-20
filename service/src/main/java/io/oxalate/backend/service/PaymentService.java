@@ -17,9 +17,9 @@ import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.PaymentStatusResponse;
 import io.oxalate.backend.model.Payment;
 import io.oxalate.backend.model.PeriodResult;
+import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.PaymentRepository;
 import io.oxalate.backend.tools.PeriodTool;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -31,6 +31,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Service;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PortalConfigurationService portalConfigurationService;
+    private final EventRepository eventRepository;
 
     public List<PaymentStatusResponse> getAllActivePaymentStatus() {
         var paymentStatusResponses = new ArrayList<PaymentStatusResponse>();
@@ -103,7 +105,7 @@ public class PaymentService {
         return activePayments;
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public PaymentStatusResponse savePayment(long userId, PaymentRequest paymentRequest) {
         switch (paymentRequest.getPaymentType()) {
         case ONE_TIME -> saveOneTimePayment(userId, paymentRequest.getPaymentCount());

@@ -5,6 +5,7 @@ import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.PaymentTypeEnum;
+import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
 import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
 import io.oxalate.backend.api.request.EventRequest;
@@ -17,7 +18,6 @@ import io.oxalate.backend.model.EventsParticipant;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,6 +27,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -80,9 +81,12 @@ public class EventService {
                 continue;
             }
 
-            eventRepository.addParticipantToEvent(participantId, eventRequest.getId(), ParticipantTypeEnum.USER.name(),
-                    paymentService.getBestAvailablePaymentType(participantId)
-                                  .name(), Instant.now());
+            var paymentType = paymentService.getBestAvailablePaymentType(participantId);
+            eventRepository.addParticipantToEvent(participantId, eventRequest.getId(), ParticipantTypeEnum.USER.name(), paymentType.name(), Instant.now());
+
+            if (paymentType.equals(ONE_TIME)) {
+                paymentService.decreaseOneTimePayment(participantId);
+            }
         }
 
         // Next we go through the current list, and if a participant is not in the new list, then we remove it
@@ -100,6 +104,12 @@ public class EventService {
             }
 
             eventRepository.removeParticipantFromEvent(currentParticipant.getUserId(), eventRequest.getId());
+
+            var paymentType = paymentService.getBestAvailablePaymentType(currentParticipant.getUserId());
+
+            if (paymentType.equals(ONE_TIME)) {
+                paymentService.increaseOneTimePayment(currentParticipant.getUserId(), 1);
+            }
         }
 
         // Finally we remove the organizer from the list, as we will add it back later
@@ -165,8 +175,12 @@ public class EventService {
             return null;
         }
 
-        eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentService.getBestAvailablePaymentType(user.getId())
-                                                                                                                    .name(), Instant.now());
+        var paymentType = paymentService.getBestAvailablePaymentType(user.getId());
+        eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentType.name(), Instant.now());
+
+        if (paymentType.equals(ONE_TIME)) {
+            paymentService.decreaseOneTimePayment(user.getId());
+        }
 
         return getRefreshedEventResponse(eventId).orElse(null);
     }
@@ -207,6 +221,13 @@ public class EventService {
         }
 
         eventRepository.removeParticipantFromEvent(user.getId(), eventId);
+
+        var paymentType = paymentService.getBestAvailablePaymentType(user.getId());
+
+        if (paymentType.equals(ONE_TIME)) {
+            paymentService.increaseOneTimePayment(user.getId(), 1);
+        }
+
         log.info("Removed user {} from event {}", user.getId(), eventId);
 
         return getRefreshedEventResponse(eventId).orElse(null);
