@@ -90,7 +90,15 @@ public class PaymentService {
                     return Optional.of(PERIOD);
                 }
             }
-            // No period was found
+
+            // No period was found, the entry has to be a one-time payment which has a count > 0
+            return Optional.of(ONE_TIME);
+        }
+
+        // This gets interesting, because what remains is the possibility that the user has a one-time payment with a count of 0 but which is still active
+        var emptyActiveOneTimePayment = paymentRepository.findActiveOneTimeByUserId(userId);
+
+        if (!emptyActiveOneTimePayment.isEmpty()) {
             return Optional.of(ONE_TIME);
         }
 
@@ -210,9 +218,9 @@ public class PaymentService {
      */
     @Transactional
     public PaymentStatusResponse increaseOneTimePayment(Long userId, int count) {
-        var oneTimePayment = paymentRepository.findByUserIdAndAndPaymentType(userId, ONE_TIME.name());
+        var oneTimePayment = paymentRepository.findActiveOneTimeByUserId(userId);
 
-        if (oneTimePayment.isEmpty() || oneTimePayment.get().getPaymentCount() < 1) {
+        if (oneTimePayment.isEmpty()) {
             var payment = Payment.builder()
                     .userId(userId)
                     .paymentType(ONE_TIME)
@@ -223,7 +231,7 @@ public class PaymentService {
             return getPaymentStatusForUser(userId);
         }
 
-        var payment = oneTimePayment.get();
+        var payment = oneTimePayment.getFirst();
         payment.setPaymentCount(payment.getPaymentCount() + count);
         paymentRepository.save(payment);
 

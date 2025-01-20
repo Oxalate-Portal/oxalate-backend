@@ -27,6 +27,9 @@ public interface PaymentRepository extends CrudRepository<Payment, Long> {
     @Query(nativeQuery = true, value = "SELECT * FROM payments WHERE user_id = :userId AND ((expires_at > NOW() AND payment_type = 'PERIOD') OR (payment_type = 'ONE_TIME' AND payment_count > 0))")
     Set<Payment> findAllActiveByUserId(@Param("userId") long userId);
 
+    @Query(nativeQuery = true, value = "SELECT * FROM payments WHERE user_id = :userId AND ((expires_at > NOW() AND payment_type = 'ONE_TIME') OR (expires_at IS NULL AND payment_type = 'ONE_TIME'))")
+    List<Payment> findActiveOneTimeByUserId(@Param("userId") long userId);
+
     @Query(nativeQuery = true,
             value = "SELECT DISTINCT p.user_id FROM payments p WHERE (p.expires_at > NOW() AND p.payment_type = 'PERIOD') OR (p.payment_type = 'ONE_TIME' AND p.payment_count > 0) ORDER BY p.user_id ASC")
     Set<Long> findAllUserIdWithActivePayments();
