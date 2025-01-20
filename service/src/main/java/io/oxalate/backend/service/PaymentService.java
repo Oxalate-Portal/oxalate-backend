@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +79,7 @@ public class PaymentService {
         return paymentResponses;
     }
 
-    public PaymentTypeEnum getBestAvailablePaymentType(long userId) {
+    public Optional<PaymentTypeEnum> getBestAvailablePaymentType(long userId) {
         // Check whether the user has a period payment, if not, mark up as a one time participation
         var payments = getActivePaymentsByUser(userId);
 
@@ -86,12 +87,14 @@ public class PaymentService {
             for (var payment : payments) {
                 if (payment.getPaymentType()
                            .equals(PaymentTypeEnum.PERIOD)) {
-                    return PERIOD;
+                    return Optional.of(PERIOD);
                 }
             }
+            // No period was found
+            return Optional.of(ONE_TIME);
         }
 
-        return ONE_TIME;
+        return Optional.empty();
     }
 
     public Set<Payment> getActivePaymentsByUser(long userId) {
