@@ -56,7 +56,7 @@ public class Payment {
                                             .id(this.id)
                                             .userId(this.userId)
                                             .paymentType(this.paymentType)
-                                            .paymentCount((long) this.paymentCount)
+                                            .paymentCount(this.paymentCount)
                                             .createdAt(this.createdAt)
                                             .build();
             case PERIOD -> PaymentResponse.builder()

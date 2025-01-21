@@ -26,5 +26,5 @@ public abstract class AbstractPayment {
 
     @Schema(description = "If type is ONE_TIME then this has to be positive integer", example = "4", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("paymentCount")
-    private Long paymentCount;
+    private Integer paymentCount;
 }

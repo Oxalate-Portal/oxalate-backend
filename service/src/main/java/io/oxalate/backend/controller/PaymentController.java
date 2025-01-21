@@ -3,6 +3,7 @@ package io.oxalate.backend.controller;
 import static io.oxalate.backend.api.AuditLevel.ERROR;
 import static io.oxalate.backend.api.AuditLevel.INFO;
 import static io.oxalate.backend.api.AuditLevel.WARN;
+import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import io.oxalate.backend.api.request.PaymentRequest;
@@ -14,6 +15,10 @@ import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_ALL_ACTIVE
 import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_ALL_ACTIVE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_ALL_ACTIVE_START;
 import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_ALL_ACTIVE_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_OK;
+import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_START;
+import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_USER_STATUS_OK;
 import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_USER_STATUS_START;
 import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_GET_USER_STATUS_UNAUTHORIZED;
@@ -32,6 +37,7 @@ import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -63,21 +69,25 @@ public class PaymentController implements PaymentAPI {
 
         var responseList = paymentService.getAllActivePaymentStatus();
 
-        for (PaymentStatusResponse response : responseList) {
-            var optionalUser = userService.findUserById(response.getUserId());
+        return appendNameToPaymentStatusResponse(request, auditUuid, responseList, PAYMENTS_GET_ALL_ACTIVE_FAIL, PAYMENTS_GET_ALL_ACTIVE_OK);
+    }
 
-            if (optionalUser.isEmpty()) {
-                appEventPublisher.publishAuditEvent(PAYMENTS_GET_ALL_ACTIVE_FAIL, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-                log.error("User ID {} from payments could not found", response.getUserId());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-            }
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatusOfType(PaymentTypeEnum paymentType, HttpServletRequest request) {
+        var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
-            var user = optionalUser.get();
-            response.setName(user.getLastName() + " " + user.getFirstName());
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
+            appEventPublisher.publishAuditEvent(PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            log.error("User ID {} tried to reset all periodic payments without proper permission", AuthTools.getCurrentUserId());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                 .body(null);
         }
 
-        appEventPublisher.publishAuditEvent(PAYMENTS_GET_ALL_ACTIVE_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return ResponseEntity.status(HttpStatus.OK).body(responseList);
+        var responseList = paymentService.getAllActivePaymentByType(paymentType);
+
+        return appendNameToPaymentStatusResponse(request, auditUuid, responseList, PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_FAIL,
+                PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_OK);
     }
 
     @Override
@@ -111,7 +121,7 @@ public class PaymentController implements PaymentAPI {
                                  .body(null);
         }
 
-        var response = paymentService.savePayment(paymentRequest.getUserId(), paymentRequest);
+        var response = paymentService.savePayment(paymentRequest);
         appEventPublisher.publishAuditEvent(PAYMENTS_ADD_OK + paymentRequest.getUserId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.status(HttpStatus.OK)
                              .body(response);
@@ -129,7 +139,7 @@ public class PaymentController implements PaymentAPI {
                                  .body(null);
         }
 
-        var response = paymentService.savePayment(paymentRequest.getUserId(), paymentRequest);
+        var response = paymentService.savePayment(paymentRequest);
 
         if (response == null) {
             appEventPublisher.publishAuditEvent(PAYMENTS_UPDATE_FAIL + paymentRequest.getUserId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
@@ -158,5 +168,24 @@ public class PaymentController implements PaymentAPI {
 
         appEventPublisher.publishAuditEvent(PAYMENTS_RESET_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.status(HttpStatus.OK).body(null);
+    }
+
+    private ResponseEntity<List<PaymentStatusResponse>> appendNameToPaymentStatusResponse(HttpServletRequest request, UUID auditUuid,
+            List<PaymentStatusResponse> responseList, String paymentsGetAllActiveWithTypeFail, String paymentsGetAllActiveWithTypeOk) {
+        for (PaymentStatusResponse response : responseList) {
+            var optionalUser = userService.findUserById(response.getUserId());
+
+            if (optionalUser.isEmpty()) {
+                appEventPublisher.publishAuditEvent(paymentsGetAllActiveWithTypeFail, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+                log.error("User ID {} from payments could not found", response.getUserId());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            }
+
+            var user = optionalUser.get();
+            response.setName(user.getLastName() + " " + user.getFirstName());
+        }
+
+        appEventPublisher.publishAuditEvent(paymentsGetAllActiveWithTypeOk, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+        return ResponseEntity.status(HttpStatus.OK).body(responseList);
     }
 }

@@ -37,4 +37,14 @@ public interface PaymentRepository extends CrudRepository<Payment, Long> {
     @Query(nativeQuery = true, value = "UPDATE payments SET expires_at = NOW() WHERE expires_at > NOW() AND payment_type = 'PERIOD'")
     @Modifying
     void resetAllPeriodicPayments();
+
+    @Query(nativeQuery = true,
+            value = """
+                    SELECT DISTINCT ON (p.user_id, p.payment_type) *
+                    FROM payments p
+                    WHERE (p.expires_at > NOW() OR p.expires_at IS NULL)
+                      AND p.payment_type = :paymentType
+                    ORDER BY p.user_id, p.payment_type, p.created_at DESC
+                    """)
+    List<Payment> findAllPaymentsWithActivePaymentsAndPaymentType(@Param("paymentType") String paymentType);
 }

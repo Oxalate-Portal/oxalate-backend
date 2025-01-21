@@ -178,6 +178,11 @@ public class AppAuditMessages {
     public static final String PAYMENTS_GET_ALL_ACTIVE_FAIL = "Failed retrieving all active payment information";
     public static final String PAYMENTS_GET_ALL_ACTIVE_OK = "Active payments retrieved";
 
+    public static final String PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_START = "Retrieving all active payment information with type";
+    public static final String PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_UNAUTHORIZED = "User was not authorized to retrieve all active payment information with type";
+    public static final String PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_FAIL = "Failed retrieving all active payment information with type";
+    public static final String PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_OK = "Active payments retrieved with type";
+
     public static final String PAYMENTS_GET_USER_STATUS_START = "";
     public static final String PAYMENTS_GET_USER_STATUS_UNAUTHORIZED = "Unauthorized user tried to retrieve payment status for user ID: ";
     public static final String PAYMENTS_GET_USER_STATUS_OK = "";
