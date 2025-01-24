@@ -316,8 +316,7 @@ public class UserController implements UserAPI {
 
         for (User user : users) {
             var adminUserResponse = user.toAdminUserResponse();
-            adminUserResponse.setStatus(user.getStatus()
-                                            .name());
+            adminUserResponse.setStatus(user.getStatus());
             adminUserResponses.add(adminUserResponse);
         }
 

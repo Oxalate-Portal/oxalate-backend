@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.api.response.PaymentStatusResponse;
@@ -32,7 +33,17 @@ public interface PaymentAPI {
     @GetMapping(path = BASE_PATH + "/active", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatus(HttpServletRequest request);
 
-    @Operation(description = "Get the payment status a specific user", tags = "PaymentAPI")
+    @Operation(description = "Get all active payment status of given payment type", tags = "PaymentAPI")
+    @Parameter(name = "paymentType", description = "Payment type for which current payment status should be fetched", example = "ONE_TIME")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    @GetMapping(path = BASE_PATH + "/active/{paymentType}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatusOfType(@PathVariable(name = "paymentType") PaymentTypeEnum paymentType, HttpServletRequest request);
+
+    @Operation(description = "Get the payment status for a specific user", tags = "PaymentAPI")
     @Parameter(name = "userId", description = "User ID for which current payment status should be fetched", example = "123")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Status retrieved successfully"),

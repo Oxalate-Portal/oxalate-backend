@@ -48,6 +48,7 @@ public class PageController implements PageAPI {
                              .body(paths);
     }
 
+    // TODO Confirm that this can be removed
     @Override
     public ResponseEntity<List<PageGroupResponse>> getPagesByPath(String path, String language, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(PAGES_GET_PAGES_BY_PATH_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());

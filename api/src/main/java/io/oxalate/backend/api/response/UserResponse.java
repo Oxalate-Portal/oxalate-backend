@@ -3,6 +3,7 @@ package io.oxalate.backend.api.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -38,6 +39,9 @@ public class UserResponse {
 
     @JsonProperty("payments")
     private Set<PaymentResponse> payments;
+
+    @JsonProperty("memberships")
+    private List<MembershipResponse> memberships;
 
     @JsonProperty("approvedTerms")
     private boolean approvedTerms;

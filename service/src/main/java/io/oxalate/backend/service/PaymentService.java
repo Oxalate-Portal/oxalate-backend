@@ -3,24 +3,35 @@ package io.oxalate.backend.service;
 import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
+import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.TIMEZONE;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
-import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.START_MONTH;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_LENGTH;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START_POINT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_TYPE;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_UNIT;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.PaymentStatusResponse;
 import io.oxalate.backend.model.Payment;
+import io.oxalate.backend.model.PeriodResult;
 import io.oxalate.backend.repository.PaymentRepository;
-import jakarta.transaction.Transactional;
+import io.oxalate.backend.tools.PeriodTool;
 import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -41,20 +52,37 @@ public class PaymentService {
         return paymentStatusResponses;
     }
 
+    public List<PaymentStatusResponse> getAllActivePaymentByType(PaymentTypeEnum paymentType) {
+        var paymentStatusResponses = new ArrayList<PaymentStatusResponse>();
+
+        var paymentList = paymentRepository.findAllPaymentsWithActivePaymentsAndPaymentType(paymentType.name());
+
+        for (var payment : paymentList) {
+            var paymentStatusResponse = PaymentStatusResponse.builder()
+                                                             .userId(payment.getUserId())
+                                                             .status(UpdateStatusEnum.OK)
+                                                             .payments(Set.of(payment.toPaymentResponse()))
+                                                             .build();
+            paymentStatusResponses.add(paymentStatusResponse);
+        }
+
+        return paymentStatusResponses;
+    }
+
     public PaymentStatusResponse getPaymentStatusForUser(long userId) {
-        var paymentResponses = getActivePaymentRespondsByUser(userId);
+        var paymentResponses = getActivePaymentResponsesByUser(userId);
 
         var paymentStatusResponse = PaymentStatusResponse.builder()
-                .userId(userId)
-                .status(UpdateStatusEnum.OK)
-                .payments(paymentResponses)
-                .build();
+                                                         .userId(userId)
+                                                         .status(UpdateStatusEnum.OK)
+                                                         .payments(paymentResponses)
+                                                         .build();
 
         log.debug("Payment status response for user ID {}: {}", userId, paymentStatusResponse);
         return paymentStatusResponse;
     }
 
-    public Set<PaymentResponse> getActivePaymentRespondsByUser(long userId) {
+    public Set<PaymentResponse> getActivePaymentResponsesByUser(long userId) {
         var payments = getActivePaymentsByUser(userId);
         var paymentResponses = new HashSet<PaymentResponse>();
 
@@ -66,7 +94,7 @@ public class PaymentService {
         return paymentResponses;
     }
 
-    public PaymentTypeEnum getBestAvailablePaymentType(long userId) {
+    public Optional<PaymentTypeEnum> getBestAvailablePaymentType(long userId) {
         // Check whether the user has a period payment, if not, mark up as a one time participation
         var payments = getActivePaymentsByUser(userId);
 
@@ -74,12 +102,22 @@ public class PaymentService {
             for (var payment : payments) {
                 if (payment.getPaymentType()
                            .equals(PaymentTypeEnum.PERIOD)) {
-                    return PERIOD;
+                    return Optional.of(PERIOD);
                 }
             }
+
+            // No period was found, the entry has to be a one-time payment which has a count > 0
+            return Optional.of(ONE_TIME);
         }
 
-        return ONE_TIME;
+        // This gets interesting, because what remains is the possibility that the user has a one-time payment with a count of 0 but which is still active
+        var emptyActiveOneTimePayment = paymentRepository.findActiveOneTimeByUserId(userId);
+
+        if (!emptyActiveOneTimePayment.isEmpty()) {
+            return Optional.of(ONE_TIME);
+        }
+
+        return Optional.empty();
     }
 
     public Set<Payment> getActivePaymentsByUser(long userId) {
@@ -93,57 +131,115 @@ public class PaymentService {
         return activePayments;
     }
 
-    @org.springframework.transaction.annotation.Transactional
-    public PaymentStatusResponse savePayment(long userId, PaymentRequest paymentRequest) {
+    @Transactional
+    public PaymentStatusResponse savePayment(PaymentRequest paymentRequest) {
+        PaymentResponse PaymentResponse = null;
         switch (paymentRequest.getPaymentType()) {
-        case ONE_TIME -> saveOneTimePayment(userId, paymentRequest.getPaymentCount());
-        case PERIOD -> savePeriodPayment(userId);
+        case ONE_TIME -> PaymentResponse = saveOneTimePayment(paymentRequest);
+        case PERIOD -> PaymentResponse = savePeriodPayment(paymentRequest.getUserId());
         default -> log.error("Unknown payment type: {}", paymentRequest.getPaymentType());
         }
 
-        return getPaymentStatusForUser(userId);
+        if (PaymentResponse == null) {
+            return PaymentStatusResponse.builder()
+                                        .userId(paymentRequest.getUserId())
+                                        .status(UpdateStatusEnum.FAIL)
+                                        .build();
+        }
+
+        return getPaymentStatusForUser(paymentRequest.getUserId());
     }
 
     @Transactional
-    public void saveOneTimePayment(long userId, long count) {
-        var payment = Payment.builder()
-                .userId(userId)
-                .paymentType(ONE_TIME)
-                .createdAt(Instant.now())
-                .paymentCount((int) count)
-                .build();
+    public PaymentResponse saveOneTimePayment(PaymentRequest paymentRequest) {
+        // First check if the given request points to an active one-time payment
+        if (paymentRequest.getId() > 0) {
+            var oldPayment = paymentRepository.findById(paymentRequest.getId());
 
-        paymentRepository.save(payment);
+            if (oldPayment.isPresent()
+                    && (oldPayment.get()
+                                  .getExpiresAt() == null || oldPayment.get()
+                                                                       .getExpiresAt()
+                                                                       .isAfter(Instant.now()))) {
+                var payment = oldPayment.get();
+                payment.setPaymentCount(paymentRequest.getPaymentCount());
+                var newPayment = paymentRepository.save(payment);
+
+                return newPayment.toPaymentResponse();
+            }
+        }
+
+        // Else find the latest non-expired one-time payment
+        var activeOnetimePaymentList = paymentRepository.findActiveOneTimeByUserId(paymentRequest.getUserId());
+
+        if (activeOnetimePaymentList.isEmpty()) {
+            var payment = Payment.builder()
+                                 .userId(paymentRequest.getUserId())
+                                 .paymentType(ONE_TIME)
+                                 .createdAt(Instant.now())
+                                 .paymentCount(paymentRequest.getPaymentCount())
+                                 .build();
+
+            var newPayment = paymentRepository.save(payment);
+
+            return newPayment.toPaymentResponse();
+        } else {
+            var payment = activeOnetimePaymentList.getFirst();
+            payment.setPaymentCount(payment.getPaymentCount());
+            var newPayment = paymentRepository.save(payment);
+
+            return newPayment.toPaymentResponse();
+        }
     }
 
     /**
      * Saves a period payment to the database, the payment will be saved for the current period
      *
-     * @param userId user id
+     * @param userId User ID
      */
 
     @Transactional
-    public void savePeriodPayment(long userId) {
+    public PaymentResponse savePeriodPayment(long userId) {
         var now = Instant.now();
-        var localDate = now.atZone(ZoneOffset.UTC).toLocalDate();
-        var currentMonth = localDate.getMonthValue();
-        var endYear = localDate.getYear();
-        var periodStartMonth = portalConfigurationService.getNumericConfiguration(PAYMENT.group, START_MONTH.key);
 
-        if (currentMonth >= periodStartMonth) {
-            endYear++;
+        // Get the type of period from the portal configuration
+        var periodTypeString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_TYPE.key);
+
+        if (periodTypeString == null) {
+            log.error("Could not find period type for key: {}", PAYMENT_PERIOD_START_POINT.key);
+            return null;
         }
 
-        var endDate = Instant.parse(endYear + "-" + String.format("%02d", periodStartMonth) + "-01T00:00:00.00Z");
+        var periodResult = new PeriodResult();
 
+        var periodUnitString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_UNIT.key);
+        var periodUnit = ChronoUnit.valueOf(periodUnitString);
+        var unitCount = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_LENGTH.key);
+
+        if (periodTypeString.equals("periodical")) {
+            var periodStart = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
+            var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
+            var calculationStartDate = LocalDate.parse(calculationStart);
+            periodResult = PeriodTool.calculatePeriod(now, calculationStartDate, periodUnit, (int) periodStart, (int) unitCount);
+        } else {
+            periodResult.setStartDate(LocalDate.now());
+            periodResult.setEndDate(LocalDate.now()
+                                             .plus(unitCount, periodUnit));
+        }
+
+        var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
+        var zoneId = ZoneId.of(timezone);
         var payment = Payment.builder()
-                .userId(userId)
-                .paymentType(PERIOD)
-                .createdAt(Instant.now())
-                .expiresAt(endDate)
-                .build();
+                             .userId(userId)
+                             .paymentType(PERIOD)
+                             .createdAt(Instant.now())
+                             .expiresAt(periodResult.getEndDate()
+                                                    .atStartOfDay(zoneId)
+                                                    .toInstant())
+                             .build();
 
-        paymentRepository.save(payment);
+        var newPayment = paymentRepository.save(payment);
+        return newPayment.toPaymentResponse();
     }
 
     /**
@@ -157,7 +253,8 @@ public class PaymentService {
     public PaymentStatusResponse decreaseOneTimePayment(long userId) {
         var oneTimePayment = paymentRepository.findByUserIdAndAndPaymentType(userId, ONE_TIME.name());
 
-        if (oneTimePayment.isEmpty() || oneTimePayment.get().getPaymentCount() < 1) {
+        if (oneTimePayment.isEmpty() || oneTimePayment.get()
+                                                      .getPaymentCount() < 1) {
             log.warn("User {} does not have any valid time payment entries", userId);
             return null;
         }
@@ -179,20 +276,20 @@ public class PaymentService {
      */
     @Transactional
     public PaymentStatusResponse increaseOneTimePayment(Long userId, int count) {
-        var oneTimePayment = paymentRepository.findByUserIdAndAndPaymentType(userId, ONE_TIME.name());
+        var oneTimePayment = paymentRepository.findActiveOneTimeByUserId(userId);
 
-        if (oneTimePayment.isEmpty() || oneTimePayment.get().getPaymentCount() < 1) {
+        if (oneTimePayment.isEmpty()) {
             var payment = Payment.builder()
-                    .userId(userId)
-                    .paymentType(ONE_TIME)
-                    .createdAt(Instant.now())
-                    .paymentCount(count)
-                    .build();
+                                 .userId(userId)
+                                 .paymentType(ONE_TIME)
+                                 .createdAt(Instant.now())
+                                 .paymentCount(count)
+                                 .build();
             paymentRepository.save(payment);
             return getPaymentStatusForUser(userId);
         }
 
-        var payment = oneTimePayment.get();
+        var payment = oneTimePayment.getFirst();
         payment.setPaymentCount(payment.getPaymentCount() + count);
         paymentRepository.save(payment);
 

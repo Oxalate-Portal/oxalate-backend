@@ -1,6 +1,7 @@
 package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.oxalate.backend.api.UserStatus;
 import java.time.Instant;
 import java.util.Set;
 import lombok.Data;
@@ -19,7 +20,7 @@ public class AdminUserResponse extends UserResponse {
     private Set<String> roles;
 
     @JsonProperty("status")
-    private String status;
+    private UserStatus status;
 
     @JsonProperty("privacy")
     private boolean privacy;

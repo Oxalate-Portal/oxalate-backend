@@ -9,6 +9,7 @@ import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.model.Role;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventRepository;
+import io.oxalate.backend.repository.MembershipRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -31,6 +32,7 @@ public class UserService {
     // Note! We can't use EventService here because it would cause a circular dependency
     private final EventRepository eventRepository;
     private final PaymentService paymentService;
+    private final MembershipRepository membershipRepository;
 
     private final String ANONYMIZED_STRING = "<Anonymized>";
 
@@ -103,6 +105,9 @@ public class UserService {
 
         var organizedEvents = eventRepository.findByOrganizer(user.getId());
         user.setOrganizedEvents(organizedEvents);
+
+        var memberships = membershipRepository.findByUserId(user.getId());
+        user.setMembership(memberships);
         user.setPayments(paymentService.getActivePaymentsByUser(user.getId()));
         user.setDiveCount(eventRepository.countDivesByUserId(user.getId()));
     }

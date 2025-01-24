@@ -4,6 +4,7 @@ public enum PortalConfigEnum {
     EMAIL("email", EmailConfigEnum.class),
     FRONTEND("frontend", FrontendConfigEnum.class),
     GENERAL("general", GeneralConfigEnum.class),
+    MEMBERSHIP("membership", MembershipConfigEnum.class),
     PAYMENT("payment", PaymentConfigEnum.class);
 
     public final String group;
@@ -63,11 +64,31 @@ public enum PortalConfigEnum {
         }
     }
 
+    public enum MembershipConfigEnum {
+        EVENT_REQUIRE_MEMBERSHIP("event-require-membership"),
+        MEMBERSHIP_PERIOD_LENGTH("membership-period-length"),
+        MEMBERSHIP_PERIOD_START("membership-period-start"),
+        MEMBERSHIP_PERIOD_START_POINT("membership-period-start-point"),
+        MEMBERSHIP_PERIOD_UNIT("membership-period-unit"),
+        MEMBERSHIP_TYPE("membership-type");
+
+        public final String key;
+
+        MembershipConfigEnum(String key) {
+            this.key = key;
+        }
+    }
+
     // Sub-enum for payment-related settings
     public enum PaymentConfigEnum {
-        ENABLED_PAYMENT_METHODS("enabled-payment-methods"),
         EVENT_REQUIRE_PAYMENT("event-require-payment"),
-        START_MONTH("start-month");
+        PAYMENT_ENABLED("payment-enabled"),
+        PAYMENT_PERIOD_LENGTH("payment-period-length"),
+        PAYMENT_PERIOD_START("payment-period-start"),
+        PAYMENT_PERIOD_START_POINT("payment-period-start-point"),
+        PERIODICAL_PAYMENT_METHOD_TYPE("periodical-payment-method-type"),
+        PERIODICAL_PAYMENT_METHOD_UNIT("periodical-payment-method-unit"),
+        SINGLE_PAYMENT_ENABLED("single-payment-enabled");
 
         public final String key;
 

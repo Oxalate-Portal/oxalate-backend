@@ -5,6 +5,7 @@ import io.oxalate.backend.api.UserStatus;
 import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.EventUserResponse;
+import io.oxalate.backend.api.response.MembershipResponse;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.UserResponse;
 import jakarta.persistence.Column;
@@ -116,6 +117,9 @@ public class User {
     @Transient
     private Set<Payment> payments;
 
+    @Transient
+    private List<Membership> membership;
+
     public User(SignupRequest signupRequest) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         this.username = signupRequest.getUsername();
@@ -194,13 +198,18 @@ public class User {
                             .name());
         }
 
+        var membershipResponses = new ArrayList<MembershipResponse>();
+
+        for (Membership membership : this.getMembership()) {
+            membershipResponses.add(membership.toResponse());
+        }
+
         return AdminUserResponse.builder()
                                 .id(this.id)
                                 .firstName(this.firstName)
                                 .lastName(this.lastName)
                                 .username(this.username)
-                                .status(this.getStatus()
-                                            .name())
+                                .status(this.getStatus())
                                 .phoneNumber(this.phoneNumber)
                                 .privacy(this.isPrivacy())
                                 .nextOfKin(this.getNextOfKin())
@@ -208,6 +217,7 @@ public class User {
                                 .approvedTerms(this.approvedTerms)
                                 .diveCount(this.diveCount)
                                 .payments(paymentResponses)
+                                .memberships(membershipResponses)
                                 .roles(roleSet)
                                 .language(this.language)
                                 .lastSeen(this.lastSeen)

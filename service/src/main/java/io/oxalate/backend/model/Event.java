@@ -1,9 +1,11 @@
 package io.oxalate.backend.model;
 
+import io.oxalate.backend.api.DiveTypeEnum;
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -33,7 +35,8 @@ public class Event {
     @Column(name = "id")
     private long id;
 
-    private String type;
+    @Convert(converter = DiveTypeEnumConverter.class)
+    private DiveTypeEnum type;
 
     @Column(name = "title")
     @Size(min = 4, message = "Event title must be longer than 4 characters long")

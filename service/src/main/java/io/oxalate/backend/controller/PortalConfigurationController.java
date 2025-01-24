@@ -33,7 +33,7 @@ public class PortalConfigurationController implements PortalConfigurationAPI {
     private final AppEventPublisher appEventPublisher;
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<List<PortalConfigurationResponse>> getAllConfigurations(HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(PORTAL_CONFIG_GET_ALL_START, INFO, request, AUDIT_NAME, userId);
@@ -68,6 +68,7 @@ public class PortalConfigurationController implements PortalConfigurationAPI {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PortalConfigurationResponse>> reloadPortalConfigurations(HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(PORTAL_CONFIG_RELOAD_START, INFO, request, AUDIT_NAME, userId);

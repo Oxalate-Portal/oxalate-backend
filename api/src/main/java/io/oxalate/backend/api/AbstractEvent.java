@@ -18,7 +18,7 @@ public abstract class AbstractEvent {
     private long id;
 
     @JsonProperty("type")
-    private String type;
+    private DiveTypeEnum type;
 
     @JsonProperty("title")
     @Size(min = 4, message = "Event title must be longer than 4 characters long")

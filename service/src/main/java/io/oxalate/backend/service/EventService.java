@@ -5,6 +5,7 @@ import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.PaymentTypeEnum;
+import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
 import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
 import io.oxalate.backend.api.request.EventRequest;
@@ -17,7 +18,6 @@ import io.oxalate.backend.model.EventsParticipant;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,6 +27,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -80,9 +81,21 @@ public class EventService {
                 continue;
             }
 
-            eventRepository.addParticipantToEvent(participantId, eventRequest.getId(), ParticipantTypeEnum.USER.name(),
-                    paymentService.getBestAvailablePaymentType(participantId)
-                                  .name(), Instant.now());
+            var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
+
+            if (optionalPaymentTypeEnum.isEmpty()) {
+                log.error("Failed to get payment type for user {}, will not add user to event", participantId);
+            } else {
+                var paymentTypeEnum = optionalPaymentTypeEnum.get();
+
+                if (paymentTypeEnum.equals(ONE_TIME)) {
+                    paymentService.decreaseOneTimePayment(participantId);
+
+                }
+
+                eventRepository.addParticipantToEvent(participantId, eventRequest.getId(), ParticipantTypeEnum.USER.name(),
+                        paymentTypeEnum.name(), Instant.now());
+            }
         }
 
         // Next we go through the current list, and if a participant is not in the new list, then we remove it
@@ -100,6 +113,18 @@ public class EventService {
             }
 
             eventRepository.removeParticipantFromEvent(currentParticipant.getUserId(), eventRequest.getId());
+
+            var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(currentParticipant.getUserId());
+
+            if (optionalPaymentTypeEnum.isEmpty()) {
+                log.error("Failed to get payment type for user {}, will not update any payment information as the player should never have been able to subscribe to an event", currentParticipant.getUserId());
+            } else {
+                var paymentTypeEnum = optionalPaymentTypeEnum.get();
+
+                if (paymentTypeEnum.equals(ONE_TIME)) {
+                    paymentService.increaseOneTimePayment(currentParticipant.getUserId(), 1);
+                }
+            }
         }
 
         // Finally we remove the organizer from the list, as we will add it back later
@@ -165,8 +190,19 @@ public class EventService {
             return null;
         }
 
-        eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentService.getBestAvailablePaymentType(user.getId())
-                                                                                                                    .name(), Instant.now());
+        var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(user.getId());
+
+        if (optionalPaymentTypeEnum.isEmpty()) {
+            log.error("Failed to get payment type for user {}, will not add user to event", user.getId());
+            return null;
+        }
+
+        var paymentTypeEnum = optionalPaymentTypeEnum.get();
+        eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentTypeEnum.name(), Instant.now());
+
+        if (paymentTypeEnum.equals(ONE_TIME)) {
+            paymentService.decreaseOneTimePayment(user.getId());
+        }
 
         return getRefreshedEventResponse(eventId).orElse(null);
     }
@@ -207,6 +243,19 @@ public class EventService {
         }
 
         eventRepository.removeParticipantFromEvent(user.getId(), eventId);
+
+        var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(user.getId());
+
+        if (optionalPaymentTypeEnum.isEmpty()) {
+            log.error("Failed to get payment type for user {}, will not update any payment information as the player should never have been able to subscribe to an event", user.getId());
+        } else {
+            var paymentTypeEnum = optionalPaymentTypeEnum.get();
+
+            if (paymentTypeEnum.equals(ONE_TIME)) {
+                paymentService.increaseOneTimePayment(user.getId(), 1);
+            }
+        }
+
         log.info("Removed user {} from event {}", user.getId(), eventId);
 
         return getRefreshedEventResponse(eventId).orElse(null);
@@ -392,9 +441,21 @@ public class EventService {
         // Add participants
         if (eventRequest.getParticipants() != null) {
             for (Long participantId : eventRequest.getParticipants()) {
-                eventRepository.addParticipantToEvent(participantId, newEvent.getId(), ParticipantTypeEnum.USER.name(),
-                        paymentService.getBestAvailablePaymentType(participantId)
-                                      .name(), Instant.now());
+                var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
+
+                if (optionalPaymentTypeEnum.isEmpty()) {
+                    log.error("Failed to get payment type for user {}, will not add user to event", participantId);
+                } else {
+                    var paymentTypeEnum = optionalPaymentTypeEnum.get();
+
+                    if (paymentTypeEnum.equals(ONE_TIME)) {
+                        paymentService.decreaseOneTimePayment(participantId);
+
+                    }
+
+                    eventRepository.addParticipantToEvent(participantId, newEvent.getId(), ParticipantTypeEnum.USER.name(),
+                            paymentTypeEnum.name(), Instant.now());
+                }
             }
         }
 

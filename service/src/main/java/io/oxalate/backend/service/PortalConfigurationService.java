@@ -58,21 +58,31 @@ public class PortalConfigurationService {
     }
 
     public String getStringConfiguration(String group, String key) {
-        var config = getPortalConfiguration(group, key);
+        var optionalConfig = getPortalConfiguration(group, key);
 
-        if (config.isPresent()) {
-            if (config.get()
-                      .getRuntimeValue() != null) {
-                return config.get()
-                             .getRuntimeValue();
+        if (optionalConfig.isPresent()) {
+            var portalConfiguration = optionalConfig.get();
+
+            if (portalConfiguration.getRuntimeValue() != null) {
+                return portalConfiguration.getRuntimeValue();
             }
 
-            return config.get()
-                         .getDefaultValue();
+            return portalConfiguration.getDefaultValue();
         }
 
         log.error("Could not find configuration for group: {} and key: {}", group, key);
         return null;
+    }
+
+    /**
+     * A wrapper for getStringConfiguration that returns the same value. The conversion to enum has to be on the caller-side since it knows which enum to use.
+     * This aĺso handles the case where only default value is set in case which the first item only is picked.
+     */
+    public String getEnumConfiguration(String group, String key) {
+        var stringValue = getStringConfiguration(group, key);
+
+        // Return only the first comma separated part of the value as this handles the case where we receive the default value
+        return stringValue.split(",")[0];
     }
 
     public boolean getBooleanConfiguration(String group, String key) {
