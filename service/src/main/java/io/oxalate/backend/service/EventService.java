@@ -12,7 +12,7 @@ import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
-import io.oxalate.backend.api.response.EventUserResponse;
+import io.oxalate.backend.api.response.ListUserResponse;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.EventsParticipant;
 import io.oxalate.backend.model.User;
@@ -207,9 +207,9 @@ public class EventService {
         return getRefreshedEventResponse(eventId).orElse(null);
     }
 
-    private boolean isUserInList(long userId, List<EventUserResponse> eventUserResponseList) {
-        for (EventUserResponse eventUserResponse : eventUserResponseList) {
-            if (eventUserResponse.getId() == userId) {
+    private boolean isUserInList(long userId, List<ListUserResponse> listUserResponseList) {
+        for (ListUserResponse listUserResponse : listUserResponseList) {
+            if (listUserResponse.getId() == userId) {
                 return true;
             }
         }
@@ -231,10 +231,16 @@ public class EventService {
             return null;
         }
 
+        // If the event has already started, then we don't allow the diver to remove themselves
+        if (eventResponse.getStartTime().isBefore(Instant.now())) {
+            log.warn("Can not remove user from event {} as it has already started", eventId);
+            return null;
+        }
+
         // Get the list of participant user IDs
         var participantIds = new HashSet<Long>();
-        for (EventUserResponse eventUserResponse : eventResponse.getParticipants()) {
-            participantIds.add(eventUserResponse.getId());
+        for (ListUserResponse listUserResponse : eventResponse.getParticipants()) {
+            participantIds.add(listUserResponse.getId());
         }
 
         if (!participantIds.contains(user.getId())) {
@@ -375,7 +381,7 @@ public class EventService {
         }
 
         var participants = userService.findEventParticipants(event.getId());
-        var participantList = new ArrayList<EventUserResponse>();
+        var participantList = new ArrayList<ListUserResponse>();
 
         for (User participant : participants) {
             var eventUserResponse = participant.toEventUserResponse();

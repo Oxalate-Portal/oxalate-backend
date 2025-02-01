@@ -152,6 +152,7 @@ public interface EventAPI {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Unsubscription successful"),
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
+            @ApiResponse(responseCode = "423", description = "Event can not be modified anymore"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")

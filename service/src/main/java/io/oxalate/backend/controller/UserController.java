@@ -11,7 +11,7 @@ import io.oxalate.backend.api.request.TermRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.request.UserUpdateRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
-import io.oxalate.backend.api.response.EventUserResponse;
+import io.oxalate.backend.api.response.ListUserResponse;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_DETAILS_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_DETAILS_OK;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_DETAILS_START;
@@ -249,10 +249,10 @@ public class UserController implements UserAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<EventUserResponse>> getUserIdNameListWithRole(RoleEnum roleEnum, HttpServletRequest request) {
+    public ResponseEntity<List<ListUserResponse>> getUserIdNameListWithRole(RoleEnum roleEnum, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(USERS_GET_WITH_ROLE_START + roleEnum, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
         var users = userService.findAllByRole(roleEnum);
-        var userIdNameResponses = new ArrayList<EventUserResponse>();
+        var userIdNameResponses = new ArrayList<ListUserResponse>();
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)) {
             appEventPublisher.publishAuditEvent(USERS_GET_WITH_ROLE_UNAUTHORIZED + roleEnum, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
@@ -266,7 +266,7 @@ public class UserController implements UserAPI {
         }
 
         var sortedList = userIdNameResponses.stream()
-                                            .sorted(Comparator.comparing(EventUserResponse::getName))
+                                            .sorted(Comparator.comparing(ListUserResponse::getName))
                                             .collect(Collectors.toCollection(ArrayList::new));
         appEventPublisher.publishAuditEvent(USERS_GET_WITH_ROLE_OK + roleEnum, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.status(HttpStatus.OK)

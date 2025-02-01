@@ -52,7 +52,7 @@ public class PeriodTool {
     }
 
     private static boolean isDateWithinPeriod(LocalDate date, LocalDate periodStart, ChronoUnit unit, int unitCount) {
-        LocalDate periodEnd = calculatePeriodEnd(periodStart, unit, unitCount);
+        var periodEnd = calculatePeriodEnd(periodStart, unit, unitCount);
         return (date.isEqual(periodStart) || date.isAfter(periodStart)) && date.isBefore(periodEnd.plusDays(1));
     }
 

@@ -152,8 +152,10 @@ public class PaymentService {
 
     @Transactional
     public PaymentResponse saveOneTimePayment(PaymentRequest paymentRequest) {
+        log.debug("Saving one-time payment: {}", paymentRequest);
         // First check if the given request points to an active one-time payment
-        if (paymentRequest.getId() > 0) {
+        if (paymentRequest.getId() > 0L) {
+            log.debug("Updating existing one-time payment ID: {}", paymentRequest.getId());
             var oldPayment = paymentRepository.findById(paymentRequest.getId());
 
             if (oldPayment.isPresent()
@@ -166,6 +168,8 @@ public class PaymentService {
                 var newPayment = paymentRepository.save(payment);
 
                 return newPayment.toPaymentResponse();
+            } else {
+                log.warn("Could not find active one-time payment with ID: {}", paymentRequest.getId());
             }
         }
 

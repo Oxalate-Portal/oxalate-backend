@@ -1,10 +1,11 @@
 package io.oxalate.backend.model;
 
+import io.oxalate.backend.api.MembershipStatusEnum;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.UserStatus;
 import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
-import io.oxalate.backend.api.response.EventUserResponse;
+import io.oxalate.backend.api.response.ListUserResponse;
 import io.oxalate.backend.api.response.MembershipResponse;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.UserResponse;
@@ -141,7 +142,7 @@ public class User {
         this.lastSeen = Instant.now();
     }
 
-    public EventUserResponse toEventUserResponse() {
+    public ListUserResponse toEventUserResponse() {
         var paymentResponses = new HashSet<PaymentResponse>();
 
         if (this.payments != null) {
@@ -150,13 +151,18 @@ public class User {
             }
         }
 
-        return EventUserResponse.builder()
-                                .id(this.id)
-                                .name(this.lastName + " " + this.firstName)
-                                .eventDiveCount(this.diveCount)
-                                .createdAt(null)
-                                .payments(paymentResponses)
-                                .build();
+        var activeMembership = this.membership.stream()
+                                              .anyMatch(membership -> membership.getStatus()
+                                                                                .equals(MembershipStatusEnum.ACTIVE));
+
+        return ListUserResponse.builder()
+                               .id(this.id)
+                               .name(this.lastName + " " + this.firstName)
+                               .eventDiveCount(this.diveCount)
+                               .createdAt(null)
+                               .payments(paymentResponses)
+                               .membershipActive(activeMembership)
+                               .build();
     }
 
     public UserResponse toUserResponse() {

@@ -6,7 +6,7 @@ import io.oxalate.backend.api.request.TermRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.request.UserUpdateRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
-import io.oxalate.backend.api.response.EventUserResponse;
+import io.oxalate.backend.api.response.ListUserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -43,7 +43,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping(value = BASE_PATH + "/role/{role}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventUserResponse>> getUserIdNameListWithRole(@PathVariable("role") RoleEnum roleEnum, HttpServletRequest request);
+    ResponseEntity<List<ListUserResponse>> getUserIdNameListWithRole(@PathVariable("role") RoleEnum roleEnum, HttpServletRequest request);
 
     @Operation(description = "Show specific user details", tags = "UserAPI")
     @Parameter(name = "userId", description = "User ID to be retrieved", example = "123", required = true)
