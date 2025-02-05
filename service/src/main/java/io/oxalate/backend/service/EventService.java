@@ -84,7 +84,7 @@ public class EventService {
             var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
 
             if (optionalPaymentTypeEnum.isEmpty()) {
-                log.error("Failed to get payment type for user {}, will not add user to event", participantId);
+                log.error("Failed to get payment type for user {}, will not add user to event when updating event", participantId);
             } else {
                 var paymentTypeEnum = optionalPaymentTypeEnum.get();
 

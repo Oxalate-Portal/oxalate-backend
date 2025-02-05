@@ -1,6 +1,5 @@
 package io.oxalate.backend;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -15,11 +14,6 @@ public abstract class AbstractIntegrationTest {
     @BeforeAll
     static void beforeAll() {
         POSTGRES_CONTAINER.start();
-    }
-
-    @AfterAll
-    static void afterAll() {
-        POSTGRES_CONTAINER.stop();
     }
 
     @DynamicPropertySource

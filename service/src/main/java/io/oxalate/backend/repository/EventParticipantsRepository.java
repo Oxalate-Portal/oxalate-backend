@@ -18,4 +18,15 @@ public interface EventParticipantsRepository extends CrudRepository<EventsPartic
     EventsParticipant findByEventIdAndUserId(long eventId, Long userId);
 
     List<EventsParticipant> findAllByEventId(long eventId);
+
+    @Query(nativeQuery = true, value = """
+            SELECT DISTINCT ep.event_id
+            FROM event_participants ep, events e\s
+            WHERE ep.user_id = 100
+              AND ep.event_id = e.id
+              AND ep.payment_type = 'ONE_TIME'
+              AND e.start_time + (e.event_duration * INTERVAL '1 hour') > NOW()
+            ORDER BY ep.event_id
+            """)
+	List<Long> findOneTimeFutureEventParticipantsByUserId(long userId);
 }

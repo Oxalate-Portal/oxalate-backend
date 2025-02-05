@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "PaymentAPI", description = "Payment REST endpoints")
 public interface PaymentAPI {
@@ -75,11 +76,12 @@ public interface PaymentAPI {
     ResponseEntity<PaymentStatusResponse> updatePaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
 
     @Operation(description = "Reset all period payments immediately. This will update the period payment expiration time to now()", tags = "PaymentAPI")
+    @Parameter(name = "paymentType", description = "Type of payments that needs to be reset", example = "ONE_TIME")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Reset completed successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping(path = BASE_PATH + "/reset")
-    ResponseEntity<Void> resetAllPeriodicPayments(HttpServletRequest request);
+    ResponseEntity<Void> resetAllPayments(@RequestParam(value = "paymentType") PaymentTypeEnum paymentType, HttpServletRequest request);
 }

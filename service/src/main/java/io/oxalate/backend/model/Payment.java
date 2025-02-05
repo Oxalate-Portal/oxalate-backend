@@ -58,6 +58,7 @@ public class Payment {
                                             .paymentType(this.paymentType)
                                             .paymentCount(this.paymentCount)
                                             .createdAt(this.createdAt)
+                                            .expiresAt(this.expiresAt)
                                             .build();
             case PERIOD -> PaymentResponse.builder()
                                           .id(this.id)
