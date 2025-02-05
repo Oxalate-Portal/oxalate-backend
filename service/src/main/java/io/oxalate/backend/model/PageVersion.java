@@ -52,7 +52,7 @@ public class PageVersion {
 
     public static PageVersion of(PageVersionRequest pageVersionRequest) {
         return PageVersion.builder()
-                          .id(pageVersionRequest.getId())
+                          .id(pageVersionRequest.getId() == 0L ? null : pageVersionRequest.getId())
                           .pageId((pageVersionRequest.getPageId() == 0L ? null : pageVersionRequest.getPageId()))
                           .language(pageVersionRequest.getLanguage())
                           .title(pageVersionRequest.getTitle())

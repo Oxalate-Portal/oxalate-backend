@@ -4,12 +4,12 @@ import io.oxalate.backend.api.request.MessageRequest;
 import io.oxalate.backend.api.response.MessageResponse;
 import io.oxalate.backend.model.Message;
 import io.oxalate.backend.repository.MessageRepository;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
