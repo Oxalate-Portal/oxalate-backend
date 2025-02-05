@@ -340,12 +340,10 @@ public class PageService {
         var page = Page.of(pageRequest, userId);
         // Add page
         var newPage = pageRepository.save(page);
-        log.info("Stored page: {}", newPage);
 
         for (var pageVersionRequest : pageRequest.getPageVersions()) {
             pageVersionRequest.setPageId(newPage.getId());
             var pageVersion = PageVersion.of(pageVersionRequest);
-            log.info("Storing page version: {}", pageVersion);
             pageVersionRepository.save(pageVersion);
         }
 
