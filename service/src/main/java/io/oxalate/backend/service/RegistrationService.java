@@ -6,7 +6,6 @@ import io.oxalate.backend.model.TokenType;
 import static io.oxalate.backend.model.TokenType.EMAIL_RESEND;
 import static io.oxalate.backend.model.TokenType.REGISTRATION;
 import io.oxalate.backend.repository.TokenRepository;
-import jakarta.transaction.Transactional;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import java.time.Instant;
 import java.util.UUID;
@@ -14,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor

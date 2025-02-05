@@ -9,7 +9,6 @@ import io.oxalate.backend.api.response.CertificateResponse;
 import io.oxalate.backend.model.Certificate;
 import io.oxalate.backend.repository.CertificateRepository;
 import io.oxalate.backend.repository.filetransfer.CertificateDocumentRepository;
-import jakarta.transaction.Transactional;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j

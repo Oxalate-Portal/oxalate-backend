@@ -5,13 +5,13 @@ import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.security.AuthenticationFailureListener;
 import io.oxalate.backend.security.LoginAttemptService;
-import jakarta.transaction.Transactional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service

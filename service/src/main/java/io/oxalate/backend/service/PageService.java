@@ -23,7 +23,6 @@ import io.oxalate.backend.repository.PageGroupVersionRepository;
 import io.oxalate.backend.repository.PageRepository;
 import io.oxalate.backend.repository.PageRoleAccessRepository;
 import io.oxalate.backend.repository.PageVersionRepository;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -340,10 +340,12 @@ public class PageService {
         var page = Page.of(pageRequest, userId);
         // Add page
         var newPage = pageRepository.save(page);
+        log.info("Stored page: {}", newPage);
 
         for (var pageVersionRequest : pageRequest.getPageVersions()) {
             pageVersionRequest.setPageId(newPage.getId());
             var pageVersion = PageVersion.of(pageVersionRequest);
+            log.info("Storing page version: {}", pageVersion);
             pageVersionRepository.save(pageVersion);
         }
 
