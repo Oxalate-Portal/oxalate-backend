@@ -196,28 +196,9 @@ public class PaymentService {
                 payment.setPaymentCount(paymentRequest.getPaymentCount());
 
                 // Check if the current portal configuration for payments has the expiration enabled
-                var oneTimeType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
-
-                var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
-                var zoneId = ZoneId.of(timezone);
-                var chronoUnit = ChronoUnit.valueOf(portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_UNIT.key));
-                var expirationUnits = portalConfigurationService.getNumericConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_LENGTH.key);
-                var startDate = LocalDate.parse(portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key));
-                var periodStartPoint = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
-
-                switch (oneTimeType) {
-                case "perpetual" -> payment.setExpiresAt(null);
-                case "periodical" -> {
-                    var periodResult = PeriodTool.calculatePeriod(Instant.now(), startDate, chronoUnit, periodStartPoint, expirationUnits);
-                    payment.setExpiresAt(periodResult.getEndDate()
-                                                     .atStartOfDay(zoneId)
-                                                     .toInstant());
-                }
-                case "durational" -> payment.setExpiresAt(Instant.now()
-                                                                 .plus(expirationUnits, chronoUnit)
-                                                                 .atZone(zoneId)
-                                                                 .toInstant());
-                }
+                var oneTimeExpirationType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
+                var expiresAt = getExpirationTime(oneTimeExpirationType);
+                payment.setExpiresAt(expiresAt);
 
                 var newPayment = paymentRepository.save(payment);
 
@@ -232,18 +213,9 @@ public class PaymentService {
 
         if (activeOnetimePaymentList.isEmpty()) {
             // If the one-time expiration configuration is enabled, then we need to calculate the expiration date
-            Instant expiresAt = null;
-            if (!portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key)
-                                           .equals("disabled")) {
-                var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
-                var zoneId = ZoneId.of(timezone);
-                var chronoUnit = ChronoUnit.valueOf(portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_UNIT.key));
-                var expirationUnits = portalConfigurationService.getNumericConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_LENGTH.key);
-                expiresAt = Instant.now()
-                                   .plus(expirationUnits, chronoUnit)
-                                   .atZone(zoneId)
-                                   .toInstant();
-            }
+            var oneTimeExpirationType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
+
+            var expiresAt = getExpirationTime(oneTimeExpirationType);
 
             var payment = Payment.builder()
                                  .userId(paymentRequest.getUserId())
@@ -263,6 +235,92 @@ public class PaymentService {
 
             return newPayment.toPaymentResponse();
         }
+    }
+
+    protected Instant getExpirationTime(String oneTimeExpirationType) {
+        var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
+        var zoneId = ZoneId.of(timezone);
+        var chronoUnit = ChronoUnit.valueOf(portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_UNIT.key));
+        var unitCounts = portalConfigurationService.getNumericConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_LENGTH.key);
+        var startDate = LocalDate.parse(portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key));
+        var periodStartPoint = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
+
+        switch (oneTimeExpirationType) {
+            case "disabled", "perpetual" -> {
+                return null;
+            }
+            case "periodical" -> {
+                var periodResult = PeriodTool.calculatePeriod(Instant.now(), startDate, chronoUnit, periodStartPoint, unitCounts);
+                return periodResult.getEndDate()
+                                   .atStartOfDay(zoneId)
+                                   .toInstant();
+            }
+            case "durational" -> {
+                // This gets tricky because some chronoUnits can not be just added to the current time, so e.g. if we add one month to 31.01., we should get 28.02.
+                // same as if it was 30.01. or 29.01. We need to cover all months that are not 31 days long
+
+                if (chronoUnit == ChronoUnit.MONTHS) {
+                    // Get the current date day
+                    var currentDate = LocalDate.now(zoneId);
+                    var startDateDay = currentDate.getDayOfMonth();
+                    // Get the current month number
+                    var startDateMonth = currentDate.getMonthValue();
+                    var endYear = currentDate.getYear();
+                    // Calculate the end month number
+                    int endMonth = startDateMonth + (int) unitCounts;
+                    int endDay = startDateDay;
+
+                    while (endMonth > 12) {
+                        endMonth = endMonth - 12;
+                        endYear++;
+                    }
+
+                    // At this point we have sorted out the year and the month of the end date. Next we need to figure out what the day should be.
+                    // We can just raise the month number with the unit counts if the current month day is 28 or less.
+                    // Else we need to do some magic to get the correct day.
+                    if (startDateDay > 28) {
+                        // Get the length of the end month of the end year (keep in mind that it could be a leap year February
+                        var endMonthLength = LocalDate.of(endYear, endMonth, 1)
+                                                      .lengthOfMonth();
+                        // If end month length is less than the current day, we need to set the day to the last day of the month
+                        if (endMonthLength > startDateDay) {
+                            endDay = endMonthLength;
+                        }
+                    }
+                    // Now we can assemble the end date
+                    var endDateString = String.format("%d-%02d-%02d", endYear, endMonth, endDay);
+                    var endDate = LocalDate.parse(endDateString);
+                    // And convert it to an instant
+                    return endDate.atStartOfDay(zoneId)
+                                  .toInstant();
+                } else if (chronoUnit == ChronoUnit.YEARS) {
+                    // This is almost the same as for months, but we only need to consider the leap year February, otherwise we just increase the year
+                    // If the current date is 29.02. we need to set the end date to 28.02. of the next year
+                    var currentDate = LocalDate.now(zoneId);
+
+                    var startDateDay = currentDate.getDayOfMonth();
+                    var startDateMonth = currentDate.getMonthValue();
+                    var endYear = currentDate.getYear() + (int) unitCounts;
+                    var endDate = startDateDay;
+
+                    if (startDateDay == 29 && startDateMonth == 2) {
+                        endDate = 28;
+                    }
+
+                    return LocalDate.of(endYear, startDateMonth, endDate)
+                                   .atStartOfDay(zoneId)
+                                   .toInstant();
+                } else {
+                    return LocalDate.now()
+                                    .plus(unitCounts, chronoUnit)
+                                    .atStartOfDay()
+                                    .atZone(zoneId)
+                                    .toInstant();
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
