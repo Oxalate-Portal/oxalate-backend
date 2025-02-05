@@ -20,7 +20,7 @@ public class PeriodToolUTC {
             "2024-08-06T13:13:13.432Z, 2024-04-22, WEEKS,  26, 4, 2024-07-22, 2024-08-19"
     })
     @ParameterizedTest
-    void periodResultV2Ok(Instant nowInstant, LocalDate localDate, ChronoUnit calendarUnit, int periodStart, int unitCount, LocalDate startDate,
+    void periodResultV2Ok(Instant nowInstant, LocalDate localDate, ChronoUnit calendarUnit, long periodStart, long unitCount, LocalDate startDate,
             LocalDate endDate) {
         var periodResult = PeriodTool.calculatePeriod(nowInstant, localDate, calendarUnit, periodStart, unitCount);
         assertEquals(startDate, periodResult.getStartDate());

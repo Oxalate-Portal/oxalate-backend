@@ -45,6 +45,7 @@ import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.rest.UserAPI;
 import io.oxalate.backend.service.AnonymizeService;
+import io.oxalate.backend.service.PaymentService;
 import io.oxalate.backend.service.RoleService;
 import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
@@ -69,6 +70,7 @@ public class UserController implements UserAPI {
     private final UserService userService;
     private final RoleService roleService;
     private final AnonymizeService anonymizeService;
+    private final PaymentService paymentService;
 
     private static final String AUDIT_NAME = "UserController";
     private final AppEventPublisher appEventPublisher;
@@ -262,7 +264,10 @@ public class UserController implements UserAPI {
         }
 
         for (User user : users) {
-            userIdNameResponses.add(user.toEventUserResponse());
+            var userResponse = user.toEventUserResponse();
+            var paymentResponses = paymentService.getActivePaymentResponsesByUser(user.getId());
+            userResponse.setPayments(paymentResponses);
+            userIdNameResponses.add(userResponse);
         }
 
         var sortedList = userIdNameResponses.stream()

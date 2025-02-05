@@ -6,17 +6,22 @@ import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
 import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
 import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.TIMEZONE;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.ONE_TIME_PAYMENT_EXPIRATION_LENGTH;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.ONE_TIME_PAYMENT_EXPIRATION_TYPE;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.ONE_TIME_PAYMENT_EXPIRATION_UNIT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_LENGTH;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START_POINT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_TYPE;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_UNIT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.SINGLE_PAYMENT_ENABLED;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.PaymentStatusResponse;
 import io.oxalate.backend.model.Payment;
 import io.oxalate.backend.model.PeriodResult;
+import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.PaymentRepository;
 import io.oxalate.backend.tools.PeriodTool;
 import java.time.Instant;
@@ -39,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PortalConfigurationService portalConfigurationService;
+    private final EventParticipantsRepository eventParticipantsRepository;
 
     public List<PaymentStatusResponse> getAllActivePaymentStatus() {
         var paymentStatusResponses = new ArrayList<PaymentStatusResponse>();
@@ -71,6 +77,14 @@ public class PaymentService {
 
     public PaymentStatusResponse getPaymentStatusForUser(long userId) {
         var paymentResponses = getActivePaymentResponsesByUser(userId);
+        // Populate the list of one-time payments used in future events
+        var futureEventList = eventParticipantsRepository.findOneTimeFutureEventParticipantsByUserId(userId);
+        for (var paymentResponse : paymentResponses) {
+            if (paymentResponse.getPaymentType()
+                               .equals(ONE_TIME)) {
+                paymentResponse.setBoundEvents(futureEventList);
+            }
+        }
 
         var paymentStatusResponse = PaymentStatusResponse.builder()
                                                          .userId(userId)
@@ -87,7 +101,14 @@ public class PaymentService {
         var paymentResponses = new HashSet<PaymentResponse>();
 
         for (Payment payment : payments) {
-            paymentResponses.add(payment.toPaymentResponse());
+            var paymentResponse = payment.toPaymentResponse();
+
+            if (payment.getPaymentType().equals(ONE_TIME)) {
+                var futureEventList = eventParticipantsRepository.findOneTimeFutureEventParticipantsByUserId(userId);
+                paymentResponse.setBoundEvents(futureEventList);
+            }
+
+            paymentResponses.add(paymentResponse);
         }
 
         log.debug("Found active payment responds for user ID {}: {}", userId, paymentResponses);
@@ -134,6 +155,7 @@ public class PaymentService {
     @Transactional
     public PaymentStatusResponse savePayment(PaymentRequest paymentRequest) {
         PaymentResponse PaymentResponse = null;
+
         switch (paymentRequest.getPaymentType()) {
         case ONE_TIME -> PaymentResponse = saveOneTimePayment(paymentRequest);
         case PERIOD -> PaymentResponse = savePeriodPayment(paymentRequest.getUserId());
@@ -152,6 +174,13 @@ public class PaymentService {
 
     @Transactional
     public PaymentResponse saveOneTimePayment(PaymentRequest paymentRequest) {
+        // Check first if one-time payment is enabled
+        var isOneTimeEnabled = portalConfigurationService.getBooleanConfiguration(PAYMENT.group, SINGLE_PAYMENT_ENABLED.key);
+        if (!isOneTimeEnabled) {
+            log.warn("One-time payment ({} {}) is disabled: {}", PAYMENT.group, SINGLE_PAYMENT_ENABLED.key, isOneTimeEnabled);
+            return null;
+        }
+
         log.debug("Saving one-time payment: {}", paymentRequest);
         // First check if the given request points to an active one-time payment
         if (paymentRequest.getId() > 0L) {
@@ -165,6 +194,31 @@ public class PaymentService {
                                                                        .isAfter(Instant.now()))) {
                 var payment = oldPayment.get();
                 payment.setPaymentCount(paymentRequest.getPaymentCount());
+
+                // Check if the current portal configuration for payments has the expiration enabled
+                var oneTimeType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
+
+                var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
+                var zoneId = ZoneId.of(timezone);
+                var chronoUnit = ChronoUnit.valueOf(portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_UNIT.key));
+                var expirationUnits = portalConfigurationService.getNumericConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_LENGTH.key);
+                var startDate = LocalDate.parse(portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key));
+                var periodStartPoint = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
+
+                switch (oneTimeType) {
+                case "perpetual" -> payment.setExpiresAt(null);
+                case "periodical" -> {
+                    var periodResult = PeriodTool.calculatePeriod(Instant.now(), startDate, chronoUnit, periodStartPoint, expirationUnits);
+                    payment.setExpiresAt(periodResult.getEndDate()
+                                                     .atStartOfDay(zoneId)
+                                                     .toInstant());
+                }
+                case "durational" -> payment.setExpiresAt(Instant.now()
+                                                                 .plus(expirationUnits, chronoUnit)
+                                                                 .atZone(zoneId)
+                                                                 .toInstant());
+                }
+
                 var newPayment = paymentRepository.save(payment);
 
                 return newPayment.toPaymentResponse();
@@ -177,10 +231,25 @@ public class PaymentService {
         var activeOnetimePaymentList = paymentRepository.findActiveOneTimeByUserId(paymentRequest.getUserId());
 
         if (activeOnetimePaymentList.isEmpty()) {
+            // If the one-time expiration configuration is enabled, then we need to calculate the expiration date
+            Instant expiresAt = null;
+            if (!portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key)
+                                           .equals("disabled")) {
+                var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
+                var zoneId = ZoneId.of(timezone);
+                var chronoUnit = ChronoUnit.valueOf(portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_UNIT.key));
+                var expirationUnits = portalConfigurationService.getNumericConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_LENGTH.key);
+                expiresAt = Instant.now()
+                                   .plus(expirationUnits, chronoUnit)
+                                   .atZone(zoneId)
+                                   .toInstant();
+            }
+
             var payment = Payment.builder()
                                  .userId(paymentRequest.getUserId())
                                  .paymentType(ONE_TIME)
                                  .createdAt(Instant.now())
+                                 .expiresAt(expiresAt)
                                  .paymentCount(paymentRequest.getPaymentCount())
                                  .build();
 
@@ -224,7 +293,7 @@ public class PaymentService {
             var periodStart = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
             var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
             var calculationStartDate = LocalDate.parse(calculationStart);
-            periodResult = PeriodTool.calculatePeriod(now, calculationStartDate, periodUnit, (int) periodStart, (int) unitCount);
+            periodResult = PeriodTool.calculatePeriod(now, calculationStartDate, periodUnit, periodStart, unitCount);
         } else {
             periodResult.setStartDate(LocalDate.now());
             periodResult.setEndDate(LocalDate.now()
@@ -301,9 +370,9 @@ public class PaymentService {
     }
 
     @Transactional
-    public boolean resetAllPeriodicPayments() {
+    public boolean resetAllPayments(PaymentTypeEnum paymentType) {
         try {
-            paymentRepository.resetAllPeriodicPayments();
+            paymentRepository.resetAllPayments(paymentType.name());
         } catch (Exception e) {
             log.error("Failed to reset all periodic payments", e);
             return false;

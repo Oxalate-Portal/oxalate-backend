@@ -30,6 +30,7 @@
             <plugin> <!-- This is needed so that maven finds the correct MainClass in service module -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring.boot.version}</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>

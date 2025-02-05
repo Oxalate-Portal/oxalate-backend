@@ -120,8 +120,7 @@ public class MembershipService {
                     MEMBERSHIP_PERIOD_START_POINT.key);
             var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
             var calculationStartDate = LocalDate.parse(calculationStart);
-            periodResult = PeriodTool.calculatePeriod(now, calculationStartDate, membershipPeriodUnit, (int) membershipPeriodStartPoint,
-                    (int) membershipPeriodLength);
+            periodResult = PeriodTool.calculatePeriod(now, calculationStartDate, membershipPeriodUnit, membershipPeriodStartPoint, membershipPeriodLength);
         } else {
             periodResult.setStartDate(LocalDate.now());
             periodResult.setEndDate(LocalDate.now()
@@ -194,7 +193,6 @@ public class MembershipService {
 
     private MembershipTypeEnum getMembershipTypeSetting() {
         var membershipTypeString = portalConfigurationService.getEnumConfiguration(PortalConfigEnum.MEMBERSHIP.group, MEMBERSHIP_TYPE.key);
-        var membershipType = MembershipTypeEnum.fromString(membershipTypeString);
-        return membershipType;
+        return MembershipTypeEnum.fromString(membershipTypeString);
     }
 }
