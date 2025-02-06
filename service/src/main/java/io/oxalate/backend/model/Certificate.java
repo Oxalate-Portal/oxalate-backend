@@ -8,7 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.Instant;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,7 +45,7 @@ public class Certificate {
     private String diverId;
 
     @Column(name = "certification_date")
-    private Instant certificationDate;
+    private LocalDate certificationDate;
 
     public CertificateResponse toCertificateResponse() {
         return CertificateResponse.builder()

@@ -25,6 +25,7 @@ import io.oxalate.backend.service.RoleService;
 import io.oxalate.backend.service.UserService;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -163,20 +164,24 @@ public class TestController implements TestAPI {
             var certificateRequest = CertificateRequest.builder()
                                                        .organization(getCertificateOrganization())
                                                        .certificateName(getDiveCertificationPrefix() + " " + getDiveCertificationName())
-                                                       .certificateId(RandomStringUtils.secure().nextAlphanumeric(7))
-                                                       .diverId(RandomStringUtils.secure().nextAlphanumeric(7))
-                                                       .certificationDate(createDate.minus(RandomUtils.secure()
-                                                                                                      .randomLong(100, 5000), ChronoUnit.DAYS))
+                                                       .certificateId(RandomStringUtils.secure()
+                                                                                       .nextAlphanumeric(7))
+                                                       .diverId(RandomStringUtils.secure()
+                                                                                 .nextAlphanumeric(7))
+                                                       .certificationDate(LocalDate.from(createDate.minus(RandomUtils.secure()
+                                                                                                                     .randomLong(100, 5000), ChronoUnit.DAYS)))
                                                        .build();
             while (certificateService.findCertificateByUserOrgAndCertification(user.getId(), certificateRequest.getOrganization(),
                     certificateRequest.getCertificateName()) != null) {
                 certificateRequest = CertificateRequest.builder()
                                                        .organization(getCertificateOrganization())
                                                        .certificateName(getDiveCertificationPrefix() + " " + getDiveCertificationName())
-                                                       .certificateId(RandomStringUtils.secure().nextAlphanumeric(7))
-                                                       .diverId(RandomStringUtils.secure().nextAlphanumeric(7))
-                                                       .certificationDate(createDate.minus(RandomUtils.secure()
-                                                                                                      .randomLong(100, 5000), ChronoUnit.DAYS))
+                                                       .certificateId(RandomStringUtils.secure()
+                                                                                       .nextAlphanumeric(7))
+                                                       .diverId(RandomStringUtils.secure()
+                                                                                 .nextAlphanumeric(7))
+                                                       .certificationDate(LocalDate.from(createDate.minus(RandomUtils.secure()
+                                                                                                                     .randomLong(100, 5000), ChronoUnit.DAYS)))
                                                        .build();
             }
 
@@ -211,8 +216,11 @@ public class TestController implements TestAPI {
         var username = firstName + "." + lastName + "_" + i + "@test.tld";
         log.info("Generating user: {}", username);
         var password = authService.generatePasswordHash(PASSWORD);
-        var phoneNumber = String.valueOf(RandomUtils.secure().randomLong(30000000000L, 99999999999L));
-        var nextOfKin = RandomStringUtils.secure().nextAlphabetic(18) + " " + RandomUtils.secure().randomLong(30000000000L, 99999999999L);
+        var phoneNumber = String.valueOf(RandomUtils.secure()
+                                                    .randomLong(30000000000L, 99999999999L));
+        var nextOfKin = RandomStringUtils.secure()
+                                         .nextAlphabetic(18) + " " + RandomUtils.secure()
+                                                                                .randomLong(30000000000L, 99999999999L);
 
         var user = User.builder()
                        .username(username)
@@ -224,7 +232,8 @@ public class TestController implements TestAPI {
                        .nextOfKin(nextOfKin)
                        .phoneNumber(phoneNumber)
                        .registered(Instant.now()
-                                          .minus(RandomUtils.secure().randomLong(0, DAYS_BACK), ChronoUnit.DAYS))
+                                          .minus(RandomUtils.secure()
+                                                            .randomLong(0, DAYS_BACK), ChronoUnit.DAYS))
                        .approvedTerms(true)
                        .build();
 
@@ -238,8 +247,10 @@ public class TestController implements TestAPI {
                                    .randomInt(3, 24);
 
         var event = Event.builder()
-                         .title("Event " + RandomStringUtils.secure().nextAlphabetic(10))
-                         .description("Event " + RandomStringUtils.secure().nextAlphabetic(100))
+                         .title("Event " + RandomStringUtils.secure()
+                                                            .nextAlphabetic(10))
+                         .description("Event " + RandomStringUtils.secure()
+                                                                  .nextAlphabetic(100))
                          .eventDuration(RandomUtils.secure()
                                                    .randomInt(4, 24))
                          .maxDuration(RandomUtils.secure()
@@ -335,8 +346,11 @@ public class TestController implements TestAPI {
 
     private User generateRandomUser(RandomUserInfo userInfo, Instant createInstant) {
         var password = authService.generatePasswordHash(PASSWORD);
-        var phoneNumber = String.valueOf(RandomUtils.secure().randomLong(30000000000L, 99999999999L));
-        var nextOfKin = "Next" + RandomStringUtils.secure().nextAlphabetic(18) + " " + RandomUtils.secure().randomLong(30000000000L, 99999999999L);
+        var phoneNumber = String.valueOf(RandomUtils.secure()
+                                                    .randomLong(30000000000L, 99999999999L));
+        var nextOfKin = "Next" + RandomStringUtils.secure()
+                                                  .nextAlphabetic(18) + " " + RandomUtils.secure()
+                                                                                         .randomLong(30000000000L, 99999999999L);
         var language = List.of("de", "fi", "en", "sv")
                            .get(RandomUtils.secure()
                                            .randomInt(0, 4));
@@ -348,7 +362,8 @@ public class TestController implements TestAPI {
                 break;
             }
 
-            userInfo.setEmail(RandomStringUtils.secure().nextAlphabetic (4) + "_" + userInfo.getEmail());
+            userInfo.setEmail(RandomStringUtils.secure()
+                                               .nextAlphabetic(4) + "_" + userInfo.getEmail());
         }
 
         var user = User.builder()

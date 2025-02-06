@@ -10,7 +10,7 @@ import io.oxalate.backend.model.Certificate;
 import io.oxalate.backend.repository.CertificateRepository;
 import io.oxalate.backend.repository.filetransfer.CertificateDocumentRepository;
 import java.nio.file.Paths;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -153,7 +153,7 @@ public class CertificateService {
             certificate.setDiverId(UUID.randomUUID().toString());
             certificate.setCertificateId(UUID.randomUUID().toString());
             certificate.setCertificateName(UUID.randomUUID().toString());
-            certificate.setCertificationDate(Instant.ofEpochSecond(31337));
+            certificate.setCertificationDate(LocalDate.MIN);
         }
 
         certificateRepository.saveAll(certificates);
