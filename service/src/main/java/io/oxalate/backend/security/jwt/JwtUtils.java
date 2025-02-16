@@ -27,14 +27,14 @@ public class JwtUtils {
 
     @Value("${oxalate.app.jwt-secret}")
     private String jwtSecret;
-    @Value("${oxalate.app.jwt-expiration-ms}")
-    private int jwtExpirationMs;
+    @Value("${oxalate.app.jwt-expiration}")
+    private int jwtExpiration;
     private final Key secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
 
     public String generateJwtToken(Authentication authentication) {
         var userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
         var nowDate = Instant.now();
-        var expDate = nowDate.plus(jwtExpirationMs, ChronoUnit.MILLIS);
+        var expDate = nowDate.plus(jwtExpiration, ChronoUnit.SECONDS);
 
         return Jwts.builder()
                    .setSubject((userPrincipal.getUsername()))

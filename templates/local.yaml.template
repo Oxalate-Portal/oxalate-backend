@@ -29,7 +29,7 @@ oxalate:
     backend-url: http://localhost:8080
     frontend-url: http://localhost:3000
     jwt-secret: <Add a very long random string here>
-    jwt-expiration-ms: 86400000
+    jwt-expiration: 86400
   cors:
     allowed-origins: ${oxalate.app.frontend-url},http://localhost:3001
   first-time: false

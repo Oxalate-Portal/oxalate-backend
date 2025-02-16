@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.response.download.DownloadCertificateResponse;
 import io.oxalate.backend.api.response.download.DownloadDiveResponse;
@@ -24,7 +25,7 @@ public interface DataDownloadAPI {
             @ApiResponse(responseCode = "200", description = "List of certificate download retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/certificates", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<DownloadCertificateResponse>> downloadCertificates(HttpServletRequest request);
 
@@ -33,7 +34,7 @@ public interface DataDownloadAPI {
             @ApiResponse(responseCode = "200", description = "List of dive download retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/dives", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<DownloadDiveResponse>> downloadDives(HttpServletRequest request);
 
@@ -42,7 +43,7 @@ public interface DataDownloadAPI {
             @ApiResponse(responseCode = "200", description = "List of payment download retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/payments", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<DownloadPaymentResponse>> downloadPayments(HttpServletRequest request);
 }

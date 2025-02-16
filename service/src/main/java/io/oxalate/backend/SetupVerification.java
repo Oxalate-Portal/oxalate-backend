@@ -32,7 +32,7 @@ class SetupVerification implements ApplicationContextAware {
             { "oxalate.app.backend-url", "string" },
             { "oxalate.app.frontend-url", "string" },
             { "oxalate.app.jwt-secret", "string" },
-            { "oxalate.app.jwt-expiration-ms", "number" },
+            { "oxalate.app.jwt-expiration", "number" },
             { "oxalate.cors.allowed-origins", "string" },
             { "oxalate.captcha.enabled", "boolean" },
             { "oxalate.captcha.site-key", "string" },

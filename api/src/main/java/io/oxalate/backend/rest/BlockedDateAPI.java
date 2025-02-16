@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.BlockedDateRequest;
 import io.oxalate.backend.api.response.BlockedDateResponse;
@@ -29,7 +30,7 @@ public interface BlockedDateAPI {
             @ApiResponse(responseCode = "401", description = "Unauthorized access"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<BlockedDateResponse>> getAllBlockedDates(HttpServletRequest request);
 
@@ -40,7 +41,7 @@ public interface BlockedDateAPI {
             @ApiResponse(responseCode = "401", description = "Unauthorized access"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<BlockedDateResponse> addBlockedDate(@RequestBody BlockedDateRequest blockedDateRequest, HttpServletRequest request);
 
@@ -52,7 +53,7 @@ public interface BlockedDateAPI {
             @ApiResponse(responseCode = "404", description = "Given blocked date ID not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(value = BASE_PATH + "/{blockedDateId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> removeBlockedDate(@PathVariable("blockedDateId") long blockedDateId, HttpServletRequest request);
 }

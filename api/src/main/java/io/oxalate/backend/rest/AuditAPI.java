@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.response.AuditEntryResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +33,7 @@ public interface AuditAPI {
             @ApiResponse(responseCode = "200", description = "List of audit entries retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Page<AuditEntryResponse>> getAuditEvents(
             @RequestParam(name = "page", defaultValue = "0") int page,
@@ -52,7 +53,7 @@ public interface AuditAPI {
             @ApiResponse(responseCode = "200", description = "List of audit entries for a user retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Page<AuditEntryResponse>> getAuditEventsByUserId(
             @PathVariable("userId") long userId,

@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import io.oxalate.backend.api.request.EmailNotificationSubscriptionRequest;
 import io.oxalate.backend.api.response.EmailNotificationSubscriptionResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,7 +25,7 @@ public interface EmailNotificationSubscriptionAPI {
             @ApiResponse(responseCode = "200", description = "List of subscriptions retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EmailNotificationSubscriptionResponse>> getAllEmailNotificationSubscriptions(HttpServletRequest request);
 
@@ -36,7 +37,7 @@ public interface EmailNotificationSubscriptionAPI {
             @ApiResponse(responseCode = "200", description = "List of subscriptions retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EmailNotificationSubscriptionResponse>> subscribeToEmailNotifications(HttpServletRequest request, @RequestBody EmailNotificationSubscriptionRequest subscriptions);
 

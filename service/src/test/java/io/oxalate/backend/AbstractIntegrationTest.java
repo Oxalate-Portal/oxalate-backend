@@ -21,7 +21,7 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
         registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-        registry.add("oxalate.app.jwt-expiration-ms", () -> 3600000);
+        registry.add("oxalate.app.jwt-expiration", () -> 3600);
         registry.add("oxalate.upload.directory", () -> "/tmp/oxalate");
     }
 }

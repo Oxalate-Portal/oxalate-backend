@@ -7,7 +7,7 @@ import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import static io.oxalate.backend.api.UrlConstants.PAGES_URL;
 import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.security.jwt.AuthEntryPointJwt;
-import io.oxalate.backend.security.jwt.AuthTokenFilter;
+import io.oxalate.backend.security.jwt.JwtUtils;
 import io.oxalate.backend.security.service.UserDetailsServiceImpl;
 import io.oxalate.backend.service.RecaptchaService;
 import java.util.Collections;
@@ -45,6 +45,7 @@ public class WebSecurityConfig {
     private final AuthEntryPointJwt unauthorizedHandler;
     private final RecaptchaService recaptchaService;
     private final AppEventPublisher appEventPublisher;
+    private final JwtUtils jwtUtils;
 
     @Value("${oxalate.cors.allowed-origins}")
     private String allowedOrigins;
@@ -86,7 +87,7 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(new RecaptchaFilter(recaptchaService, appEventPublisher), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtCookieAuthenticationFilter(jwtUtils), UsernamePasswordAuthenticationFilter.class)
         ;
 
         return http.build();
@@ -99,6 +100,7 @@ public class WebSecurityConfig {
         configuration.setAllowedOrigins(Collections.singletonList(allowedOrigins));
         configuration.setAllowedMethods(Collections.singletonList("*"));
         configuration.setAllowedHeaders(Collections.singletonList("*"));
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(maxAge);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration(corsPattern, configuration);
@@ -119,8 +121,8 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public AuthTokenFilter authenticationJwtTokenFilter() {
-        return new AuthTokenFilter();
+    public JwtCookieAuthenticationFilter jwtCookieAuthenticationFilter(JwtUtils jwtUtils) {
+        return new JwtCookieAuthenticationFilter(jwtUtils, userDetailsService);
     }
 
     @Bean
