@@ -461,7 +461,7 @@ public class EventController implements EventAPI {
             appEventPublisher.publishAuditEvent(EVENTS_UNSUBSCRIBE_FAIL + eventId, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.warn("Can not unsubscribe user {} from event {}", optionalUser.get()
                                                                               .getId(), eventId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.LOCKED).body(null);
         }
 
         appEventPublisher.publishAuditEvent(EVENTS_UNSUBSCRIBE_OK + eventId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);

@@ -2,7 +2,7 @@ package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.Instant;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,7 +27,7 @@ public class CertificateResponse {
     private String diverId;
     @JsonProperty("certificationDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd", timezone = "UTC")
-    private Instant certificationDate;
+    private LocalDate certificationDate;
     @JsonProperty("certificatePhotoUrl")
     private String certificatePhotoUrl;
 }

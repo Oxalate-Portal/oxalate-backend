@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.CertificateRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
@@ -29,7 +30,7 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "200", description = "List of certificates retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<CertificateResponse>> getAllCertificates(HttpServletRequest request);
 
@@ -39,7 +40,7 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "200", description = "List of certificates retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<CertificateResponse>> getUserCertificates(@PathVariable("userId") long userId, HttpServletRequest request);
 
@@ -49,7 +50,7 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "200", description = "Certificate retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/{certificateId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<CertificateResponse> getCertificate(@PathVariable("certificateId") long certificateId,
             HttpServletRequest request);
@@ -62,7 +63,7 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "400", description = "User access violation"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<CertificateResponse> addCertificate(@RequestBody CertificateRequest certificateRequest,
             HttpServletRequest request);
@@ -75,7 +76,7 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "404", description = "Certificate does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<CertificateResponse> updateCertificate(@RequestBody CertificateRequest certificateRequest, HttpServletRequest request);
 
@@ -86,7 +87,7 @@ public interface CertificateAPI {
             @ApiResponse(responseCode = "404", description = "Certificate does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(value = BASE_PATH + "/{certificateId}")
     ResponseEntity<Void> deleteCertificate(@PathVariable("certificateId") long certificateId, HttpServletRequest request);
 }

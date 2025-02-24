@@ -10,7 +10,7 @@ import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
 
 public class PeriodTool {
-    public static PeriodResult calculatePeriod(Instant now, LocalDate startDate, ChronoUnit calendarUnit, int periodStart, int unitCount) {
+    public static PeriodResult calculatePeriod(Instant now, LocalDate startDate, ChronoUnit calendarUnit, long periodStart, long unitCount) {
         // Ensure valid input for the period start
         if (periodStart <= 0 || periodStart > getMaxUnitValue(calendarUnit)) {
             throw new IllegalArgumentException("Invalid period start value for the given calendar unit.");
@@ -22,14 +22,14 @@ public class PeriodTool {
 
         // Align the first period's start date
         // Iterate forward in unitCount increments to find the correct period
-        LocalDate periodStartDate = alignFirstPeriodStart(startDate, calendarUnit, periodStart);
+        LocalDate periodStartDate = alignFirstPeriodStart(startDate, calendarUnit, (int) periodStart);
 
-        while (!isDateWithinPeriod(currentDate, periodStartDate, calendarUnit, unitCount)) {
+        while (!isDateWithinPeriod(currentDate, periodStartDate, calendarUnit, (int) unitCount)) {
             periodStartDate = periodStartDate.plus(unitCount, calendarUnit);
         }
 
         // Calculate the end date of the identified period
-        LocalDate periodEndDate = calculatePeriodEnd(periodStartDate, calendarUnit, unitCount);
+        LocalDate periodEndDate = calculatePeriodEnd(periodStartDate, calendarUnit, (int) unitCount);
 
         return PeriodResult.builder()
                            .startDate(periodStartDate)
@@ -52,7 +52,7 @@ public class PeriodTool {
     }
 
     private static boolean isDateWithinPeriod(LocalDate date, LocalDate periodStart, ChronoUnit unit, int unitCount) {
-        LocalDate periodEnd = calculatePeriodEnd(periodStart, unit, unitCount);
+        var periodEnd = calculatePeriodEnd(periodStart, unit, unitCount);
         return (date.isEqual(periodStart) || date.isAfter(periodStart)) && date.isBefore(periodEnd.plusDays(1));
     }
 

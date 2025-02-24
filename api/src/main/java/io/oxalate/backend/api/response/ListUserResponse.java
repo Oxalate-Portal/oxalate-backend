@@ -13,7 +13,7 @@ import lombok.Data;
 
 @Builder
 @Data
-public class EventUserResponse {
+public class ListUserResponse {
     @JsonProperty("id")
     protected long id;
 
@@ -28,4 +28,7 @@ public class EventUserResponse {
 
     @JsonProperty("payments")
     protected Set<PaymentResponse> payments;
+
+    @JsonProperty("membershipActive")
+    protected boolean membershipActive;
 }

@@ -11,7 +11,7 @@ import io.oxalate.backend.api.request.TermRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.request.UserUpdateRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
-import io.oxalate.backend.api.response.EventUserResponse;
+import io.oxalate.backend.api.response.ListUserResponse;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_DETAILS_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_DETAILS_OK;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_DETAILS_START;
@@ -45,6 +45,7 @@ import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.rest.UserAPI;
 import io.oxalate.backend.service.AnonymizeService;
+import io.oxalate.backend.service.PaymentService;
 import io.oxalate.backend.service.RoleService;
 import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
@@ -69,6 +70,7 @@ public class UserController implements UserAPI {
     private final UserService userService;
     private final RoleService roleService;
     private final AnonymizeService anonymizeService;
+    private final PaymentService paymentService;
 
     private static final String AUDIT_NAME = "UserController";
     private final AppEventPublisher appEventPublisher;
@@ -249,10 +251,10 @@ public class UserController implements UserAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<EventUserResponse>> getUserIdNameListWithRole(RoleEnum roleEnum, HttpServletRequest request) {
+    public ResponseEntity<List<ListUserResponse>> getUserIdNameListWithRole(RoleEnum roleEnum, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(USERS_GET_WITH_ROLE_START + roleEnum, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
         var users = userService.findAllByRole(roleEnum);
-        var userIdNameResponses = new ArrayList<EventUserResponse>();
+        var userIdNameResponses = new ArrayList<ListUserResponse>();
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)) {
             appEventPublisher.publishAuditEvent(USERS_GET_WITH_ROLE_UNAUTHORIZED + roleEnum, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
@@ -262,11 +264,14 @@ public class UserController implements UserAPI {
         }
 
         for (User user : users) {
-            userIdNameResponses.add(user.toEventUserResponse());
+            var userResponse = user.toEventUserResponse();
+            var paymentResponses = paymentService.getActivePaymentResponsesByUser(user.getId());
+            userResponse.setPayments(paymentResponses);
+            userIdNameResponses.add(userResponse);
         }
 
         var sortedList = userIdNameResponses.stream()
-                                            .sorted(Comparator.comparing(EventUserResponse::getName))
+                                            .sorted(Comparator.comparing(ListUserResponse::getName))
                                             .collect(Collectors.toCollection(ArrayList::new));
         appEventPublisher.publishAuditEvent(USERS_GET_WITH_ROLE_OK + roleEnum, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.status(HttpStatus.OK)

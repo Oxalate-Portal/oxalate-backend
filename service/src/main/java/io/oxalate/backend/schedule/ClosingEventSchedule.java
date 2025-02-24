@@ -3,12 +3,12 @@ package io.oxalate.backend.schedule;
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.repository.EventRepository;
-import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component

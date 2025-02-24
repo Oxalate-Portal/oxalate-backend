@@ -1,7 +1,7 @@
 spring:
   config:
     activate:
-      on-profile: local
+      on-profile: local-web
   datasource:
     url: jdbc:postgresql://localhost:5432/oxdb
     username: oxalate
@@ -12,6 +12,7 @@ spring:
     properties:
       hibernate:
         default_schema: oxalate
+    show-sql: false
   flyway:
     schemas:
       - oxalate
@@ -22,19 +23,22 @@ spring:
 logging:
   level:
     root: info
+    io:
+      oxalate: info
 
 oxalate:
   app:
     env: local
-    backend-url: http://localhost:8080
-    frontend-url: http://localhost:3000
-    jwt-secret: <Add a very long random string here>
+    backend-url: https://oxalate.intra.poltsi.fi
+    frontend-url: https://oxalate.intra.poltsi.fi
+    jwt-secret: 4f0dd9c339d77e7a98a7e90fc3d6572d40426f4bf4b4a845389f7773923a3dc0da8608c3e92028aea5ebabfaeaf85154f2737af04c137bc090d92c862a9d6b32
     jwt-expiration: 86400
+    jwt-secure: false
+    jwt-same-site: None
   cors:
     allowed-origins: ${oxalate.app.frontend-url},http://localhost:3001
-  first-time: false
   captcha:
-    enabled: true
-    site-key: <Set your Google captcha site key>
-    secret-key: <Set your Google captcha secret key>
+    enabled: false
+    site-key: 6LfGtFImAAAAAG9fADR3SUfA2sb0zXSYvZrFtPhT
+    secret-key: 6LfGtFImAAAAACF1aaNeVgMdgfxdGYTR-gPidaeS
     threshold: 0.5

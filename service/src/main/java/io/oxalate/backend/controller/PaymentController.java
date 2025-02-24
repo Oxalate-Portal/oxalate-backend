@@ -152,16 +152,16 @@ public class PaymentController implements PaymentAPI {
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> resetAllPeriodicPayments(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_RESET_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+    public ResponseEntity<Void> resetAllPayments(PaymentTypeEnum paymentType, HttpServletRequest request) {
+        var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_RESET_START + " " +  paymentType, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
-            appEventPublisher.publishAuditEvent(PAYMENTS_RESET_UNAUTHORIZED, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            log.error("User ID {} tried to reset all periodic payments without proper permission", AuthTools.getCurrentUserId());
+            appEventPublisher.publishAuditEvent(PAYMENTS_RESET_UNAUTHORIZED + " " +  paymentType, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            log.error("User ID {} tried to reset all {} payments without proper permission", AuthTools.getCurrentUserId(), paymentType);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
-        if (!paymentService.resetAllPeriodicPayments()) {
+        if (!paymentService.resetAllPayments(paymentType)) {
             appEventPublisher.publishAuditEvent(PAYMENTS_RESET_FAIL, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }

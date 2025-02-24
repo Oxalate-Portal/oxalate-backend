@@ -13,30 +13,64 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PaymentRepository extends CrudRepository<Payment, Long> {
     @Query(nativeQuery = true,
-            value = "SELECT DISTINCT p.* "
-                    + "FROM payments p "
-                    + "WHERE "
-                    + "      p.user_id = :userId "
-                    + "  AND p.payment_type = :paymentType "
-                    + "  AND (   (p.expires_at > NOW() AND p.payment_type = 'PERIOD') "
-                    + "       OR (p.payment_type = 'ONE_TIME' AND p.payment_count > 0))")
+            value = """
+                    SELECT DISTINCT p.*
+                    FROM payments p
+                    WHERE p.user_id = :userId
+                      AND p.payment_type = :paymentType
+                      AND ((p.expires_at > NOW()
+                            AND p.payment_type = 'PERIOD')
+                           OR (p.payment_type = 'ONE_TIME'
+                               AND p.payment_count > 0
+                               AND (p.expires_at > NOW()
+                                    OR p.expires_at IS NULL)))
+                    """)
     Optional<Payment> findByUserIdAndAndPaymentType(@Param("userId") long userId, @Param("paymentType") String paymentType);
 
     List<Payment> findAllByUserId(long userId);
 
-    @Query(nativeQuery = true, value = "SELECT * FROM payments WHERE user_id = :userId AND ((expires_at > NOW() AND payment_type = 'PERIOD') OR (payment_type = 'ONE_TIME' AND payment_count > 0))")
+    @Query(nativeQuery = true, value = """
+            SELECT * FROM payments
+            WHERE user_id = :userId
+              AND (expires_at > NOW()
+                   OR expires_at IS NULL)
+              AND (payment_type = 'PERIOD'
+                   OR payment_type = 'ONE_TIME')
+            """)
     Set<Payment> findAllActiveByUserId(@Param("userId") long userId);
 
-    @Query(nativeQuery = true, value = "SELECT * FROM payments WHERE user_id = :userId AND ((expires_at > NOW() AND payment_type = 'ONE_TIME') OR (expires_at IS NULL AND payment_type = 'ONE_TIME'))")
+    @Query(nativeQuery = true, value = """
+            SELECT *
+            FROM payments
+            WHERE user_id = :userId
+              AND ((expires_at > NOW()
+                    AND payment_type = 'ONE_TIME')
+                   OR (expires_at IS NULL
+                       AND payment_type = 'ONE_TIME'))
+            """)
     List<Payment> findActiveOneTimeByUserId(@Param("userId") long userId);
 
     @Query(nativeQuery = true,
-            value = "SELECT DISTINCT p.user_id FROM payments p WHERE (p.expires_at > NOW() AND p.payment_type = 'PERIOD') OR (p.payment_type = 'ONE_TIME' AND p.payment_count > 0) ORDER BY p.user_id ASC")
+            value = """
+                    SELECT DISTINCT p.user_id
+                    FROM payments p
+                    WHERE (p.expires_at > NOW()
+                           AND p.payment_type = 'PERIOD')
+                       OR (p.payment_type = 'ONE_TIME'
+                           AND p.payment_count > 0)
+                    ORDER BY p.user_id
+                    """)
     Set<Long> findAllUserIdWithActivePayments();
 
-    @Query(nativeQuery = true, value = "UPDATE payments SET expires_at = NOW() WHERE expires_at > NOW() AND payment_type = 'PERIOD'")
+    @Query(nativeQuery = true, value = """
+            UPDATE payments
+            SET expires_at = NOW()
+            WHERE (expires_at > NOW()
+                   OR expires_at IS NULL)
+              AND payment_type = :paymentType
+            """)
     @Modifying
-    void resetAllPeriodicPayments();
+    void resetAllPayments(@Param("paymentType") String paymentType);
 
     @Query(nativeQuery = true,
             value = """

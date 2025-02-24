@@ -5,7 +5,6 @@ import io.oxalate.backend.events.AppAuditEvent;
 import io.oxalate.backend.model.ApplicationAuditEvent;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.ApplicationAuditEventRepository;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -16,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor

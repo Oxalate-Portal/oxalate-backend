@@ -84,6 +84,7 @@ public class AppAuditMessages {
 
     public static final String CERTIFICATES_UPDATE_START = "Updating certificate: ";
     public static final String CERTIFICATES_UPDATE_FAIL = "Failed to update certificate: ";
+    public static final String CERTIFICATES_UPDATE_NOT_FOUND = "The updated certificate was not found with ID: ";
     public static final String CERTIFICATES_UPDATE_UNAUTHORIZED = "User was not authorized to update certificate ID: ";
     public static final String CERTIFICATES_UPDATE_OK = "Certificate updated: ";
 

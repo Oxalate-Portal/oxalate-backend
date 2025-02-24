@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.EmailRequest;
 import io.oxalate.backend.api.request.LoginRequest;
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +40,7 @@ public interface AuthAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @PostMapping(value = BASE_PATH + "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request);
+    ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response);
 
     @Operation(description = "Logout endpoint", tags = "AuthAPI")
     @ApiResponses(value = {
@@ -46,9 +48,9 @@ public interface AuthAPI {
             @ApiResponse(responseCode = "403", description = "Authentication failed"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/logout")
-    ResponseEntity<Void> logout(HttpServletRequest request);
+    ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response);
 
     @Operation(description = "Registration endpoint", tags = "AuthAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Registration request", required = true)
@@ -68,7 +70,7 @@ public interface AuthAPI {
             @ApiResponse(responseCode = "400", description = "Bad request"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/{userId}/password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<UserUpdateStatus> updateUserPassword(@PathVariable("userId") long userId, @RequestBody UserUpdatePasswordRequest updatePasswordRequest,
             HttpServletRequest request);

@@ -18,5 +18,5 @@ public class EventResponse extends AbstractEvent {
     private UserResponse organizer;
 
     @JsonProperty("participants")
-    private List<EventUserResponse> participants;
+    private List<ListUserResponse> participants;
 }

@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.EventDiveListRequest;
 import io.oxalate.backend.api.request.EventRequest;
@@ -36,7 +37,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EventResponse>> getFutureEvents(HttpServletRequest request);
 
@@ -45,7 +46,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/ongoing", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EventResponse>> getOngoingEvents(HttpServletRequest request);
 
@@ -54,7 +55,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/past", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EventResponse>> getPastEvents(HttpServletRequest request);
 
@@ -64,7 +65,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EventListResponse>> getEventsForUser(@PathVariable(name = "userId") long userId, HttpServletRequest request);
 
@@ -75,7 +76,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "400", description = "Creation failed, the event may conflict with an existing one"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<EventResponse> createEvent(@RequestBody EventRequest eventRequest, HttpServletRequest request);
 
@@ -86,7 +87,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<EventResponse> updateEvent(@RequestBody EventRequest eventRequest, HttpServletRequest request);
 
@@ -97,7 +98,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/{eventId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<EventResponse> getEventById(@NotNull @PathVariable("eventId") long eventId, HttpServletRequest request);
 
@@ -108,7 +109,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/{eventId}/dives", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<EventDiveListResponse> getEventDives(@PathVariable("eventId") long eventId, HttpServletRequest request);
 
@@ -120,7 +121,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH + "/{eventId}/dives", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<EventDiveListResponse> updateEventDives(@PathVariable("eventId") long eventId, @RequestBody EventDiveListRequest eventDiveListRequest,
             HttpServletRequest request);
@@ -132,7 +133,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/{eventId}")
     ResponseEntity<HttpStatus> cancelEvent(@PathVariable("eventId") long eventId, HttpServletRequest request);
 
@@ -143,7 +144,7 @@ public interface EventAPI {
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH + "/{eventId}/subscribe", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<EventResponse> subscribe(Authentication auth, @PathVariable(name = "eventId") long eventId, HttpServletRequest request);
 
@@ -152,9 +153,10 @@ public interface EventAPI {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Unsubscription successful"),
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
+            @ApiResponse(responseCode = "423", description = "Event can not be modified anymore"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/{eventId}/unsubscribe")
     ResponseEntity<EventResponse> unSubscribe(Authentication auth, @PathVariable(name = "eventId") long eventId, HttpServletRequest request);
 }

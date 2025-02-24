@@ -82,6 +82,9 @@ public enum PortalConfigEnum {
     // Sub-enum for payment-related settings
     public enum PaymentConfigEnum {
         EVENT_REQUIRE_PAYMENT("event-require-payment"),
+        ONE_TIME_PAYMENT_EXPIRATION_TYPE("one-time-expiration-type"),
+        ONE_TIME_PAYMENT_EXPIRATION_UNIT("one-time-expiration-unit"),
+        ONE_TIME_PAYMENT_EXPIRATION_LENGTH("one-time-expiration-length"),
         PAYMENT_ENABLED("payment-enabled"),
         PAYMENT_PERIOD_LENGTH("payment-period-length"),
         PAYMENT_PERIOD_START("payment-period-start"),

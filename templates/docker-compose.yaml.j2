@@ -32,7 +32,7 @@ services:
       - oxalate.app.backend-url=https://{{ item.hostname }}
       - oxalate.app.frontend-url=https://{{ item.hostname }}
       - oxalate.app.jwt-secret={{ oxalate_app_jwt_secret }}
-      - oxalate.app.jwt-expiration-ms=86400000
+      - oxalate.app.jwt-expiration=86400
       - oxalate.captcha.enabled={{ item.captcha_enabled }}
       - oxalate.captcha.site-key={{ oxalate_captcha_site_key }}
       - oxalate.captcha.secret-key={{ oxalate_captcha_secret_key }}

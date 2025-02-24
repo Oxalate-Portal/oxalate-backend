@@ -1,12 +1,13 @@
 package io.oxalate.backend.rest;
 
 import io.oxalate.backend.api.RoleEnum;
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.TermRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.request.UserUpdateRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
-import io.oxalate.backend.api.response.EventUserResponse;
+import io.oxalate.backend.api.response.ListUserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,7 +32,7 @@ public interface UserAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<AdminUserResponse>> getUsers(HttpServletRequest request);
 
@@ -41,9 +42,9 @@ public interface UserAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/role/{role}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventUserResponse>> getUserIdNameListWithRole(@PathVariable("role") RoleEnum roleEnum, HttpServletRequest request);
+    ResponseEntity<List<ListUserResponse>> getUserIdNameListWithRole(@PathVariable("role") RoleEnum roleEnum, HttpServletRequest request);
 
     @Operation(description = "Show specific user details", tags = "UserAPI")
     @Parameter(name = "userId", description = "User ID to be retrieved", example = "123", required = true)
@@ -51,7 +52,7 @@ public interface UserAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<AdminUserResponse> getUserDetails(@PathVariable("userId") long userId, HttpServletRequest request);
 
@@ -61,7 +62,7 @@ public interface UserAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<AdminUserResponse> updateUser(@RequestBody UserUpdateRequest updateRequest, HttpServletRequest request);
 
@@ -73,7 +74,7 @@ public interface UserAPI {
             @ApiResponse(responseCode = "500", description = "Given user not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/{userId}/status")
     ResponseEntity<Void> updateUserStatus(@PathVariable("userId") long userId, @RequestBody UserStatusRequest userStatusRequest, HttpServletRequest request);
 
@@ -83,7 +84,7 @@ public interface UserAPI {
             @ApiResponse(responseCode = "200", description = "Term answer registered successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/accept-terms")
     ResponseEntity<Void> recordTermAnswer(@RequestBody TermRequest termRequest, HttpServletRequest request);
 
@@ -92,7 +93,7 @@ public interface UserAPI {
             @ApiResponse(responseCode = "200", description = "Term answer reset successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/reset-terms", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> resetTermAnswer(HttpServletRequest request);
 
