@@ -12,3 +12,4 @@ target/
 
 ### Local development specific profiles
 service/src/main/resources/local.yaml
+service/src/main/resources/local-web.yaml
