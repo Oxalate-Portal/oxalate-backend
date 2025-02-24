@@ -59,5 +59,4 @@ public interface PortalConfigurationAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/reload", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PortalConfigurationResponse>> reloadPortalConfigurations(HttpServletRequest request);
-
 }
