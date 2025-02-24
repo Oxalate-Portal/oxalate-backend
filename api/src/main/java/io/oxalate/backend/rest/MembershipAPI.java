@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.MembershipRequest;
 import io.oxalate.backend.api.response.MembershipResponse;
@@ -28,7 +29,7 @@ public interface MembershipAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<MembershipResponse>> getAllActiveMemberships(HttpServletRequest request);
 
@@ -38,7 +39,7 @@ public interface MembershipAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<MembershipResponse> getMembership(@PathVariable(name = "id") long membershipId, HttpServletRequest request);
 
@@ -48,7 +49,7 @@ public interface MembershipAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<MembershipResponse>> getMembershipsForUser(@PathVariable(name = "userId") long userId, HttpServletRequest request);
 
@@ -59,7 +60,7 @@ public interface MembershipAPI {
             @ApiResponse(responseCode = "400", description = "Creation failed, the membership may conflict with an existing one"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<MembershipResponse> createMembership(@RequestBody MembershipRequest membershipRequest, HttpServletRequest request);
 
@@ -70,7 +71,7 @@ public interface MembershipAPI {
             @ApiResponse(responseCode = "404", description = "Membership does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<MembershipResponse> updateMembership(@RequestBody MembershipRequest membershipRequest, HttpServletRequest request);
 }

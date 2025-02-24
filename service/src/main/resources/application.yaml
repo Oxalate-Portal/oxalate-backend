@@ -81,7 +81,9 @@ oxalate:
     backend-url: override-me
     frontend-url: override-me
     jwt-secret: override-me
-    jwt-expiration-ms: override-me
+    jwt-expiration: override-me
+    jwt-secure: true
+    jwt-same-site: Strict
   cors:
     allowed-origins: ${oxalate.app.frontend-url}
     cors-pattern: '/**'
@@ -112,6 +114,16 @@ spring:
     activate:
       on-profile: local
     import: classpath:local.yaml
+
+---
+### Local machine with a running web-server and separate hostname ###
+
+spring:
+  config:
+    activate:
+      on-profile: local-web
+    import: classpath:local-web.yaml
+
 ---
 ### Production machine ###
 

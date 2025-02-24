@@ -3,6 +3,7 @@ package io.oxalate.backend.controller;
 import static io.oxalate.backend.api.AuditLevel.ERROR;
 import static io.oxalate.backend.api.AuditLevel.INFO;
 import static io.oxalate.backend.api.AuditLevel.WARN;
+import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import static io.oxalate.backend.api.UserStatus.ACTIVE;
 import static io.oxalate.backend.api.UserStatus.LOCKED;
@@ -71,6 +72,7 @@ import io.oxalate.backend.service.RegistrationService;
 import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -80,7 +82,9 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -110,17 +114,22 @@ public class AuthController implements AuthAPI {
     @Value("${oxalate.token.registration-url}")
     private String registrationUrl;
 
-    @Value("${oxalate.app.jwt-expiration-ms}")
-    private long expirationTime;
+    @Value("${oxalate.app.jwt-expiration}")
+    private int expirationTime;
+
+    @Value("${oxalate.app.jwt-secure}")
+    private boolean secureCookie;
+
+    @Value("${oxalate.app.jwt-same-site}")
+    private String sameSite;
 
     private static final String JSON_MESSAGE_OK = "{\"message\": \"OK\"}";
     private static final String JSON_MESSAGE_ERROR = "{\"message\": \"ERROR\"}";
 
     @Override
-    public ResponseEntity<?> authenticateUser(LoginRequest loginRequest, HttpServletRequest request) {
+    public ResponseEntity<?> authenticateUser(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication;
-        var auditUuid = appEventPublisher.publishAuditEvent(AUTH_AUTHENTICATION_START + loginRequest.getUsername(), INFO, request, AUDIT_NAME,
-                -1L);
+        var auditUuid = appEventPublisher.publishAuditEvent(AUTH_AUTHENTICATION_START + loginRequest.getUsername(), INFO, request, AUDIT_NAME, -1L);
 
         try {
             authentication = authenticationManager.authenticate(
@@ -157,8 +166,7 @@ public class AuthController implements AuthAPI {
         if (user.getRoles() == null || user.getRoles()
                                            .isEmpty()) {
             log.info("User {} attempted to log in but the account has no roles.", loginRequest.getUsername());
-            appEventPublisher.publishAuditEvent(AUTH_AUTHENTICATION_NO_ROLES + loginRequest.getUsername(), ERROR, request, AUDIT_NAME, user.getId(),
-                    auditUuid);
+            appEventPublisher.publishAuditEvent(AUTH_AUTHENTICATION_NO_ROLES + loginRequest.getUsername(), ERROR, request, AUDIT_NAME, user.getId(), auditUuid);
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                                  .body(null);
         }
@@ -197,19 +205,43 @@ public class AuthController implements AuthAPI {
                                      .payments(paymentResponses)
                                      .language(user.getLanguage())
                                      .build();
+
+        // Set JWT as a cookie
+        ResponseCookie cookie = ResponseCookie.from(JWT_TOKEN, jwt)
+                                               .httpOnly(true)
+                                               .secure(secureCookie)
+                                               .path("/")
+                                               .maxAge(expirationTime)
+                                               .sameSite(sameSite)
+                                               .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
         appEventPublisher.publishAuditEvent(AUTH_AUTHENTICATION_OK + loginRequest.getUsername(), INFO, request, AUDIT_NAME, user.getId(), auditUuid);
+
         return ResponseEntity.status(HttpStatus.OK)
                              .body(jwtResponse);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         var userId = AuthTools.getCurrentUserId();
         var auditUuid = appEventPublisher.publishAuditEvent(AUTH_LOGOUT_START, INFO, request, AUDIT_NAME, userId);
         userService.logoutUser(userId);
+
+        var cookie = ResponseCookie.from(JWT_TOKEN, "")
+                                   .httpOnly(true)
+                                   .secure(secureCookie)
+                                   .path("/")
+                                   .maxAge(0)
+                                   .sameSite("Strict")
+                                   .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        SecurityContextHolder.clearContext();
+
         appEventPublisher.publishAuditEvent(AUTH_LOGOUT_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
-        return null;
+        return ResponseEntity.noContent().build();
     }
 
     @Override

@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
 import static io.oxalate.backend.api.UploadDirectoryConstants.CERTIFICATES;
 import static io.oxalate.backend.api.UploadDirectoryConstants.DIVE_FILES;
@@ -41,7 +42,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + AVATARS, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<AvatarFileResponse>> findAllAvatarFiles(HttpServletRequest request);
 
@@ -52,7 +53,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "File uploaded successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/" + AVATARS, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<?> uploadAvatarFile(@RequestPart("uploadFile") MultipartFile uploadFile, HttpServletRequest request);
 
@@ -64,7 +65,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + AVATARS + "/{avatarId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     ResponseEntity<byte[]> downloadAvatarFile(@PathVariable("avatarId") long avatarId, HttpServletRequest request);
 
@@ -76,7 +77,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + AVATARS + "/{avatarId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<FileRemovalResponse> removeAvatarFile(@PathVariable("avatarId") long avatarId, HttpServletRequest request);
 
@@ -87,7 +88,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + CERTIFICATES, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<CertificateFileResponse>> findAllCertificateFiles(HttpServletRequest request);
 
@@ -99,7 +100,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "File uploaded successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/" + CERTIFICATES
             + "/{certificateId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<?> uploadCertificateFile(
@@ -115,7 +116,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + CERTIFICATES + "/{certificateId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     ResponseEntity<byte[]> downloadCertificateFile(@PathVariable("certificateId") long certificateId, HttpServletRequest request);
 
@@ -127,7 +128,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + CERTIFICATES + "/{certificateId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<FileRemovalResponse> removeCertificateFile(@PathVariable("certificateId") long certificateId, HttpServletRequest request);
 
@@ -138,7 +139,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DIVE_FILES, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<DiveFileResponse>> findAllDiveFiles(HttpServletRequest request);
 
@@ -151,7 +152,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "File uploaded successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/" + DIVE_FILES, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<?> uploadDiveFile(
             @RequestPart("uploadFile") MultipartFile uploadFile,
@@ -167,7 +168,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DIVE_FILES + "/{diveFileId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     ResponseEntity<byte[]> downloadDiveFile(@PathVariable("diveFileId") long diveFileId, HttpServletRequest request);
 
@@ -179,7 +180,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + DIVE_FILES + "/{diveFileId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<FileRemovalResponse> removeDiveFile(@PathVariable("diveFileId") long diveFileId, HttpServletRequest request);
 
@@ -190,7 +191,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DOCUMENTS, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<DocumentFileResponse>> findAllDocumentFiles(HttpServletRequest request);
 
@@ -201,7 +202,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "File uploaded successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/" + DOCUMENTS, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<?> uploadDocumentFile(@RequestPart("uploadFile") MultipartFile uploadFile, HttpServletRequest request);
 
@@ -213,7 +214,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DOCUMENTS + "/{documentId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     ResponseEntity<byte[]> downloadDocumentFile(@PathVariable("documentId") long documentId, HttpServletRequest request);
 
@@ -225,7 +226,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + DOCUMENTS + "/{documentId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<FileRemovalResponse> removeDocumentFile(@PathVariable("documentId") long documentId, HttpServletRequest request);
 
@@ -236,7 +237,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + PAGE_FILES, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PageFileResponse>> findAllPageFiles(HttpServletRequest request);
 
@@ -249,7 +250,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "200", description = "File uploaded successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/" + PAGE_FILES, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<?> uploadPageFile(@RequestPart("uploadFile") MultipartFile uploadFile,
             @RequestParam("language") String language,
@@ -281,7 +282,7 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "404", description = "File not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + PAGE_FILES + "/{pageId}/{language}/{fileName}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<FileRemovalResponse> removePageFile(@PathVariable("pageId") long pageId,
             @PathVariable("language") String language,

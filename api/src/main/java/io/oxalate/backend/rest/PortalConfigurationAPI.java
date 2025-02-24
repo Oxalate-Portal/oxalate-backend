@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.PortalConfigurationRequest;
 import io.oxalate.backend.api.response.FrontendConfigurationResponse;
@@ -26,7 +27,7 @@ public interface PortalConfigurationAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PortalConfigurationResponse>> getAllConfigurations(HttpServletRequest request);
 
@@ -37,7 +38,7 @@ public interface PortalConfigurationAPI {
             @ApiResponse(responseCode = "404", description = "Configuration does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PortalConfigurationResponse> updateConfigurationValue(@RequestBody PortalConfigurationRequest portalConfigurationRequest,
             HttpServletRequest request);
@@ -55,7 +56,7 @@ public interface PortalConfigurationAPI {
             @ApiResponse(responseCode = "200", description = "Configurations reloaded successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/reload", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PortalConfigurationResponse>> reloadPortalConfigurations(HttpServletRequest request);
 

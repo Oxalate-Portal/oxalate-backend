@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageRequest;
@@ -23,7 +24,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-
 @Tag(name = "PageManagementAPI", description = "Page management REST endpoints")
 public interface PageManagementAPI {
     String BASE_PATH = API + "/page-management";
@@ -34,7 +34,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/page-groups", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PageGroupResponse>> getPageGroups(HttpServletRequest request);
 
@@ -45,7 +45,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "404", description = "Page group does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/page-groups/{pageGroupId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageGroupResponse> getPageGroup(@PathVariable(name = "pageGroupId") long pageGroupId, HttpServletRequest request);
 
@@ -56,7 +56,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "403", description = "User does not have permission to create path"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/page-groups", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageGroupResponse> createPageGroup(@RequestBody PageGroupRequest pathRequests, HttpServletRequest request);
 
@@ -68,7 +68,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "404", description = "Path does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH + "/page-groups", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageGroupResponse> updatePageGroup(@RequestBody PageGroupRequest pathRequests, HttpServletRequest request);
 
@@ -80,7 +80,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "404", description = "Path does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/page-groups/{pageGroupId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<HttpStatus> closePageGroup(@PathVariable(name = "pageGroupId") long pageGroupId, HttpServletRequest request);
 
@@ -91,7 +91,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/pages", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PageResponse>> getPagesByPageGroupId(@RequestParam(name = "pageGroupId") long pageGroupId, HttpServletRequest request);
 
@@ -114,7 +114,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "404", description = "Page group does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/pages", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageResponse> createPage(@RequestBody PageRequest pageRequests, HttpServletRequest request);
 
@@ -126,7 +126,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "404", description = "Page or page group not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH + "/pages", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageResponse> updatePage(@RequestBody PageRequest pageRequests, HttpServletRequest request);
 
@@ -138,7 +138,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "404", description = "Page or page group not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/pages/{pageId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<HttpStatus> closePage(@PathVariable(name = "pageId") long pageId, HttpServletRequest request);
 }

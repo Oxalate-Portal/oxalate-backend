@@ -1,5 +1,6 @@
 package io.oxalate.backend.rest;
 
+import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
 import io.oxalate.backend.api.response.stats.MultiYearValue;
@@ -24,7 +25,7 @@ public interface StatsAPI {
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-registrations", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<MultiYearValue>> getYearlyRegistrations(HttpServletRequest request);
 
@@ -33,7 +34,7 @@ public interface StatsAPI {
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-events", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<MultiYearValue>> getYearlyEvents(HttpServletRequest request);
 
@@ -42,7 +43,7 @@ public interface StatsAPI {
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-organizers", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<MultiYearValue>> getYearlyOrganizers(HttpServletRequest request);
 
@@ -51,7 +52,7 @@ public interface StatsAPI {
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-payments", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<MultiYearValue>> getYearlyPayments(HttpServletRequest request);
 
@@ -60,7 +61,7 @@ public interface StatsAPI {
             @ApiResponse(responseCode = "200", description = "Reports retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/event-report", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EventPeriodReportResponse>> getEventReports(HttpServletRequest request);
 
@@ -69,7 +70,7 @@ public interface StatsAPI {
             @ApiResponse(responseCode = "200", description = "Lists retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-diver-list", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<YearlyDiversListResponse>> yearlyDiverList(HttpServletRequest request);
 }
