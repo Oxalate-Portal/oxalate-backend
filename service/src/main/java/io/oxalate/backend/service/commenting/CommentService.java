@@ -1,16 +1,24 @@
 package io.oxalate.backend.service.commenting;
 
-import io.oxalate.backend.api.CommentStatusEnum;
+import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_BODY;
+import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_ID;
+import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_TITLE;
+import static io.oxalate.backend.api.CommentStatusEnum.PUBLISHED;
+import static io.oxalate.backend.api.CommentTypeEnum.TOPIC;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
 import io.oxalate.backend.model.commenting.Comment;
+import io.oxalate.backend.model.commenting.EventComment;
 import io.oxalate.backend.repository.commenting.CommentRepository;
+import io.oxalate.backend.repository.commenting.EventCommentRepository;
 import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +31,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final UserService userService;
+    private final EventCommentRepository eventCommentRepository;
 
     @Transactional
     public CommentResponse createComment(long userId, CommentRequest commentRequest) {
@@ -49,10 +58,10 @@ public class CommentService {
         var comment = Comment.builder()
                              .title(commentRequest.getTitle())
                              .body(commentRequest.getBody())
-                             .parentComment(parentComment)
+                             .parentCommentId(parentComment.getId())
                              .userId(userId)
                              .commentType(commentRequest.getCommentType())
-                             .commentStatus(CommentStatusEnum.PUBLISHED)
+                             .commentStatus(PUBLISHED)
                              .createdAt(Instant.now())
                              .build();
         var newComment = commentRepository.save(comment);
@@ -92,52 +101,62 @@ public class CommentService {
         return commentResponse;
     }
 
-    public List<CommentResponse> getCommentThread(long parentId, long depth) {
+    public CommentResponse getCommentThread(long parentId, long depth) {
         log.info("Fetching comment thread for parent ID: {}", parentId);
-        var thread = new ArrayList<Comment>();
-        fetchCommentsRecursively(parentId, thread, (depth == 0) ? Long.MAX_VALUE : depth);
 
-        var commentResponseList = new ArrayList<CommentResponse>();
-
-        for (Comment comment : thread) {
-            var optionalUser = userService.findUserById(comment.getUserId());
-            if (optionalUser.isEmpty()) {
-                log.error("User with ID: {} referenced by comment ID {} not found", comment.getUserId(), comment.getId());
-                continue;
-            }
-
-            var user = optionalUser.get();
-            var commentResponse = comment.toResponse();
-            commentResponse.setUsername(user.getLastName() + " " + user.getFirstName());
-            var childCount = commentRepository.countChildren(comment.getId());
-            commentResponse.setChildCount(childCount);
-            commentResponseList.add(commentResponse);
+        // If the start depth is 0, then set it to max long value
+        if (depth == 0L) {
+            depth = Long.MAX_VALUE;
         }
 
-        return commentResponseList;
-    }
-
-    private void fetchCommentsRecursively(Long parentId, List<Comment> thread, Long depth) {
+        // Fetch parent comment
         var optionalParentComment = commentRepository.findById(parentId);
 
-        if (optionalParentComment.isEmpty() || depth == 0L) {
-            return;
+        if (optionalParentComment.isEmpty()) {
+            throw new EntityNotFoundException("Parent comment not found");
         }
 
         var parentComment = optionalParentComment.get();
 
-        if (!parentComment.getCommentStatus()
-                          .equals(CommentStatusEnum.PUBLISHED)) {
-            return;
+        if (!parentComment.getCommentStatus().equals(PUBLISHED)) {
+            throw new IllegalStateException("Parent comment is not published");
         }
 
-        thread.add(parentComment);
+        // Recursively fetch the child comments and build the tree
+        log.info("Fetching comments recursively for parent ID: {} to depth: {}", parentId, depth);
+        parentComment.setChildComments(fetchCommentsRecursively(parentId, depth));
 
-        List<Comment> childComments = commentRepository.findAllByParentComment(parentComment);
+        // Convert the root comment to response format
+        var commentResponse = parentComment.toResponse();
 
+        // Set username from userService
+        var optionalUser = userService.findUserById(parentComment.getUserId());
+        if (optionalUser.isPresent()) {
+            var user = optionalUser.get();
+            commentResponse.setUsername(user.getLastName() + " " + user.getFirstName());
+        } else {
+            log.error("User with ID: {} referenced by comment ID {} not found", parentComment.getUserId(), parentComment.getId());
+        }
+
+        return commentResponse;
+    }
+
+    private List<Comment> fetchCommentsRecursively(Long parentId, Long depth) {
+        if (depth == 0L) {
+            return new ArrayList<>();
+        }
+
+        List<Comment> childComments = commentRepository.findAllByParentCommentId(parentId)
+                                                       .stream()
+                                                       .filter(comment -> comment.getCommentStatus().equals(PUBLISHED)) // Only include published comments
+                                                       .collect(Collectors.toList());
+
+        // Recursively fetch and attach child comments
         for (Comment child : childComments) {
-            fetchCommentsRecursively(child.getId(), thread, (depth - 1L));
+            child.setChildComments(fetchCommentsRecursively(child.getId(), depth - 1L));
         }
+
+        return childComments;
     }
 
     @Transactional
@@ -211,5 +230,39 @@ public class CommentService {
         }
 
         return commentResponseList;
+    }
+
+    @Transactional
+    public CommentResponse createEventTopicComment(long eventId, long userId) {
+        // Get id for the root of all event comments
+        log.info("Creating event comment for event ID: {} linked to event root comment ID: {} by user ID: {}", eventId, ROOT_EVENT_COMMENT_ID, userId);
+
+        var comment = Comment.builder()
+                             .userId(userId)
+                             .parentCommentId(ROOT_EVENT_COMMENT_ID)
+                             .commentType(TOPIC)
+                             .title(ROOT_EVENT_COMMENT_TITLE + eventId)
+                             .body(ROOT_EVENT_COMMENT_BODY + eventId)
+                             .commentStatus(PUBLISHED)
+                             .createdAt(Instant.now())
+                             .build();
+        var newComment = commentRepository.save(comment);
+
+        var commentResponse = newComment.toResponse();
+        commentResponse.setChildCount(0);
+
+        // Add the entry also to event_comments table
+        eventCommentRepository.save(EventComment.builder()
+                                                .eventId(eventId)
+                                                .comment(newComment)
+                                                .build());
+
+        return commentResponse;
+    }
+
+    public long getEventCommentId(long eventId) {
+        var eventComment = eventCommentRepository.findByEventId(eventId);
+        return eventComment.getComment()
+                           .getId();
     }
 }

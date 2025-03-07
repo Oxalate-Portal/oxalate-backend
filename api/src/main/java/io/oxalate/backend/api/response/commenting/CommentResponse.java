@@ -5,6 +5,7 @@ import io.oxalate.backend.api.CommentStatusEnum;
 import io.oxalate.backend.api.CommentTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -27,6 +28,12 @@ public class CommentResponse {
     @JsonProperty("username")
     private String username;
 
+    @JsonProperty("avatarUrl")
+    private String avatarUrl;
+
+    @JsonProperty("registeredAt")
+    private Instant registeredAt;
+
     @JsonProperty("parentCommentId")
     private Long parentCommentId;
 
@@ -47,4 +54,7 @@ public class CommentResponse {
 
     @JsonProperty("modifiedAt")
     private Instant modifiedAt;
+
+    @JsonProperty("childComments")
+    private List<CommentResponse> childComments;
 }

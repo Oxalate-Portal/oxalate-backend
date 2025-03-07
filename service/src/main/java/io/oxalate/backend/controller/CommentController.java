@@ -22,13 +22,13 @@ public class CommentController implements CommentAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<CommentResponse>> getCommentThread(long parentId, HttpServletRequest request) {
+    public ResponseEntity<CommentResponse> getCommentThread(long parentId, HttpServletRequest request) {
         var comments = commentService.getCommentThread(parentId,0L);
         return ResponseEntity.ok(comments);
     }
 
     @Override
-    public ResponseEntity<List<CommentResponse>> getCommentThreadToDepth(long parentId, long depth, HttpServletRequest request) {
+    public ResponseEntity<CommentResponse> getCommentThreadToDepth(long parentId, long depth, HttpServletRequest request) {
         var comments = commentService.getCommentThread(parentId, depth);
         return ResponseEntity.ok(comments);
     }

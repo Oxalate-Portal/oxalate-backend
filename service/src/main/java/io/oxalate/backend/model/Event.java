@@ -88,6 +88,7 @@ public class Event {
                 .startTime(this.startTime)
                 .title(this.title)
                 .type(this.type)
+                .eventCommentId(0L)
                 .build();
     }
 
@@ -103,6 +104,7 @@ public class Event {
                 .startTime(this.startTime)
                 .title(this.title)
                 .type(this.type)
+                .eventCommentId(0L)
                 .build();
     }
 }

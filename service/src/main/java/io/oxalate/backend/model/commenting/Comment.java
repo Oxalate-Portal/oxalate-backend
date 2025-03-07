@@ -7,14 +7,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,9 +43,8 @@ public class Comment {
     @Column(name = "user_id", nullable = false)
     private long userId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_comment_id")
-    private Comment parentComment;
+    private Long parentCommentId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "comment_type", nullable = false)
@@ -61,20 +62,26 @@ public class Comment {
     @Column(name = "modified_at")
     private Instant modifiedAt;
 
+    @Transient
+    private List<Comment> childComments = new ArrayList<>();
+
     public CommentResponse toResponse() {
         return CommentResponse.builder()
-                .id(id)
-                .title(title)
-                .body(body)
-                .userId(userId)
-                .username(null)
-                .parentCommentId(parentComment != null ? parentComment.getId() : null)
-                .commentType(commentType)
-                .commentStatus(commentStatus)
-                .cancelReason(cancelReason)
-                .createdAt(createdAt)
-                .modifiedAt(modifiedAt)
-                .childCount(0L)
-                .build();
+                              .id(id)
+                              .title(title)
+                              .body(body)
+                              .userId(userId)
+                              .username(null)
+                              .parentCommentId(parentCommentId)
+                              .commentType(commentType)
+                              .commentStatus(commentStatus)
+                              .cancelReason(cancelReason)
+                              .createdAt(createdAt)
+                              .modifiedAt(modifiedAt)
+                              .childCount(childComments == null ? 0 : childComments.size())
+                              .childComments(childComments == null ? new ArrayList<>() : childComments.stream()
+                                                                                                      .map(Comment::toResponse)
+                                                                                                      .collect(Collectors.toList()))
+                              .build();
     }
 }

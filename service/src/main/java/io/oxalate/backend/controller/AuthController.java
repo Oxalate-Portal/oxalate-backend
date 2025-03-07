@@ -200,7 +200,7 @@ public class AuthController implements AuthAPI {
                                      .type("Bearer")
                                      .accessToken(jwt)
                                      .expiresAt(Instant.now()
-                                                       .plus(expirationTime, ChronoUnit.MILLIS))
+                                                       .plus(expirationTime, ChronoUnit.SECONDS))
                                      .approvedTerms(user.isApprovedTerms())
                                      .payments(paymentResponses)
                                      .language(user.getLanguage())
@@ -399,7 +399,7 @@ public class AuthController implements AuthAPI {
             appEventPublisher.publishAuditEvent(AUTH_REGISTRATION_VERIFY_OK, INFO, request, AUDIT_NAME, registrationToken.getUserId(), auditUuid);
         }
 
-        var uri = UriComponentsBuilder.fromHttpUrl(registrationUrl)
+        var uri = UriComponentsBuilder.fromUriString(registrationUrl)
                                       .query("status={returnStatus}")
                                       .buildAndExpand(returnStatus)
                                       .toUri();

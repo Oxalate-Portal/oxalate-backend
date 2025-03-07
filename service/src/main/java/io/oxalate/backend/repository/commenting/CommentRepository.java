@@ -5,11 +5,12 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.data.repository.query.Param;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
-    List<Comment> findAllByParentComment(Comment parentComment);
+    List<Comment> findAllByParentCommentId(long parentCommentId);
 
     List<Comment> findAllByUserId(long userId);
 
@@ -28,4 +29,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             SELECT COUNT(*) - 1 AS total_children
             FROM comment_tree""")
     long countChildren(@Param(value = "parentId") long commentId);
+
+	Comment findByTitle(@NonNull String eventRootTopic);
 }
