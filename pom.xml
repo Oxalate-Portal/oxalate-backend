@@ -23,6 +23,7 @@
         <swagger.version>2.2.28</swagger.version>
         <testcontainers.version>1.20.5</testcontainers.version>
         <apache-maven.version>3.5.2</apache-maven.version>
+        <jboss-logging.component.version>3.0.4.Final</jboss-logging.component.version>
     </properties>
 
     <build>

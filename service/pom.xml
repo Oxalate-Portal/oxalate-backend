@@ -164,12 +164,12 @@
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging-annotations</artifactId>
-                <version>3.0.4.Final</version>
+                <version>${jboss-logging.component.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging-processor</artifactId>
-                <version>3.0.4.Final</version>
+                <version>${jboss-logging.component.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.classgraph</groupId>
