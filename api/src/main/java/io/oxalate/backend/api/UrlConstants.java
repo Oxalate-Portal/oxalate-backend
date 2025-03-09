@@ -6,8 +6,8 @@ package io.oxalate.backend.api;
 
 public class UrlConstants {
     public static final String API = "/api";
+    public static final String DIVE_PLANS_URL = API + "/dive-plans";
+    public static final String DOCUMENTS_URL = API + "/documents";
     public static final String FILES_URL = API + "/files";
     public static final String PAGES_URL = API + "/pages";
-    public static final String DOCUMENTS_URL = API + "/documents";
-    public static final String DIVE_PLANS_URL = API + "/dive-plans";
 }

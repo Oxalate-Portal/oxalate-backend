@@ -3,7 +3,9 @@ package io.oxalate.backend.rest;
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
+import io.oxalate.backend.api.request.commenting.ReportRequest;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
+import io.oxalate.backend.api.response.commenting.ReportResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -64,7 +66,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CommentResponse> addComment(@RequestBody CommentRequest commentRequest, HttpServletRequest request);
+    ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest, HttpServletRequest request);
 
     @Operation(description = "Update a comment", tags = "CommentAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "CommentRequest", required = true)
@@ -85,4 +87,24 @@ public interface CommentAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<CommentResponse>> getCommentsByUserId(@PathVariable("userId") long userId, HttpServletRequest request);
+
+    @Operation(description = "Report inappropriate comment", tags = "CommentAPI")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "ReportRequest", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reported successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PostMapping(value = BASE_PATH + "/report", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ReportResponse> report(@RequestBody ReportRequest reportRequest, HttpServletRequest request);
+
+    @Operation(description = "Cancel comment report", tags = "CommentAPI")
+    @Parameter(name = "commentId", description = "Comment ID of the report that should be retrieved", example = "123", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Report cancelled successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PostMapping(value = BASE_PATH + "/cancel-report", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ReportResponse> cancelReport(@PathVariable("commentId") long commentId, HttpServletRequest request);
 }

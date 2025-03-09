@@ -3,22 +3,37 @@ package io.oxalate.backend.service.commenting;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_BODY;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_ID;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_TITLE;
+import static io.oxalate.backend.api.CommentStatusEnum.HELD_FOR_MODERATION;
 import static io.oxalate.backend.api.CommentStatusEnum.PUBLISHED;
 import static io.oxalate.backend.api.CommentTypeEnum.TOPIC;
+import static io.oxalate.backend.api.CommentTypeEnum.USER_COMMENT;
+import static io.oxalate.backend.api.PortalConfigEnum.COMMENTING;
+import static io.oxalate.backend.api.PortalConfigEnum.CommentConfigEnum.COMMENT_REPORT_TRIGGER_LEVEL;
+import static io.oxalate.backend.api.PortalConfigEnum.CommentConfigEnum.COMMENT_REQUIRE_REVIEW;
+import io.oxalate.backend.api.ReportStatusEnum;
+import static io.oxalate.backend.api.ReportStatusEnum.PENDING;
 import io.oxalate.backend.api.RoleEnum;
+import io.oxalate.backend.api.UpdateStatusEnum;
+import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
+import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
+import io.oxalate.backend.api.request.commenting.ReportRequest;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
+import io.oxalate.backend.api.response.commenting.ReportResponse;
 import io.oxalate.backend.model.commenting.Comment;
+import io.oxalate.backend.model.commenting.CommentReport;
 import io.oxalate.backend.model.commenting.EventComment;
+import io.oxalate.backend.repository.commenting.CommentReportRepository;
 import io.oxalate.backend.repository.commenting.CommentRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
+import io.oxalate.backend.repository.filetransfer.AvatarFileRepository;
+import io.oxalate.backend.service.PortalConfigurationService;
 import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +47,9 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final UserService userService;
     private final EventCommentRepository eventCommentRepository;
+    private final CommentReportRepository commentReportRepository;
+    private final AvatarFileRepository avatarFileRepository;
+    private final PortalConfigurationService portalConfigurationService;
 
     @Transactional
     public CommentResponse createComment(long userId, CommentRequest commentRequest) {
@@ -54,6 +72,7 @@ public class CommentService {
         }
 
         var parentComment = optionalParentComment.get();
+        var initialStatus = portalConfigurationService.getBooleanConfiguration(COMMENTING.group, COMMENT_REQUIRE_REVIEW.key) ? HELD_FOR_MODERATION : PUBLISHED;
 
         var comment = Comment.builder()
                              .title(commentRequest.getTitle())
@@ -61,13 +80,13 @@ public class CommentService {
                              .parentCommentId(parentComment.getId())
                              .userId(userId)
                              .commentType(commentRequest.getCommentType())
-                             .commentStatus(PUBLISHED)
+                             .commentStatus(initialStatus)
                              .createdAt(Instant.now())
                              .build();
         var newComment = commentRepository.save(comment);
 
         var commentResponse = newComment.toResponse();
-        commentResponse.setUsername(user.getLastName() + " " + user.getFirstName());
+        populateUserInformation(newComment.getUserId(), commentResponse);
         var childCount = commentRepository.countChildren(comment.getId());
         commentResponse.setChildCount(childCount);
 
@@ -85,23 +104,15 @@ public class CommentService {
         }
 
         var comment = optionalComment.get();
-        var optionalUser = userService.findUserById(comment.getUserId());
-
-        if (optionalUser.isEmpty()) {
-            log.error("User with ID: {} referenced by comment ID {} not found", comment.getUserId(), commentId);
-            return null;
-        }
-
-        var user = optionalUser.get();
         var commentResponse = comment.toResponse();
-        commentResponse.setUsername(user.getLastName() + " " + user.getFirstName());
+        populateUserInformation(comment.getUserId(), commentResponse);
         var childCount = commentRepository.countChildren(comment.getId());
         commentResponse.setChildCount(childCount);
 
         return commentResponse;
     }
 
-    public CommentResponse getCommentThread(long parentId, long depth) {
+    public CommentResponse getCommentThread(long parentId, long depth, long userId) {
         log.info("Fetching comment thread for parent ID: {}", parentId);
 
         // If the start depth is 0, then set it to max long value
@@ -118,45 +129,23 @@ public class CommentService {
 
         var parentComment = optionalParentComment.get();
 
-        if (!parentComment.getCommentStatus().equals(PUBLISHED)) {
+        if (!parentComment.getCommentStatus()
+                          .equals(PUBLISHED)) {
             throw new IllegalStateException("Parent comment is not published");
         }
 
+        var parentCommentResponse = parentComment.toResponse();
+
         // Recursively fetch the child comments and build the tree
         log.info("Fetching comments recursively for parent ID: {} to depth: {}", parentId, depth);
-        parentComment.setChildComments(fetchCommentsRecursively(parentId, depth));
-
-        // Convert the root comment to response format
-        var commentResponse = parentComment.toResponse();
+        parentCommentResponse.setChildComments(fetchCommentsRecursively(parentId, depth, userId));
+        parentCommentResponse.setUserHasReported(hasUserReportedComment(userId, parentId));
 
         // Set username from userService
-        var optionalUser = userService.findUserById(parentComment.getUserId());
-        if (optionalUser.isPresent()) {
-            var user = optionalUser.get();
-            commentResponse.setUsername(user.getLastName() + " " + user.getFirstName());
-        } else {
-            log.error("User with ID: {} referenced by comment ID {} not found", parentComment.getUserId(), parentComment.getId());
-        }
+        populateUserInformation(parentComment.getUserId(), parentCommentResponse);
 
-        return commentResponse;
-    }
-
-    private List<Comment> fetchCommentsRecursively(Long parentId, Long depth) {
-        if (depth == 0L) {
-            return new ArrayList<>();
-        }
-
-        List<Comment> childComments = commentRepository.findAllByParentCommentId(parentId)
-                                                       .stream()
-                                                       .filter(comment -> comment.getCommentStatus().equals(PUBLISHED)) // Only include published comments
-                                                       .collect(Collectors.toList());
-
-        // Recursively fetch and attach child comments
-        for (Comment child : childComments) {
-            child.setChildComments(fetchCommentsRecursively(child.getId(), depth - 1L));
-        }
-
-        return childComments;
+        log.info("Returning comment thread for parent ID: {}: {}", parentId, parentCommentResponse);
+        return parentCommentResponse;
     }
 
     @Transactional
@@ -181,7 +170,8 @@ public class CommentService {
         var user = optionalUser.get();
         var isAdmin = false;
 
-        if (user.getId() != userId) {
+        if (!user.getId()
+                 .equals(userId)) {
             var userRoles = AuthTools.getUserRoles();
             // Only admin may update comments created by other users
             if (!userRoles.contains(RoleEnum.ROLE_ADMIN)) {
@@ -213,6 +203,7 @@ public class CommentService {
         var updatedComment = commentRepository.save(originalComment);
         var commentResponse = updatedComment.toResponse();
         commentResponse.setUsername(originalUser.getLastName() + " " + originalUser.getFirstName());
+        commentResponse.setUserHasReported(hasUserReportedComment(userId, updatedComment.getId()));
 
         return commentResponse;
     }
@@ -264,5 +255,131 @@ public class CommentService {
         var eventComment = eventCommentRepository.findByEventId(eventId);
         return eventComment.getComment()
                            .getId();
+    }
+
+    @Transactional
+    public ReportResponse reportComment(ReportRequest reportRequest, long userId) {
+        // Check first if the user has already reported the comment
+        if (hasUserReportedComment(userId, reportRequest.getCommentId())) {
+            log.error("User with ID: {} has already reported comment with ID: {}", userId, reportRequest.getCommentId());
+            return ReportResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .errorMessage("User has already reported this comment")
+                                 .errorCode(400L)
+                                 .build();
+        }
+
+        // Reporting can only be done on a USER_COMMENT
+        var reportedComment = commentRepository.findById(reportRequest.getCommentId())
+                                               .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
+
+        if (reportedComment.getCommentType() != USER_COMMENT) {
+            log.error("Comment with ID: {} is not a user comment", reportRequest.getCommentId());
+            return ReportResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .errorMessage("Comment is not a user comment")
+                                 .errorCode(400L)
+                                 .build();
+        }
+
+        var commentReport = CommentReport.builder()
+                                         .commentId(reportRequest.getCommentId())
+                                         .reason(reportRequest.getReportReason())
+                                         .userId(userId)
+                                         .status(PENDING)
+                                         .build();
+
+        var reportResponse = ReportResponse.builder()
+                                           .status(UpdateStatusEnum.OK)
+                                           .build();
+
+        var newReport = commentReportRepository.save(commentReport);
+
+        if (newReport.getId() == null) {
+            reportResponse.setStatus(UpdateStatusEnum.FAIL);
+            reportResponse.setErrorMessage("Saving report failed");
+            reportResponse.setErrorCode(500L);
+        }
+
+        // Check how many reports the comment already has
+        var reportCount = commentReportRepository.countByCommentId(reportRequest.getCommentId());
+
+        if (reportCount >= portalConfigurationService.getNumericConfiguration(COMMENTING.group, COMMENT_REPORT_TRIGGER_LEVEL.key)) {
+            // Mark the comment as reported
+            reportedComment.setCommentStatus(HELD_FOR_MODERATION);
+            commentRepository.save(reportedComment);
+        }
+
+        return reportResponse;
+    }
+
+    @Transactional
+    public ReportResponse cancelReport(long commentId, long userId) {
+        if (!hasUserReportedComment(userId, commentId)) {
+            log.error("User with ID: {} has not reported comment with ID: {}", userId, commentId);
+            return ReportResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .errorMessage("User has not reported this comment")
+                                 .errorCode(400L)
+                                 .build();
+        }
+
+        var commentReport = commentReportRepository.findByUserIdAndCommentId(userId, commentId);
+        commentReport.setStatus(ReportStatusEnum.CANCELLED);
+
+        return ReportResponse.builder()
+                             .status(UpdateStatusEnum.OK)
+                             .build();
+    }
+
+    private void populateUserInformation(long userId, CommentResponse commentResponse) {
+        var optionalUser = userService.findUserById(userId);
+        if (optionalUser.isPresent()) {
+            var user = optionalUser.get();
+            commentResponse.setUsername(user.getLastName() + " " + user.getFirstName());
+            commentResponse.setRegisteredAt(user.getRegistered());
+            commentResponse.setAvatarUrl(getUserAvatarUrl(userId));
+        } else {
+            log.error("User with ID: {} not found when populating comment response", userId);
+        }
+    }
+
+    private List<CommentResponse> fetchCommentsRecursively(Long parentId, Long depth, long userId) {
+        if (depth == 0L) {
+            return new ArrayList<>();
+        }
+
+        List<Comment> childComments = commentRepository.findAllByParentCommentId(parentId)
+                                                       .stream()
+                                                       .filter(comment -> comment.getCommentStatus()
+                                                                                 .equals(PUBLISHED)) // Only include published comments
+                                                       .toList();
+        var childCommentResponses = new ArrayList<CommentResponse>();
+        // Recursively fetch and attach child comments
+        for (Comment child : childComments) {
+            var childCommentResponse = child.toResponse();
+            childCommentResponse.setChildComments(fetchCommentsRecursively(child.getId(), depth - 1L, userId));
+            childCommentResponse.setUserHasReported(hasUserReportedComment(userId, child.getId()));
+            populateUserInformation(child.getUserId(), childCommentResponse);
+            childCommentResponses.add(childCommentResponse);
+        }
+
+        return childCommentResponses;
+    }
+
+    private boolean hasUserReportedComment(long userId, long commentId) {
+        return commentReportRepository.existsByUserIdAndCommentId(userId, commentId);
+    }
+
+    private String getUserAvatarUrl(long userId) {
+        var optionalAvatarFile = avatarFileRepository.findByUserId(userId);
+
+        if (optionalAvatarFile.isEmpty()) {
+            return null;
+        }
+
+        var avatarFile = optionalAvatarFile.get();
+
+        return FILES_URL + "/" + AVATARS + "/" + avatarFile.getId();
     }
 }

@@ -1,7 +1,9 @@
 package io.oxalate.backend.controller;
 
 import io.oxalate.backend.api.request.commenting.CommentRequest;
+import io.oxalate.backend.api.request.commenting.ReportRequest;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
+import io.oxalate.backend.api.response.commenting.ReportResponse;
 import io.oxalate.backend.rest.CommentAPI;
 import io.oxalate.backend.service.commenting.CommentService;
 import io.oxalate.backend.tools.AuthTools;
@@ -23,13 +25,16 @@ public class CommentController implements CommentAPI {
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<CommentResponse> getCommentThread(long parentId, HttpServletRequest request) {
-        var comments = commentService.getCommentThread(parentId,0L);
+        var userId = AuthTools.getCurrentUserId();
+        var comments = commentService.getCommentThread(parentId,0L, userId);
         return ResponseEntity.ok(comments);
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<CommentResponse> getCommentThreadToDepth(long parentId, long depth, HttpServletRequest request) {
-        var comments = commentService.getCommentThread(parentId, depth);
+        var userId = AuthTools.getCurrentUserId();
+        var comments = commentService.getCommentThread(parentId, depth, userId);
         return ResponseEntity.ok(comments);
     }
 
@@ -47,7 +52,7 @@ public class CommentController implements CommentAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<CommentResponse> addComment(CommentRequest commentRequest, HttpServletRequest request) {
+    public ResponseEntity<CommentResponse> createComment(CommentRequest commentRequest, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var commentResponse = commentService.createComment(userId, commentRequest);
 
@@ -77,5 +82,20 @@ public class CommentController implements CommentAPI {
     public ResponseEntity<List<CommentResponse>> getCommentsByUserId(long userId, HttpServletRequest request) {
         var comments = commentService.getCommentsByUserId(userId);
         return ResponseEntity.ok(comments);
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ReportResponse> report(ReportRequest reportRequest, HttpServletRequest request) {
+        var userId = AuthTools.getCurrentUserId();
+        var reportResponse = commentService.reportComment(reportRequest, userId);
+        return ResponseEntity.ok(reportResponse);
+    }
+
+    @Override
+    public ResponseEntity<ReportResponse> cancelReport(long commentId, HttpServletRequest request) {
+        var userId = AuthTools.getCurrentUserId();
+        var reportResponse = commentService.cancelReport(commentId, userId);
+        return ResponseEntity.ok(reportResponse);
     }
 }

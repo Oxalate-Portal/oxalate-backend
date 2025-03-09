@@ -8,6 +8,12 @@ VALUES ('array', 'commenting', 'commenting-enabled-features', 'event,page,forum'
 INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
 VALUES ('boolean', 'commenting', 'commenting-allow-editing', 'false', NULL, false, 'Allow comments to be edited by their authors');
 
+INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
+VALUES ('boolean', 'commenting', 'comments-require-review', 'false', NULL, false, 'All comments have to be reviewed before being published');
+
+INSERT INTO portal_configuration (value_type, group_key, setting_key, default_value, runtime_value, required_runtime, description)
+VALUES ('number', 'commenting', 'comments-report-trigger-level', '5', NULL, false, 'How many user reports are required before a comment is set to be reviewed');
+
 CREATE TABLE comments
 (
     id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -47,6 +53,17 @@ CREATE TABLE forum_topics
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     comment_id BIGINT NOT NULL,
     CONSTRAINT fk_forum_topics_comment FOREIGN KEY (comment_id) REFERENCES comments (id)
+);
+
+CREATE TABLE comment_reports
+(
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    comment_id BIGINT NOT NULL,
+    user_id    BIGINT NOT NULL,
+    reason     TEXT,
+    status     VARCHAR(20)  NOT NULL,
+    CONSTRAINT fk_comment_reports_comment FOREIGN KEY (comment_id) REFERENCES comments (id) ON DELETE CASCADE,
+    CONSTRAINT fk_comment_reports_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 -- These are the root topics

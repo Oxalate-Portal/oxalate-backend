@@ -57,4 +57,7 @@ public class CommentResponse {
 
     @JsonProperty("childComments")
     private List<CommentResponse> childComments;
+
+    @JsonProperty("userHasReported")
+    private boolean userHasReported;
 }
