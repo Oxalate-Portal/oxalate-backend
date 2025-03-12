@@ -6,11 +6,11 @@ import io.oxalate.backend.api.CommentTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
-import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 @Schema(description = "Comment response")
-@Builder
+@SuperBuilder
 @Data
 public class CommentResponse {
     @JsonProperty("id")

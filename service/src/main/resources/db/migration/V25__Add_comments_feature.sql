@@ -62,6 +62,7 @@ CREATE TABLE comment_reports
     user_id    BIGINT NOT NULL,
     reason     TEXT,
     status     VARCHAR(20)  NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_comment_reports_comment FOREIGN KEY (comment_id) REFERENCES comments (id) ON DELETE CASCADE,
     CONSTRAINT fk_comment_reports_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );

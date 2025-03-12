@@ -2,6 +2,7 @@ package io.oxalate.backend.controller;
 
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.request.commenting.ReportRequest;
+import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
 import io.oxalate.backend.api.response.commenting.ReportResponse;
 import io.oxalate.backend.rest.CommentAPI;
@@ -93,9 +94,45 @@ public class CommentController implements CommentAPI {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     public ResponseEntity<ReportResponse> cancelReport(long commentId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var reportResponse = commentService.cancelReport(commentId, userId);
+        return ResponseEntity.ok(reportResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<CommentModerationResponse>> getPendingReports(HttpServletRequest request) {
+        var commentServicePendingReports = commentService.getPendingReports();
+        return ResponseEntity.ok(commentServicePendingReports);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ReportResponse> rejectComment(long commentId, HttpServletRequest request) {
+        var reportResponse = commentService.rejectComment(commentId);
+        return ResponseEntity.ok(reportResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ReportResponse> rejectReports(long commentId, HttpServletRequest request) {
+        var reportResponse = commentService.rejectReports(commentId);
+        return ResponseEntity.ok(reportResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ReportResponse> acceptReport(long reportId, HttpServletRequest request) {
+        var reportResponse = commentService.acceptReport(reportId);
+        return ResponseEntity.ok(reportResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ReportResponse> dismissReport(long reportId, HttpServletRequest request) {
+        var reportResponse = commentService.dismissReport(reportId);
         return ResponseEntity.ok(reportResponse);
     }
 }

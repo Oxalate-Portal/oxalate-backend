@@ -2,6 +2,7 @@ package io.oxalate.backend.model.commenting;
 
 import io.oxalate.backend.api.CommentStatusEnum;
 import io.oxalate.backend.api.CommentTypeEnum;
+import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -83,5 +84,22 @@ public class Comment {
                                                                                                       .map(Comment::toResponse)
                                                                                                       .collect(Collectors.toList()))
                               .build();
+    }
+
+    public CommentModerationResponse toCommentModerationResponse() {
+        return CommentModerationResponse.builder()
+                                        .id(id)
+                                        .title(title)
+                                        .body(body)
+                                        .userId(userId)
+                                        .username(null)
+                                        .parentCommentId(parentCommentId)
+                                        .commentType(commentType)
+                                        .commentStatus(commentStatus)
+                                        .cancelReason(cancelReason)
+                                        .createdAt(createdAt)
+                                        .modifiedAt(modifiedAt)
+                                        .childCount(childComments == null ? 0 : childComments.size())
+                                        .build();
     }
 }

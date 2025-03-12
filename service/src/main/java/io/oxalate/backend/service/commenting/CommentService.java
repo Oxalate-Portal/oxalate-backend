@@ -3,6 +3,7 @@ package io.oxalate.backend.service.commenting;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_BODY;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_ID;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_TITLE;
+import io.oxalate.backend.api.CommentStatusEnum;
 import static io.oxalate.backend.api.CommentStatusEnum.HELD_FOR_MODERATION;
 import static io.oxalate.backend.api.CommentStatusEnum.PUBLISHED;
 import static io.oxalate.backend.api.CommentTypeEnum.TOPIC;
@@ -18,6 +19,8 @@ import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.request.commenting.ReportRequest;
+import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
+import io.oxalate.backend.api.response.commenting.CommentReportResponse;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
 import io.oxalate.backend.api.response.commenting.ReportResponse;
 import io.oxalate.backend.model.commenting.Comment;
@@ -33,6 +36,7 @@ import io.oxalate.backend.tools.AuthTools;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -287,6 +291,7 @@ public class CommentService {
                                          .reason(reportRequest.getReportReason())
                                          .userId(userId)
                                          .status(PENDING)
+                                         .createdAt(Instant.now())
                                          .build();
 
         var reportResponse = ReportResponse.builder()
@@ -332,6 +337,109 @@ public class CommentService {
                              .build();
     }
 
+    public List<CommentModerationResponse> getPendingReports() {
+        var pendingCommentModerationResponses = new ArrayList<CommentModerationResponse>();
+        var pendingReports = commentReportRepository.findAllByStatus(PENDING);
+
+        if (!pendingReports.isEmpty()) {
+            // First we get the list of unique comment IDs
+            var commentIds = pendingReports.stream()
+                                           .map(CommentReport::getCommentId)
+                                           .toList();
+
+            for (var commentId : commentIds) {
+                var comment = commentRepository.findById(commentId)
+                                               .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
+
+                var commentModerationResponse = comment.toCommentModerationResponse();
+                populateUserInformation(comment.getUserId(), commentModerationResponse);
+                // Get the sub-list of reports for this comment
+                var commentReports = pendingReports.stream()
+                                                   .filter(report -> report.getCommentId() == commentId)
+                                                   .toList();
+                var reportResponses = new ArrayList<CommentReportResponse>();
+
+                for (var report : commentReports) {
+                    var reporter = userService.findUserById(report.getUserId())
+                                              .orElseThrow(() -> new EntityNotFoundException("Reporter not found"));
+                    var commentReportResponse = CommentReportResponse.builder()
+                                                                     .id(report.getId())
+                                                                     .reporterId(reporter.getId())
+                                                                     .reporter(reporter.getLastName() + " " + reporter.getFirstName())
+                                                                     .createdAt(report.getCreatedAt())
+                                                                     .status(report.getStatus())
+                                                                     .reason(report.getReason())
+                                                                     .build();
+                    reportResponses.add(commentReportResponse);
+                }
+
+                commentModerationResponse.setReports(reportResponses);
+                var childCount = commentRepository.countChildren(comment.getId());
+                commentModerationResponse.setChildCount(childCount);
+                pendingCommentModerationResponses.add(commentModerationResponse);
+            }
+        }
+
+        return pendingCommentModerationResponses;
+    }
+
+    @Transactional
+    public ReportResponse rejectComment(long commentId) {
+        rejectRecursivelyComment(commentId);
+        return setStatusOfAllCommentReports(commentId, ReportStatusEnum.APPROVED);
+    }
+
+    @Transactional
+    public ReportResponse rejectReports(long commentId) {
+        return setStatusOfAllCommentReports(commentId, ReportStatusEnum.REJECTED);
+    }
+
+    @Transactional
+    public ReportResponse acceptReport(long reportId) {
+        return updateCommentReportStatus(reportId, ReportStatusEnum.APPROVED);
+    }
+
+    @Transactional
+    public ReportResponse dismissReport(long reportId) {
+        return updateCommentReportStatus(reportId, ReportStatusEnum.REJECTED);
+    }
+
+    private ReportResponse setStatusOfAllCommentReports(long commentId, ReportStatusEnum rejected) {
+        var commentReports = commentReportRepository.findAllByCommentId(commentId);
+
+        for (var report : commentReports) {
+            report.setStatus(rejected);
+            commentReportRepository.save(report);
+        }
+
+        return ReportResponse.builder()
+                             .status(UpdateStatusEnum.OK)
+                             .build();
+    }
+
+    private ReportResponse updateCommentReportStatus(long reportId, ReportStatusEnum reportStatusEnum) {
+        var commentReport = commentReportRepository.findById(reportId)
+                                                   .orElseThrow(() -> new EntityNotFoundException("Report not found"));
+
+        if (reportStatusEnum == ReportStatusEnum.REJECTED) {
+            var commentId = commentReport.getCommentId();
+            // If the comment status is currently HELD_FOR_MODERATION, then we need to update the comment status back to PUBLISHED
+            var comment = commentRepository.findById(commentId)
+                                           .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
+            if (comment.getCommentStatus() == HELD_FOR_MODERATION) {
+                comment.setCommentStatus(PUBLISHED);
+                commentRepository.save(comment);
+            }
+        }
+
+        commentReport.setStatus(reportStatusEnum);
+        commentReportRepository.save(commentReport);
+
+        return ReportResponse.builder()
+                             .status(UpdateStatusEnum.OK)
+                             .build();
+    }
+
     private void populateUserInformation(long userId, CommentResponse commentResponse) {
         var optionalUser = userService.findUserById(userId);
         if (optionalUser.isPresent()) {
@@ -349,10 +457,13 @@ public class CommentService {
             return new ArrayList<>();
         }
 
+        // Order the comments by creation date
+
         List<Comment> childComments = commentRepository.findAllByParentCommentId(parentId)
                                                        .stream()
                                                        .filter(comment -> comment.getCommentStatus()
-                                                                                 .equals(PUBLISHED)) // Only include published comments
+                                                                                 .equals(PUBLISHED))
+                                                       .sorted(Comparator.comparing(Comment::getCreatedAt))
                                                        .toList();
         var childCommentResponses = new ArrayList<CommentResponse>();
         // Recursively fetch and attach child comments
@@ -381,5 +492,17 @@ public class CommentService {
         var avatarFile = optionalAvatarFile.get();
 
         return FILES_URL + "/" + AVATARS + "/" + avatarFile.getId();
+    }
+
+    private void rejectRecursivelyComment(long commentId) {
+        var comment = commentRepository.findById(commentId)
+                                       .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
+        comment.setCommentStatus(CommentStatusEnum.REJECTED);
+        commentRepository.save(comment);
+
+        var childComments = commentRepository.findAllByParentCommentId(commentId);
+        for (var childComment : childComments) {
+            rejectRecursivelyComment(childComment.getId());
+        }
     }
 }

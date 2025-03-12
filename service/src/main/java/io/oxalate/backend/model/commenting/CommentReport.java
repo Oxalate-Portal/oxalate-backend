@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,4 +38,7 @@ public class CommentReport {
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private ReportStatusEnum status;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 }
