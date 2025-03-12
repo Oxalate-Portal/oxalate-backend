@@ -1,6 +1,8 @@
 package io.oxalate.backend.service;
 
 import io.oxalate.backend.AbstractIntegrationTest;
+import static io.oxalate.backend.api.CommentConstants.COMMON_LEGACY_EVENT_COMMENT_ID;
+import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_ID;
 import io.oxalate.backend.api.DiveTypeEnum;
 import static io.oxalate.backend.api.DiveTypeEnum.CAVE;
 import io.oxalate.backend.api.EventStatusEnum;
@@ -17,11 +19,14 @@ import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.User;
+import io.oxalate.backend.model.commenting.Comment;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.PaymentRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
+import io.oxalate.backend.repository.commenting.CommentRepository;
+import io.oxalate.backend.repository.commenting.EventCommentRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
@@ -62,6 +67,10 @@ class EventServiceITC extends AbstractIntegrationTest {
     private User organizer;
     private User diver;
     private Event event;
+    @Autowired
+    private CommentRepository commentRepository;
+    @Autowired
+    private EventCommentRepository eventCommentRepository;
 
     @BeforeEach
     void setUp() {
@@ -80,6 +89,16 @@ class EventServiceITC extends AbstractIntegrationTest {
     void tearDown() {
         // Remove event participants
         eventParticipantsRepository.deleteAll();
+        // Remove all event-comments
+        eventCommentRepository.deleteAll();
+        // Remove all comments with ID above 4
+        var comments = commentRepository.findAll();
+        for (var comment : comments) {
+            if (comment.getId() > COMMON_LEGACY_EVENT_COMMENT_ID) {
+                commentRepository.deleteById(comment.getId());
+            }
+        }
+
         // Remove event
         eventRepository.deleteAll();
         // Remove user roles
@@ -94,6 +113,36 @@ class EventServiceITC extends AbstractIntegrationTest {
 
     @Test
     void updateEventWithUserOk() {
+        var paymentRequest = PaymentRequest.builder()
+                                           .userId(diver.getId())
+                                           .paymentCount(4)
+                                           .paymentType(ONE_TIME)
+                                           .build();
+        paymentService.savePayment(paymentRequest);
+
+        // Create related eventCommentTopic
+        var comment = Comment.builder()
+                .userId(diver.getId())
+                .parentCommentId(ROOT_EVENT_COMMENT_ID)
+                .build();
+
+        var eventRequest = generateEventRequestFromEvent();
+
+        var eventResponse = eventService.updateEvent(eventRequest);
+
+        assertNotNull(eventResponse);
+        assertNotNull(eventResponse.getParticipants());
+        assertFalse(eventResponse.getParticipants()
+                                 .isEmpty());
+        assertEquals(1, eventResponse.getParticipants()
+                                     .size());
+        assertEquals(diver.getId(), eventResponse.getParticipants()
+                                                 .getFirst()
+                                                 .getId());
+    }
+
+    @Test
+    void updateEventWithUserNoTopicCommentOk() {
         var paymentRequest = PaymentRequest.builder()
                                            .userId(diver.getId())
                                            .paymentCount(4)

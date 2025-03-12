@@ -16,4 +16,7 @@ public class EventListResponse extends AbstractEvent {
 
     @JsonProperty("participantCount")
     private int participantCount;
+
+    @JsonProperty("eventCommentId")
+    private long eventCommentId;
 }

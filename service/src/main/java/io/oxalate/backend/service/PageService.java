@@ -282,7 +282,7 @@ public class PageService {
 
         closePages(pages);
 
-        pageGroupRepository.updateStatus(pageGroupId, PageStatusEnum.DELETED);
+        pageGroupRepository.updateStatus(pageGroupId, PageStatusEnum.DELETED.name());
 
         return true;
     }

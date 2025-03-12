@@ -18,6 +18,8 @@ import io.oxalate.backend.model.EventsParticipant;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
+import io.oxalate.backend.repository.commenting.EventCommentRepository;
+import io.oxalate.backend.service.commenting.CommentService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,6 +41,8 @@ public class EventService {
     private final PaymentService paymentService;
     private final EmailQueueService emailQueueService;
     private final PortalConfigurationService portalConfigurationService;
+    private final CommentService commentService;
+    private final EventCommentRepository eventCommentRepository;
 
     public EventResponse findById(Long eventId) {
         var event = eventRepository.findById(eventId)
@@ -127,7 +131,7 @@ public class EventService {
             }
         }
 
-        // Finally we remove the organizer from the list, as we will add it back later
+        // After that we remove the organizer from the list, as we will add it back later
         eventRepository.removeAllParticipantsFromEvent(eventRequest.getId(), ParticipantTypeEnum.ORGANIZER.name());
 
         // We need to store the old status to determine if we need to send a notification
@@ -165,6 +169,15 @@ public class EventService {
                 || oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.DRAFTED))
                 && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "event-removed")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, updatedEvent.getId());
+        }
+
+        try {
+            // Check if the event already has a comment topic, we're doing this in order to make sure no open event was missed by the Flyway migration
+            commentService.getEventCommentId(eventRequest.getId());
+        } catch (NullPointerException e) {
+            log.info("Event {} does not have a comment topic, creating one", eventRequest.getId());
+            // If the event does not have a comment topic, then we create one
+            commentService.createEventTopicComment(eventRequest.getId(), eventRequest.getOrganizerId());
         }
 
         return getPopulatedEventResponse(updatedEvent).orElse(null);
@@ -396,6 +409,9 @@ public class EventService {
                                             .toUserResponse());
         eventResponse.setParticipants(participantList);
 
+        var eventCommentId = commentService.getEventCommentId(event.getId());
+        eventResponse.setEventCommentId(eventCommentId);
+
         return Optional.of(eventResponse);
     }
 
@@ -416,6 +432,9 @@ public class EventService {
         var eventListResponse = event.toEventListResponse();
         eventListResponse.setOrganizerName(organizer.getFirstName() + " " + organizer.getLastName());
         eventListResponse.setParticipantCount(participants.size());
+
+        var eventCommentId = commentService.getEventCommentId(event.getId());
+        eventListResponse.setEventCommentId(eventCommentId);
 
         return Optional.of(eventListResponse);
     }
@@ -465,6 +484,8 @@ public class EventService {
             }
         }
 
+        // Now we can create the event topic in comments
+        commentService.createEventTopicComment(newEvent.getId(), userId);
         // Now we can get the repopulated response
         var optionalEventResponse = getPopulatedEventResponse(newEvent);
 

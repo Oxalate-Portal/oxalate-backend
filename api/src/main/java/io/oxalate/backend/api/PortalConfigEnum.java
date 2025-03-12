@@ -5,7 +5,8 @@ public enum PortalConfigEnum {
     FRONTEND("frontend", FrontendConfigEnum.class),
     GENERAL("general", GeneralConfigEnum.class),
     MEMBERSHIP("membership", MembershipConfigEnum.class),
-    PAYMENT("payment", PaymentConfigEnum.class);
+    PAYMENT("payment", PaymentConfigEnum.class),
+    COMMENTING("commenting", CommentConfigEnum.class);
 
     public final String group;
     public final Class<?> subEnum;
@@ -15,6 +16,20 @@ public enum PortalConfigEnum {
         this.subEnum = subEnum;
     }
 
+    // Sub-enum for comment-related settings
+    public enum CommentConfigEnum {
+        COMMENT_ENABLED("commenting-enabled"),
+        COMMENT_ALLOW_EDITING("commenting-allow-editing"),
+        COMMENT_ENABLED_FEATURES("commenting-enabled-features"),
+        COMMENT_REPORT_TRIGGER_LEVEL("comments-report-trigger-level"),
+        COMMENT_REQUIRE_REVIEW("comments-require-review"),;
+
+        public final String key;
+
+        CommentConfigEnum(String key) {
+            this.key = key;
+        }
+    }
     // Sub-enum for email-related settings
     public enum EmailConfigEnum {
         EMAIL_ENABLED("email-enabled"),
