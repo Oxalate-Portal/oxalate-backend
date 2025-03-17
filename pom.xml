@@ -20,7 +20,7 @@
         <spring.boot.version>3.4.3</spring.boot.version> <!-- Keep this in sync with the parent version -->
         <flyway.version>11.4.0</flyway.version>
         <jjwt.version>0.12.6</jjwt.version>
-        <swagger.version>2.2.28</swagger.version>
+        <swagger.version>2.2.29</swagger.version>
         <testcontainers.version>1.20.6</testcontainers.version>
         <apache-maven.version>3.5.2</apache-maven.version>
         <jboss-logging.component.version>3.0.4.Final</jboss-logging.component.version>
