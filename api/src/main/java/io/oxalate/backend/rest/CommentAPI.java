@@ -2,6 +2,7 @@ package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
+import io.oxalate.backend.api.request.commenting.CommentFilterRequest;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.request.commenting.ReportRequest;
 import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
@@ -157,4 +158,14 @@ public interface CommentAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/dismiss-report/{reportId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ReportResponse> dismissReport(@PathVariable("reportId") long reportId, HttpServletRequest request);
+
+    @Operation(description = "Retrieve a list of comments based on the given filter criterias", tags = "CommentAPI")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "CommentFilterRequest", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of comments retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PostMapping(value = BASE_PATH + "/filter", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<CommentResponse>> filterComments(@RequestBody CommentFilterRequest commentFilterRequest, HttpServletRequest request);
 }

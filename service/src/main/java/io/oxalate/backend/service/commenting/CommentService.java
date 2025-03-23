@@ -6,6 +6,7 @@ import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_TITLE;
 import io.oxalate.backend.api.CommentStatusEnum;
 import static io.oxalate.backend.api.CommentStatusEnum.HELD_FOR_MODERATION;
 import static io.oxalate.backend.api.CommentStatusEnum.PUBLISHED;
+import io.oxalate.backend.api.CommentTypeEnum;
 import static io.oxalate.backend.api.CommentTypeEnum.TOPIC;
 import static io.oxalate.backend.api.CommentTypeEnum.USER_COMMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.COMMENTING;
@@ -17,6 +18,7 @@ import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
+import io.oxalate.backend.api.request.commenting.CommentFilterRequest;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.request.commenting.ReportRequest;
 import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
@@ -37,9 +39,11 @@ import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -403,6 +407,119 @@ public class CommentService {
     public ReportResponse dismissReport(long reportId) {
         return updateCommentReportStatus(reportId, ReportStatusEnum.REJECTED);
     }
+
+    public List<CommentResponse> getFilteredComments(CommentFilterRequest commentFilterRequest) {
+        log.info("Filtering comments with request: {}", commentFilterRequest);
+
+        Specification<Comment> spec = Specification.where(null);
+
+        if (commentFilterRequest.getUserId() > 0) {
+            spec = spec.and(hasUserId(commentFilterRequest.getUserId()));
+        }
+        if (commentFilterRequest.getForumId() > 0) {
+            spec = spec.and(belongsToForum(commentFilterRequest.getForumId()));
+        }
+        if (commentFilterRequest.getDiveEventId() > 0) {
+            spec = spec.and(belongsToDiveEvent(commentFilterRequest.getDiveEventId()));
+        }
+        if (commentFilterRequest.getCommentId() > 0) {
+            spec = spec.and(hasCommentId(commentFilterRequest.getCommentId()));
+        }
+        if (commentFilterRequest.getParentId() > 0) {
+            spec = spec.and(hasParentId(commentFilterRequest.getParentId()));
+        }
+        if (commentFilterRequest.getDepth() > 0) {
+            spec = spec.and(hasDepth(commentFilterRequest.getDepth()));
+        }
+        if (commentFilterRequest.getCommentStatus() != null) {
+            spec = spec.and(hasStatus(commentFilterRequest.getCommentStatus()));
+        }
+        if (commentFilterRequest.getCommentType() != null) {
+            spec = spec.and(hasType(commentFilterRequest.getCommentType()));
+        }
+        if (commentFilterRequest.getTitleSearch() != null) {
+            spec = spec.and(titleContains(commentFilterRequest.getTitleSearch()));
+        }
+        if (commentFilterRequest.getBodySearch() != null) {
+            spec = spec.and(bodyContains(commentFilterRequest.getBodySearch()));
+        }
+        if (commentFilterRequest.getBeforeDate() != null) {
+            spec = spec.and(createdBefore(commentFilterRequest.getBeforeDate()));
+        }
+        if (commentFilterRequest.getAfterDate() != null) {
+            spec = spec.and(createdAfter(commentFilterRequest.getAfterDate()));
+        }
+        if (commentFilterRequest.getReportCount() > 0) {
+            spec = spec.and(hasReportCount(commentFilterRequest.getReportCount()));
+        }
+
+        // Apply the specification to the repository
+        var comments = commentRepository.findAll(spec);
+
+        // Convert to CommentResponse
+        List<CommentResponse> responseList = new ArrayList<>();
+        for (Comment comment : comments) {
+            var commentResponse = comment.toResponse();
+            populateUserInformation(comment.getUserId(), commentResponse);
+            responseList.add(commentResponse);
+        }
+
+        return responseList;
+    }
+
+    // Start specification methods
+    private Specification<Comment> hasUserId(long userId) {
+        return (root, query, builder) -> builder.equal(root.get("userId"), userId);
+    }
+
+    private Specification<Comment> belongsToForum(long forumId) {
+        return (root, query, builder) -> builder.equal(root.get("forumId"), forumId);
+    }
+
+    private Specification<Comment> belongsToDiveEvent(long diveEventId) {
+        return (root, query, builder) -> builder.equal(root.get("diveEventId"), diveEventId);
+    }
+
+    private Specification<Comment> hasCommentId(long commentId) {
+        return (root, query, builder) -> builder.equal(root.get("id"), commentId);
+    }
+
+    private Specification<Comment> hasParentId(long parentId) {
+        return (root, query, builder) -> builder.equal(root.get("parentCommentId"), parentId);
+    }
+
+    private Specification<Comment> hasDepth(long depth) {
+        return (root, query, builder) -> builder.equal(root.get("depth"), depth);
+    }
+
+    private Specification<Comment> hasStatus(CommentStatusEnum status) {
+        return (root, query, builder) -> builder.equal(root.get("commentStatus"), status);
+    }
+
+    private Specification<Comment> hasType(CommentTypeEnum type) {
+        return (root, query, builder) -> builder.equal(root.get("commentType"), type);
+    }
+
+    private Specification<Comment> titleContains(String title) {
+        return (root, query, builder) -> builder.like(builder.lower(root.get("title")), "%" + title.toLowerCase() + "%");
+    }
+
+    private Specification<Comment> bodyContains(String body) {
+        return (root, query, builder) -> builder.like(builder.lower(root.get("body")), "%" + body.toLowerCase() + "%");
+    }
+
+    private Specification<Comment> createdBefore(Date beforeDate) {
+        return (root, query, builder) -> builder.lessThan(root.get("createdAt"), beforeDate.toInstant());
+    }
+
+    private Specification<Comment> createdAfter(Date afterDate) {
+        return (root, query, builder) -> builder.greaterThan(root.get("createdAt"), afterDate.toInstant());
+    }
+
+    private Specification<Comment> hasReportCount(long reportCount) {
+        return (root, query, builder) -> builder.equal(root.get("reportCount"), reportCount);
+    }
+    // End specification methods
 
     private ReportResponse setStatusOfAllCommentReports(long commentId, ReportStatusEnum rejected) {
         var commentReports = commentReportRepository.findAllByCommentId(commentId);
