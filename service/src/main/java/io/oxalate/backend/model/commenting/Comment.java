@@ -4,14 +4,17 @@ import io.oxalate.backend.api.CommentStatusEnum;
 import io.oxalate.backend.api.CommentTypeEnum;
 import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import java.time.Instant;
@@ -62,6 +65,15 @@ public class Comment {
 
     @Column(name = "modified_at")
     private Instant modifiedAt;
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<EventComment> eventComments;
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PageComment> pageComments;
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ForumTopic> forumTopics;
 
     @Transient
     private List<Comment> childComments = new ArrayList<>();

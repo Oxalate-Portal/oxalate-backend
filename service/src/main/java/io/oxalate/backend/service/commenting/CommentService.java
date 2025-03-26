@@ -1,5 +1,6 @@
 package io.oxalate.backend.service.commenting;
 
+import io.oxalate.backend.api.CommentClassEnum;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_BODY;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_ID;
 import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_TITLE;
@@ -28,6 +29,8 @@ import io.oxalate.backend.api.response.commenting.ReportResponse;
 import io.oxalate.backend.model.commenting.Comment;
 import io.oxalate.backend.model.commenting.CommentReport;
 import io.oxalate.backend.model.commenting.EventComment;
+import io.oxalate.backend.model.commenting.ForumTopic;
+import io.oxalate.backend.model.commenting.PageComment;
 import io.oxalate.backend.repository.commenting.CommentReportRepository;
 import io.oxalate.backend.repository.commenting.CommentRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
@@ -36,6 +39,8 @@ import io.oxalate.backend.service.PortalConfigurationService;
 import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -452,6 +457,10 @@ public class CommentService {
         if (commentFilterRequest.getReportCount() > 0) {
             spec = spec.and(hasReportCount(commentFilterRequest.getReportCount()));
         }
+        // Apply filtering based on comment class
+        if (commentFilterRequest.getCommentClass() != null) {
+            spec = spec.and(belongsToCommentClass(commentFilterRequest.getCommentClass()));
+        }
 
         // Apply the specification to the repository
         var comments = commentRepository.findAll(spec);
@@ -465,6 +474,31 @@ public class CommentService {
         }
 
         return responseList;
+    }
+
+    private Specification<Comment> belongsToCommentClass(CommentClassEnum commentClass) {
+        return (root, query, cb) -> {
+            Join<Comment, EventComment> eventJoin;
+            Join<Comment, PageComment> pageJoin;
+            Join<Comment, ForumTopic> forumJoin;
+
+            switch (commentClass) {
+            case EVENT_COMMENTS:
+                eventJoin = root.join("eventComments", JoinType.INNER);
+                return cb.isNotNull(eventJoin.get("commentId"));
+
+            case PAGE_COMMENTS:
+                pageJoin = root.join("pageComments", JoinType.INNER);
+                return cb.isNotNull(pageJoin.get("commentId"));
+
+            case FORUM_COMMENTS:
+                forumJoin = root.join("forumTopics", JoinType.INNER);
+                return cb.isNotNull(forumJoin.get("commentId"));
+
+            default:
+                return cb.conjunction();
+            }
+        };
     }
 
     // Start specification methods

@@ -1,5 +1,6 @@
 package io.oxalate.backend.api.request.commenting;
 
+import io.oxalate.backend.api.CommentClassEnum;
 import io.oxalate.backend.api.CommentStatusEnum;
 import io.oxalate.backend.api.CommentTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,6 +27,9 @@ public class CommentFilterRequest {
 
     @Schema(description = "Depth of the child comments", example = "123", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Long depth;
+
+    @Schema(description = "Filter comments with this comment classes", example = "PAGE_COMMENTS", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private CommentClassEnum commentClass;
 
     @Schema(description = "Filter comments with this comment status", example = "CANCELLED", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private CommentStatusEnum commentStatus;
