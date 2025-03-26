@@ -485,15 +485,15 @@ public class CommentService {
             switch (commentClass) {
             case EVENT_COMMENTS:
                 eventJoin = root.join("eventComments", JoinType.INNER);
-                return cb.isNotNull(eventJoin.get("commentId"));
+                return cb.isNotNull(eventJoin.get("comment"));
 
             case PAGE_COMMENTS:
                 pageJoin = root.join("pageComments", JoinType.INNER);
-                return cb.isNotNull(pageJoin.get("commentId"));
+                return cb.isNotNull(pageJoin.get("comment"));
 
             case FORUM_COMMENTS:
                 forumJoin = root.join("forumTopics", JoinType.INNER);
-                return cb.isNotNull(forumJoin.get("commentId"));
+                return cb.isNotNull(forumJoin.get("comment"));
 
             default:
                 return cb.conjunction();
