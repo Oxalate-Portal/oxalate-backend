@@ -1,5 +1,6 @@
 package io.oxalate.backend.controller;
 
+import io.oxalate.backend.api.request.commenting.CommentFilterRequest;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.request.commenting.ReportRequest;
 import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
@@ -134,5 +135,12 @@ public class CommentController implements CommentAPI {
     public ResponseEntity<ReportResponse> dismissReport(long reportId, HttpServletRequest request) {
         var reportResponse = commentService.dismissReport(reportId);
         return ResponseEntity.ok(reportResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<CommentResponse>> filterComments(CommentFilterRequest commentFilterRequest, HttpServletRequest request) {
+        var comments = commentService.getFilteredComments(commentFilterRequest);
+        return ResponseEntity.ok(comments);
     }
 }
