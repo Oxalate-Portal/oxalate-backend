@@ -20,4 +20,7 @@ public class RecaptchaResponse {
 
     @JsonProperty("action")
     private String action;
+
+    @JsonProperty("error-codes")
+    private String[] errorCodes;
 }
