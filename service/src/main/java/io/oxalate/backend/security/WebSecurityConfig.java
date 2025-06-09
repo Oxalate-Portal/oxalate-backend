@@ -6,7 +6,6 @@ import static io.oxalate.backend.api.UrlConstants.DOCUMENTS_URL;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import static io.oxalate.backend.api.UrlConstants.PAGES_URL;
 import io.oxalate.backend.events.AppEventPublisher;
-import io.oxalate.backend.security.jwt.AuthEntryPointJwt;
 import io.oxalate.backend.security.jwt.JwtUtils;
 import io.oxalate.backend.security.service.UserDetailsServiceImpl;
 import io.oxalate.backend.service.RecaptchaService;
@@ -42,7 +41,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class WebSecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
-    private final AuthEntryPointJwt unauthorizedHandler;
     private final RecaptchaService recaptchaService;
     private final AppEventPublisher appEventPublisher;
     private final JwtUtils jwtUtils;
@@ -109,8 +107,7 @@ public class WebSecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
