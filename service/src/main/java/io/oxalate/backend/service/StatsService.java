@@ -26,26 +26,44 @@ public class StatsService {
 
     public List<MultiYearValue> getYearlyRegistrations() {
 
-        var queryString = "SELECT EXTRACT(YEAR FROM u.registered) AS year, COUNT(u.id) AS registration_count FROM users u GROUP BY year ORDER BY year";
+        var queryString = """
+                SELECT
+                  EXTRACT(YEAR FROM u.registered) AS year,
+                  COUNT(u.id) AS registration_count
+                FROM users u
+                GROUP BY year
+                ORDER BY year
+                """;
         return getMultiYearValues(queryString, "registrations");
     }
 
     public List<MultiYearValue> getYearlyEvents() {
-        var queryString = "SELECT EXTRACT(YEAR FROM e.start_time) AS year, COUNT(e.id) AS event_count FROM events e WHERE e.start_time < NOW() GROUP BY year ORDER BY year";
+        var queryString = """
+                SELECT
+                  EXTRACT(YEAR FROM e.start_time) AS year,
+                  COUNT(e.id) AS event_count
+                FROM events e
+                WHERE e.start_time < NOW()
+                GROUP BY year
+                ORDER BY year
+                """;
+
         return getMultiYearValues(queryString, "events");
     }
 
     public List<MultiYearValue> getYearlyOrganizers() {
-        var queryString = "SELECT "
-                + "  CONCAT(u.first_name, ' ', u.last_name) AS organizer_name, "
-                + "  EXTRACT(YEAR FROM e.start_time) AS year, "
-                + "  COUNT(e.id) AS event_count "
-                + "FROM events e, "
-                + "users u "
-                + "WHERE u.id = e.organizer_id "
-                + "  AND e.start_time < NOW() "
-                + "GROUP BY YEAR, e.organizer_id, organizer_name "
-                + "ORDER BY YEAR, event_count DESC";
+        var queryString = """
+                SELECT
+                  CONCAT(u.first_name, ' ', u.last_name) AS organizer_name,
+                  EXTRACT(YEAR FROM e.start_time) AS year,
+                  COUNT(e.id) AS event_count
+                FROM events e,
+                     users u
+                WHERE u.id = e.organizer_id
+                  AND e.start_time < NOW()
+                GROUP BY year, e.organizer_id, organizer_name
+                ORDER BY year, event_count DESC
+                """;
 
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> results = query.getResultList();
@@ -85,13 +103,15 @@ public class StatsService {
     }
 
     public List<MultiYearValue> getYearlyPayments() {
-        var queryString = "SELECT "
-                + "  EXTRACT(YEAR FROM p.created_at) AS year, "
-                + "  p.payment_type,"
-                + "  COUNT(p.id) AS payment_count "
-                + "FROM payments p "
-                + "GROUP BY year, p.payment_type "
-                + "ORDER BY year, payment_count DESC";
+        var queryString = """
+                SELECT
+                  EXTRACT(YEAR FROM p.created_at) AS year,
+                  p.payment_type,
+                  COUNT(p.id) AS payment_count
+                FROM payments p
+                GROUP BY year, p.payment_type
+                ORDER BY year, payment_count DESC
+                """;
 
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> results = query.getResultList();
@@ -120,7 +140,12 @@ public class StatsService {
         var eventPeriodReportResponses = new ArrayList<EventPeriodReportResponse>();
 
         // First get the date of the first event
-        var queryString = "SELECT EXTRACT(YEAR FROM MIN(e.start_time)) AS year, EXTRACT(MONTH FROM MIN(e.start_time)) AS month FROM events e";
+        var queryString = """
+                SELECT
+                    EXTRACT(YEAR FROM MIN(e.start_time)) AS year,
+                    EXTRACT(MONTH FROM MIN(e.start_time)) AS month
+                FROM events e
+                """;
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> dateResult = query.getResultList();
 
@@ -156,7 +181,8 @@ public class StatsService {
     public List<YearlyDiversListResponse> getYearlyDiversList() {
         var yearlyList = new ArrayList<YearlyDiversListResponse>();
         var firstYear = getOldestEventYear();
-        var diverListSize = portalConfigurationService.getNumericConfiguration(PortalConfigEnum.GENERAL.group, PortalConfigEnum.GeneralConfigEnum.TOP_DIVER_LIST_SIZE.key);
+        var diverListSize = portalConfigurationService.getNumericConfiguration(PortalConfigEnum.GENERAL.group,
+                PortalConfigEnum.GeneralConfigEnum.TOP_DIVER_LIST_SIZE.key);
         // If we do not have any data, then we return empty list
         if (firstYear == 0L) {
             log.warn("No dives found for top 50 divers");
@@ -167,16 +193,21 @@ public class StatsService {
                            .getValue();
 
         for (var i = firstYear; i <= lastYear; i++) {
-            var queryString = "SELECT u.id, CONCAT(u.first_name, ' ', u.last_name)"
-                    + "  , sum(ep.dive_count) AS diveCount "
-                    + "FROM users u , event_participants ep, events e "
-                    + "WHERE u.id = ep.user_id "
-                    + "  AND e.id = ep.event_id "
-                    + "  AND e.start_time <NOW() "
-                    + "  AND EXTRACT('Year' FROM e.start_time) = " + i + " "
-                    + "GROUP BY u.id "
-                    + "ORDER BY diveCount DESC "
-                    + "LIMIT " + diverListSize;
+            var queryString = String.format("""
+                    SELECT u.id,
+                           CONCAT(u.first_name, ' ', u.last_name),
+                           SUM(ep.dive_count) AS diveCount
+                    FROM users u,
+                         event_participants ep,
+                         events e
+                    WHERE u.id = ep.user_id
+                      AND e.id = ep.event_id
+                      AND e.start_time < NOW()
+                      AND EXTRACT('Year' FROM e.start_time) = %d
+                    GROUP BY u.id
+                    ORDER BY diveCount DESC
+                    LIMIT %d
+                    """, i, diverListSize);
 
             var query = entityManager.createNativeQuery(queryString);
             List<Object[]> results = query.getResultList();
@@ -237,21 +268,23 @@ public class StatsService {
     }
 
     private List<EventReportResponse> getAllEventsForPeriod(long fetchYear, int yearHalf) {
-        var queryString = "SELECT e.id, "
-                + "    e.start_time, "
-                + "    CONCAT(u.first_name, ' ', u.last_name) AS organizer_name, "
-                + "    COUNT(ep.user_id) AS participant_count, "
-                + "    SUM(ep.dive_count) AS dive_sum "
-                + "FROM events e  "
-                + "  , users u "
-                + "  , event_participants ep  "
-                + "WHERE e.organizer_id = u.id  "
-                + "  AND ep.event_id = e.id "
-                + "  AND e.start_time < NOW() "
-                + "  AND e.start_time > date '" + fetchYear + "-0" + yearHalf + "-01' "
-                + "  AND e.start_time < date '" + fetchYear + "-0" + yearHalf + "-01' + INTERVAL '6 months' "
-                + "GROUP BY e.id, organizer_name, e.start_time "
-                + "ORDER BY e.start_time";
+        var queryString = String.format("""
+                SELECT e.id,
+                       e.start_time,
+                       CONCAT(u.first_name, ' ', u.last_name) AS organizer_name,
+                       COUNT(ep.user_id) AS participant_count,
+                       SUM(ep.dive_count) AS dive_sum
+                FROM events e,
+                     users u,
+                     event_participants ep
+                WHERE e.organizer_id = u.id
+                  AND ep.event_id = e.id
+                  AND e.start_time < NOW()
+                  AND e.start_time > DATE '%s-0%s-01'
+                  AND e.start_time < DATE '%s-0%s-01' + INTERVAL '6 months'
+                GROUP BY e.id, organizer_name, e.start_time
+                ORDER BY e.start_time
+                """, fetchYear, yearHalf, fetchYear, yearHalf);
 
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> results;
