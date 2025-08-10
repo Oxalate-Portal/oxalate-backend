@@ -266,6 +266,11 @@ public class CommentService {
 
     public long getEventCommentId(long eventId) {
         var eventComment = eventCommentRepository.findByEventId(eventId);
+
+        if (eventComment == null) {
+            return 0;
+        }
+
         return eventComment.getComment()
                            .getId();
     }

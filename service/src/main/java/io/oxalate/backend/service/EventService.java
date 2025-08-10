@@ -171,13 +171,15 @@ public class EventService {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, updatedEvent.getId());
         }
 
-        try {
-            // Check if the event already has a comment topic, we're doing this in order to make sure no open event was missed by the Flyway migration
-            commentService.getEventCommentId(eventRequest.getId());
-        } catch (NullPointerException e) {
-            log.info("Event {} does not have a comment topic, creating one", eventRequest.getId());
+        // Check if the event already has a comment topic, we're doing this in order to make sure no open event was missed by the Flyway migration
+        var commentId = commentService.getEventCommentId(eventRequest.getId());
+
+        if (commentId == 0) {
+            log.info("Event {} has no comment topic, creating one", eventRequest.getId());
             // If the event does not have a comment topic, then we create one
             commentService.createEventTopicComment(eventRequest.getId(), eventRequest.getOrganizerId());
+        } else {
+            log.debug("Event {} already has a comment topic with ID {}", eventRequest.getId(), commentId);
         }
 
         return getPopulatedEventResponse(updatedEvent).orElse(null);
@@ -410,7 +412,10 @@ public class EventService {
         eventResponse.setParticipants(participantList);
 
         var eventCommentId = commentService.getEventCommentId(event.getId());
-        eventResponse.setEventCommentId(eventCommentId);
+
+        if (eventCommentId > 0) {
+            eventResponse.setEventCommentId(eventCommentId);
+        }
 
         return Optional.of(eventResponse);
     }
@@ -434,7 +439,10 @@ public class EventService {
         eventListResponse.setParticipantCount(participants.size());
 
         var eventCommentId = commentService.getEventCommentId(event.getId());
-        eventListResponse.setEventCommentId(eventCommentId);
+
+        if (eventCommentId > 0) {
+            eventListResponse.setEventCommentId(eventCommentId);
+        }
 
         return Optional.of(eventListResponse);
     }
