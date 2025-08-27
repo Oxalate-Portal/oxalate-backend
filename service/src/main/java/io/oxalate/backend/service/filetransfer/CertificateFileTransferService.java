@@ -175,7 +175,7 @@ public class CertificateFileTransferService {
         // Get the certificate and check that the user ID matches with the given userId
         var optionalCertificate = certificateRepository.findById(certificateId);
         if (optionalCertificate.isEmpty()) {
-            log.error("Certificate not found: {}", certificateId);
+            log.error("Certificate to download not found: {}", certificateId);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Certificate not found");
         }
 
@@ -198,11 +198,11 @@ public class CertificateFileTransferService {
 
         var certificateDocument = optionalCertificateDocument.get();
         var fileName = certificateDocument.getFileName();
-        var uploadPath = Paths.get(uploadMainDirectory, UploadDirectoryConstants.CERTIFICATES, String.valueOf(userId), fileName);
+        var uploadPath = Paths.get(uploadMainDirectory, UploadDirectoryConstants.CERTIFICATES, String.valueOf(certificate.getUserId()), fileName);
         var file = uploadPath.toFile();
 
         if (!file.exists()) {
-            log.error("File not found on filesystem: {}", file);
+            log.error("File to download not found on filesystem: {}", file);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "File not found");
         }
 
