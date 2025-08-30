@@ -2,9 +2,9 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.RoleEnum;
-import io.oxalate.backend.api.UserStatus;
-import static io.oxalate.backend.api.UserStatus.ANONYMIZED;
-import static io.oxalate.backend.api.UserStatus.REGISTERED;
+import io.oxalate.backend.api.UserStatusEnum;
+import static io.oxalate.backend.api.UserStatusEnum.ANONYMIZED;
+import static io.oxalate.backend.api.UserStatusEnum.REGISTERED;
 import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.model.Role;
 import io.oxalate.backend.model.User;
@@ -209,7 +209,7 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
-    public void updateStatus(long userId, UserStatus userStatus) {
+    public void updateStatus(long userId, UserStatusEnum userStatusEnum) {
         var optionalUser = userRepository.findById(userId);
 
         if (optionalUser.isEmpty()) {
@@ -218,7 +218,7 @@ public class UserService {
         }
 
         var user = optionalUser.get();
-        user.setStatus(userStatus);
+        user.setStatus(userStatusEnum);
         userRepository.save(user);
     }
 

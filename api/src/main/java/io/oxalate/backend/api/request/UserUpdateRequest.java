@@ -1,7 +1,7 @@
 package io.oxalate.backend.api.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.oxalate.backend.api.UserStatus;
+import io.oxalate.backend.api.UserStatusEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -53,7 +53,7 @@ public class UserUpdateRequest {
 
     @Schema(description = "Status of the user", example = "ANONYMIZED", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("status")
-    private UserStatus status;
+    private UserStatusEnum status;
 
     @Schema(description = "Set of roles", example = "[ROLE_USER, ROLE_ADMIN]", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("roles")

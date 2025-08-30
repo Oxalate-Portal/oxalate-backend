@@ -8,7 +8,7 @@ import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START_POINT;
 import io.oxalate.backend.api.RoleEnum;
-import static io.oxalate.backend.api.UserStatus.ACTIVE;
+import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import io.oxalate.backend.api.request.CertificateRequest;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.Payment;

@@ -6,7 +6,7 @@ import static io.oxalate.backend.api.AuditLevel.WARN;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
-import static io.oxalate.backend.api.UserStatus.ANONYMIZED;
+import static io.oxalate.backend.api.UserStatusEnum.ANONYMIZED;
 import io.oxalate.backend.api.request.TermRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.request.UserUpdateRequest;
