@@ -1,15 +1,15 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevel.ERROR;
-import static io.oxalate.backend.api.AuditLevel.INFO;
-import static io.oxalate.backend.api.AuditLevel.WARN;
+import static io.oxalate.backend.api.AuditLevelEnum.ERROR;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
-import static io.oxalate.backend.api.UserStatus.ANONYMIZED;
+import static io.oxalate.backend.api.UserStatusEnum.ANONYMIZED;
+import io.oxalate.backend.api.request.AdminUserRequest;
 import io.oxalate.backend.api.request.TermRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
-import io.oxalate.backend.api.request.UserUpdateRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_DETAILS_NOT_FOUND;
@@ -109,7 +109,7 @@ public class UserController implements UserAPI {
      */
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<AdminUserResponse> updateUser(UserUpdateRequest updateRequest, HttpServletRequest request) {
+    public ResponseEntity<AdminUserResponse> updateUser(AdminUserRequest updateRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(USERS_UPDATE_START + updateRequest.getId(), INFO, request, AUDIT_NAME,
                 AuthTools.getCurrentUserId());
 
@@ -164,6 +164,7 @@ public class UserController implements UserAPI {
             user.setNextOfKin(updateRequest.getNextOfKin());
             user.setStatus(updateRequest.getStatus());
             user.setLanguage(updateRequest.getLanguage());
+            user.setPrimaryUserType(updateRequest.getPrimaryUserType());
 
             // Only admins can change the user roles
             if (AuthTools.currentUserHasRole(ROLE_ADMIN)) {

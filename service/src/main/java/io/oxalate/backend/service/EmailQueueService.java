@@ -8,7 +8,7 @@ import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTI
 import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
 import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.DEFAULT_LANGUAGE;
 import io.oxalate.backend.api.RoleEnum;
-import io.oxalate.backend.api.UserStatus;
+import io.oxalate.backend.api.UserStatusEnum;
 import io.oxalate.backend.model.EmailQueueEntry;
 import io.oxalate.backend.model.Role;
 import io.oxalate.backend.repository.EmailNotificationSubscriptionRepository;
@@ -136,7 +136,7 @@ public class EmailQueueService {
         var user = optionalUser.get();
 
         // We only send notifications to active users
-        if (!user.getStatus().equals(UserStatus.ACTIVE)) {
+        if (!user.getStatus().equals(UserStatusEnum.ACTIVE)) {
             log.debug("User with ID {} is not active, skipping email notification", user.getId());
             return;
         }

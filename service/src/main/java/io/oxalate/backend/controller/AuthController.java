@@ -1,22 +1,22 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevel.ERROR;
-import static io.oxalate.backend.api.AuditLevel.INFO;
-import static io.oxalate.backend.api.AuditLevel.WARN;
+import static io.oxalate.backend.api.AuditLevelEnum.ERROR;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
 import io.oxalate.backend.api.UpdateStatusEnum;
-import static io.oxalate.backend.api.UserStatus.ACTIVE;
-import static io.oxalate.backend.api.UserStatus.LOCKED;
-import static io.oxalate.backend.api.UserStatus.REGISTERED;
+import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
+import static io.oxalate.backend.api.UserStatusEnum.LOCKED;
+import static io.oxalate.backend.api.UserStatusEnum.REGISTERED;
 import io.oxalate.backend.api.request.EmailRequest;
 import io.oxalate.backend.api.request.LoginRequest;
 import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.request.TokenRequest;
 import io.oxalate.backend.api.request.UserResetPasswordRequest;
 import io.oxalate.backend.api.request.UserUpdatePasswordRequest;
-import io.oxalate.backend.api.response.JwtResponse;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.RegistrationResponse;
+import io.oxalate.backend.api.response.UserSessionToken;
 import io.oxalate.backend.api.response.UserUpdateStatus;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_NON_ACTIVE;
@@ -187,24 +187,23 @@ public class AuthController implements AuthAPI {
             paymentResponses.add(payment.toPaymentResponse());
         }
 
-        var jwtResponse = JwtResponse.builder()
-                                     .id(userDetails.getId())
-                                     .username(userDetails.getUsername())
-                                     .phoneNumber(user.getPhoneNumber())
-                                     .firstName(user.getFirstName())
-                                     .lastName(user.getLastName())
-                                     .roles(roles)
-                                     .status(user.getStatus()
-                                                 .toString())
-                                     .registered(user.getRegistered())
-                                     .type("Bearer")
-                                     .accessToken(jwt)
-                                     .expiresAt(Instant.now()
+        var jwtResponse = UserSessionToken.builder()
+                                          .id(userDetails.getId())
+                                          .username(userDetails.getUsername())
+                                          .phoneNumber(user.getPhoneNumber())
+                                          .firstName(user.getFirstName())
+                                          .lastName(user.getLastName())
+                                          .roles(roles)
+                                          .status(user.getStatus())
+                                          .registered(user.getRegistered())
+                                          .type("Bearer")
+                                          .accessToken(jwt)
+                                          .expiresAt(Instant.now()
                                                        .plus(expirationTime, ChronoUnit.SECONDS))
-                                     .approvedTerms(user.isApprovedTerms())
-                                     .payments(paymentResponses)
-                                     .language(user.getLanguage())
-                                     .build();
+                                          .approvedTerms(user.isApprovedTerms())
+                                          .payments(paymentResponses)
+                                          .language(user.getLanguage())
+                                          .build();
 
         // Set JWT as a cookie
         ResponseCookie cookie = ResponseCookie.from(JWT_TOKEN, jwt)

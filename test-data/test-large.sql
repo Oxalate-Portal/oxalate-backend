@@ -5243,3 +5243,35 @@ SELECT pg_catalog.setval('payments_id_seq', 759, true);
 SELECT pg_catalog.setval('roles_id_seq', 3, true);
 SELECT pg_catalog.setval('tokens_id_seq', 1, false);
 SELECT pg_catalog.setval('users_id_seq', 457, true);
+
+UPDATE event_participants
+SET event_user_type = 'FREE_DIVER'
+WHERE ((user_id + event_id) % 11) = 1;
+
+UPDATE event_participants
+SET event_user_type = 'NON_DIVER'
+WHERE ((user_id + event_id) % 11) = 2;
+
+UPDATE event_participants
+SET event_user_type = 'SNORKLER'
+WHERE ((user_id + event_id) % 11) = 3;
+
+UPDATE event_participants
+SET event_user_type = 'SCUBA_DIVER'
+WHERE ((user_id + event_id) % 11) > 3;
+
+UPDATE users
+SET primary_user_type = 'SCUBA_DIVER';
+
+UPDATE users
+SET primary_user_type = 'NON_DIVER'
+WHERE (abs(hashtext(first_name || last_name)) % 10) = 0;
+
+UPDATE users
+SET primary_user_type = 'FREE_DIVER'
+WHERE (abs(hashtext(first_name || last_name)) % 10) = 1;
+
+UPDATE users
+SET primary_user_type = 'SNORKLER'
+WHERE (abs(hashtext(first_name || last_name)) % 10) = 2;
+

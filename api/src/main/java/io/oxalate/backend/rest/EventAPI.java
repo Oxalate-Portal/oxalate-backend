@@ -4,6 +4,7 @@ import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.EventDiveListRequest;
 import io.oxalate.backend.api.request.EventRequest;
+import io.oxalate.backend.api.request.EventSubscribeRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
@@ -138,15 +139,15 @@ public interface EventAPI {
     ResponseEntity<HttpStatus> cancelEvent(@PathVariable("eventId") long eventId, HttpServletRequest request);
 
     @Operation(description = "Subscribe to an event", tags = "EventAPI")
-    @Parameter(name = "eventId", description = "ID of the event to which the user subscribes to", example = "123", required = true)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "EventSubscribeRequest", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Subscription successful"),
             @ApiResponse(responseCode = "404", description = "Event does not exist"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @PutMapping(path = BASE_PATH + "/{eventId}/subscribe", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<EventResponse> subscribe(Authentication auth, @PathVariable(name = "eventId") long eventId, HttpServletRequest request);
+    @PutMapping(path = BASE_PATH + "/subscribe", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<EventResponse> subscribe(Authentication auth, @RequestBody EventSubscribeRequest eventSubscribeRequest, HttpServletRequest request);
 
     @Operation(description = "Unsubscribe from an event", tags = "EventAPI")
     @Parameter(name = "eventId", description = "ID of the event to which the user unsubscribes from", example = "123", required = true)

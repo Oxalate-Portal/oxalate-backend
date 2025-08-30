@@ -6,8 +6,9 @@ import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.SINGLE_PAYMENT_ENABLED;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_USER;
-import io.oxalate.backend.api.UserStatus;
-import static io.oxalate.backend.api.UserStatus.ACTIVE;
+import io.oxalate.backend.api.UserStatusEnum;
+import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.PaymentRepository;
@@ -71,13 +72,13 @@ class PaymentServiceITC extends AbstractIntegrationTest {
         assertEquals(1, savedPayment.getPayments()
                                     .size());
         var paymentResponse = savedPayment.getPayments()
-                                  .iterator()
-                                  .next();
+                                          .iterator()
+                                          .next();
         var retrievedPayment = paymentRepository.findById(paymentResponse.getId());
         assertTrue(retrievedPayment.isPresent());
     }
 
-    private User generateUser(UserStatus userStatus, RoleEnum roleEnum) {
+    private User generateUser(UserStatusEnum userStatusEnum, RoleEnum roleEnum) {
         var randomUsername = "test-" + Instant.now()
                                               .toEpochMilli() + "@test.tld";
         var user = User.builder()
@@ -85,7 +86,7 @@ class PaymentServiceITC extends AbstractIntegrationTest {
                        .password("password")
                        .firstName("Max")
                        .lastName("Mustermann")
-                       .status(userStatus)
+                       .status(userStatusEnum)
                        .phoneNumber("123456789")
                        .privacy(false)
                        .nextOfKin("Maxine Mustermann")
@@ -95,6 +96,7 @@ class PaymentServiceITC extends AbstractIntegrationTest {
                        .language("de")
                        .lastSeen(Instant.now()
                                         .minus(1, ChronoUnit.DAYS))
+                       .primaryUserType(UserTypeEnum.SCUBA_DIVER)
                        .build();
 
         var newUser = userRepository.save(user);

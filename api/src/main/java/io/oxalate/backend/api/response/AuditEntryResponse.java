@@ -1,7 +1,7 @@
 package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.oxalate.backend.api.AuditLevel;
+import io.oxalate.backend.api.AuditLevelEnum;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +20,7 @@ public class AuditEntryResponse {
     @JsonProperty("source")
     private String source;
     @JsonProperty("level")
-    private AuditLevel level;
+    private AuditLevelEnum level;
     @JsonProperty("userId")
     private long userId;
     @JsonProperty("userName")

@@ -1,8 +1,8 @@
 package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.Size;
-import java.time.Instant;
+import io.oxalate.backend.api.AbstractUser;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -14,39 +14,17 @@ import lombok.experimental.SuperBuilder;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponse {
+public class UserResponse extends AbstractUser {
 
-    @JsonProperty("id")
-    protected long id;
-
-    @JsonProperty("username")
-    protected String username;
-
-    @JsonProperty("firstName")
-    protected String firstName;
-
-    @JsonProperty("lastName")
-    protected String lastName;
-
-    @JsonProperty("phoneNumber")
-    protected String phoneNumber;
-
-    @JsonProperty("registered")
-    protected Instant registered;
-
+    @Schema(description = "Count of dives associated with the user", example = "42", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("diveCount")
     private long diveCount;
 
+    @Schema(description = "List of payments made by the user", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("payments")
     private Set<PaymentResponse> payments;
 
+    @Schema(description = "List of memberships of the user", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("memberships")
     private List<MembershipResponse> memberships;
-
-    @JsonProperty("approvedTerms")
-    private boolean approvedTerms;
-
-    @Size(min = 2, max = 2, message = "Language code is given with 2 characters as per ISO-639-1")
-    @JsonProperty("language")
-    private String language;
 }

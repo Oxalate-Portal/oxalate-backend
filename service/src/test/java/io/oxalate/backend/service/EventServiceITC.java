@@ -13,8 +13,9 @@ import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.SINGLE_P
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import static io.oxalate.backend.api.RoleEnum.ROLE_USER;
-import io.oxalate.backend.api.UserStatus;
-import static io.oxalate.backend.api.UserStatus.ACTIVE;
+import io.oxalate.backend.api.UserStatusEnum;
+import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.model.Event;
@@ -122,9 +123,9 @@ class EventServiceITC extends AbstractIntegrationTest {
 
         // Create related eventCommentTopic
         var comment = Comment.builder()
-                .userId(diver.getId())
-                .parentCommentId(ROOT_EVENT_COMMENT_ID)
-                .build();
+                             .userId(diver.getId())
+                             .parentCommentId(ROOT_EVENT_COMMENT_ID)
+                             .build();
 
         var eventRequest = generateEventRequestFromEvent();
 
@@ -294,7 +295,7 @@ class EventServiceITC extends AbstractIntegrationTest {
         return eventRepository.save(event);
     }
 
-    private User generateUser(UserStatus userStatus, RoleEnum roleEnum) {
+    private User generateUser(UserStatusEnum userStatusEnum, RoleEnum roleEnum) {
         var randomUsername = "test-" + Instant.now()
                                               .toEpochMilli() + "@test.tld";
         var user = User.builder()
@@ -302,7 +303,7 @@ class EventServiceITC extends AbstractIntegrationTest {
                        .password("password")
                        .firstName("Max")
                        .lastName("Mustermann")
-                       .status(userStatus)
+                       .status(userStatusEnum)
                        .phoneNumber("123456789")
                        .privacy(false)
                        .nextOfKin("Maxine Mustermann")
@@ -312,6 +313,7 @@ class EventServiceITC extends AbstractIntegrationTest {
                        .language("de")
                        .lastSeen(Instant.now()
                                         .minus(1, ChronoUnit.DAYS))
+                       .primaryUserType(UserTypeEnum.SCUBA_DIVER)
                        .build();
 
         var newUser = userRepository.save(user);

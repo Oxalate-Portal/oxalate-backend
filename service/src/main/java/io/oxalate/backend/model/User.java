@@ -2,7 +2,8 @@ package io.oxalate.backend.model;
 
 import io.oxalate.backend.api.MembershipStatusEnum;
 import io.oxalate.backend.api.RoleEnum;
-import io.oxalate.backend.api.UserStatus;
+import io.oxalate.backend.api.UserStatusEnum;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
@@ -75,7 +76,7 @@ public class User {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private UserStatus status;
+    private UserStatusEnum status;
 
     @NotNull
     @Column(name = "phone_number")
@@ -102,6 +103,10 @@ public class User {
 
     @Column(name = "last_seen")
     private Instant lastSeen;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "primary_user_type")
+    private UserTypeEnum primaryUserType;
 
     @Transient
     private Set<Role> roles;
@@ -134,12 +139,13 @@ public class User {
         this.roles.add(new Role(RoleEnum.ROLE_USER));
         this.organizedEvents = new ArrayList<>();
         this.participatedEvents = new ArrayList<>();
-        this.status = UserStatus.REGISTERED;
+        this.status = UserStatusEnum.REGISTERED;
         this.registered = Instant.now();
         this.approvedTerms = signupRequest.isApprovedTerms();
         this.language = signupRequest.getLanguage();
         this.diveCount = 0L;
         this.lastSeen = Instant.now();
+        this.primaryUserType = signupRequest.getPrimaryUserType();
     }
 
     public ListUserResponse toEventUserResponse() {
@@ -185,6 +191,7 @@ public class User {
                            .payments(paymentResponses)
                            .approvedTerms(this.approvedTerms)
                            .language(this.language)
+                           .primaryUserType(this.primaryUserType)
                            .build();
     }
 
@@ -227,6 +234,7 @@ public class User {
                                 .roles(roleSet)
                                 .language(this.language)
                                 .lastSeen(this.lastSeen)
+                                .primaryUserType(this.primaryUserType)
                                 .build();
     }
 }

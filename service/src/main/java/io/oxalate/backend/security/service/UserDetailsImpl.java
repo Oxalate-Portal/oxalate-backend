@@ -1,8 +1,8 @@
 package io.oxalate.backend.security.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import static io.oxalate.backend.api.UserStatus.ACTIVE;
-import static io.oxalate.backend.api.UserStatus.REGISTERED;
+import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
+import static io.oxalate.backend.api.UserStatusEnum.REGISTERED;
 import io.oxalate.backend.model.User;
 import java.io.Serial;
 import java.util.Collection;

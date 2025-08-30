@@ -1,0 +1,5 @@
+ALTER TABLE users
+    ADD COLUMN primary_user_type VARCHAR(128) NOT NULL DEFAULT 'NON_DIVER';
+
+ALTER TABLE event_participants
+    ADD COLUMN event_user_type VARCHAR(128) NOT NULL DEFAULT 'NON_DIVER';

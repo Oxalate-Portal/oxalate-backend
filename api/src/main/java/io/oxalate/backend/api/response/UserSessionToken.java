@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class JwtResponse extends UserResponse {
+public class UserSessionToken extends UserResponse {
 
     @JsonProperty("accessToken")
     private String accessToken;
@@ -20,9 +20,6 @@ public class JwtResponse extends UserResponse {
 
     @JsonProperty("roles")
     private List<String> roles;
-
-    @JsonProperty("status")
-    private String status;
 
     @JsonProperty("expiresAt")
     private Instant expiresAt;

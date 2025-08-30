@@ -8,7 +8,9 @@ import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
 import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EventRequest;
+import io.oxalate.backend.api.request.EventSubscribeRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
@@ -68,7 +70,7 @@ public class EventService {
         }
 
         // We need to recreate the list of participants as there may have been changes to the list, this means that we first need to store the current list
-        // as it contains the create time of the existing registrations
+        // as it contains the create time and select event user type of the existing participants
         var currentParticipants = eventParticipantsRepository.findAllByEventId(eventRequest.getId());
 
         // Go through the new list, and if it contains a participant that is in the current list, then we skip over it
@@ -85,6 +87,9 @@ public class EventService {
                 continue;
             }
 
+            // Since the new participant is added by the organizer/administrator, we use the default user type of the added diver
+            var newDiver = userService.findUserById(participantId).get();
+
             var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
 
             if (optionalPaymentTypeEnum.isEmpty()) {
@@ -98,7 +103,7 @@ public class EventService {
                 }
 
                 eventRepository.addParticipantToEvent(participantId, eventRequest.getId(), ParticipantTypeEnum.USER.name(),
-                        paymentTypeEnum.name(), Instant.now());
+                        paymentTypeEnum.name(), Instant.now(), newDiver.getPrimaryUserType().name());
             }
         }
 
@@ -137,8 +142,10 @@ public class EventService {
         // We need to store the old status to determine if we need to send a notification
         var oldStatus = event.getStatus();
         // Finally add the event organizer, whether it is the current or a new one
+        var newOrganizer = userService.findUserById(eventRequest.getOrganizerId()).get();
+
         eventRepository.addParticipantToEvent(eventRequest.getOrganizerId(), eventRequest.getId(), ParticipantTypeEnum.ORGANIZER.name(),
-                PaymentTypeEnum.NONE.name(), Instant.now());
+                PaymentTypeEnum.NONE.name(), Instant.now(), newOrganizer.getPrimaryUserType().name());
 
         event.setType(eventRequest.getType());
         event.setTitle(eventRequest.getTitle());
@@ -186,7 +193,8 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponse addUserToEvent(User user, long eventId) {
+    public EventResponse addUserToEvent(User user, EventSubscribeRequest eventSubscribeRequest) {
+        var eventId = eventSubscribeRequest.getDiveEventId();
         var eventResponse = findById(eventId);
 
         if (eventResponse == null) {
@@ -213,7 +221,10 @@ public class EventService {
         }
 
         var paymentTypeEnum = optionalPaymentTypeEnum.get();
-        eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentTypeEnum.name(), Instant.now());
+
+        eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentTypeEnum.name(), Instant.now(),
+                eventSubscribeRequest.getUserType()
+                                     .name());
 
         if (paymentTypeEnum.equals(ONE_TIME)) {
             paymentService.decreaseOneTimePayment(user.getId());
@@ -403,6 +414,8 @@ public class EventService {
             var eventParticipant = eventParticipantsRepository.findByEventIdAndUserId(event.getId(), participant.getId());
             eventUserResponse.setCreatedAt(eventParticipant.getCreatedAt());
             eventUserResponse.setEventDiveCount(countDivesByUserAndEvent(participant.getId(), event.getId()));
+            // We take this value from the event participant record, as it may differ from the primary user type of the diver
+            eventUserResponse.setUserType(eventParticipant.getEventUserType());
             participantList.add(eventUserResponse);
         }
 
@@ -469,11 +482,20 @@ public class EventService {
         var newEvent = eventRepository.save(event);
 
         // Add organizer as event participant with ORGANIZER type
-        eventRepository.addParticipantToEvent(userId, newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now());
+        var newOrganizer = userService.findUserById(eventRequest.getOrganizerId())
+                                      .get();
+
+        eventRepository.addParticipantToEvent(userId, newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now(),
+                newOrganizer.getPrimaryUserType()
+                            .name());
 
         // Add participants
         if (eventRequest.getParticipants() != null) {
             for (Long participantId : eventRequest.getParticipants()) {
+
+                // Since the new participant is added by the organizer/administrator, we use the default user type of the added diver
+                var newDiver = userService.findUserById(participantId).get();
+
                 var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
 
                 if (optionalPaymentTypeEnum.isEmpty()) {
@@ -487,7 +509,7 @@ public class EventService {
                     }
 
                     eventRepository.addParticipantToEvent(participantId, newEvent.getId(), ParticipantTypeEnum.USER.name(),
-                            paymentTypeEnum.name(), Instant.now());
+                            paymentTypeEnum.name(), Instant.now(), newDiver.getPrimaryUserType().name());
                 }
             }
         }
@@ -621,7 +643,8 @@ public class EventService {
     @Transactional
     public Event save(Event event) {
         var newEvent = eventRepository.save(event);
-        eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now());
+        eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now(),
+                UserTypeEnum.SCUBA_DIVER.name());
         return newEvent;
     }
 

@@ -1,6 +1,6 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevel.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import io.oxalate.backend.api.response.AuditEntryResponse;
 import static io.oxalate.backend.events.AppAuditMessages.AUDIT_GET_OK;
 import static io.oxalate.backend.events.AppAuditMessages.AUDIT_GET_START;
