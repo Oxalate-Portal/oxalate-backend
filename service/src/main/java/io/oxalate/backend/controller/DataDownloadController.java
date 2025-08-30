@@ -1,7 +1,7 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevel.ERROR;
-import static io.oxalate.backend.api.AuditLevel.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.ERROR;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import io.oxalate.backend.api.response.download.DownloadCertificateResponse;
 import io.oxalate.backend.api.response.download.DownloadDiveResponse;

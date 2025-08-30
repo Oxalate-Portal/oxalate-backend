@@ -1,7 +1,7 @@
 package io.oxalate.backend.security;
 
-import static io.oxalate.backend.api.AuditLevel.INFO;
-import static io.oxalate.backend.api.AuditLevel.WARN;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.client.api.response.RecaptchaResponse;
 import static io.oxalate.backend.events.AppAuditMessages.RECAPTCHA_FILTER_DISABLED;

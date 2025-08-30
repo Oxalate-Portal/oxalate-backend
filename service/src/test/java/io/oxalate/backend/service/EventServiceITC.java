@@ -15,6 +15,7 @@ import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import static io.oxalate.backend.api.RoleEnum.ROLE_USER;
 import io.oxalate.backend.api.UserStatusEnum;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.model.Event;
@@ -122,9 +123,9 @@ class EventServiceITC extends AbstractIntegrationTest {
 
         // Create related eventCommentTopic
         var comment = Comment.builder()
-                .userId(diver.getId())
-                .parentCommentId(ROOT_EVENT_COMMENT_ID)
-                .build();
+                             .userId(diver.getId())
+                             .parentCommentId(ROOT_EVENT_COMMENT_ID)
+                             .build();
 
         var eventRequest = generateEventRequestFromEvent();
 
@@ -312,6 +313,7 @@ class EventServiceITC extends AbstractIntegrationTest {
                        .language("de")
                        .lastSeen(Instant.now()
                                         .minus(1, ChronoUnit.DAYS))
+                       .primaryUserType(UserTypeEnum.SCUBA_DIVER)
                        .build();
 
         var newUser = userRepository.save(user);

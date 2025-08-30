@@ -1,6 +1,6 @@
 package io.oxalate.backend.events;
 
-import io.oxalate.backend.api.AuditLevel;
+import io.oxalate.backend.api.AuditLevelEnum;
 import static io.oxalate.backend.tools.HttpTools.getRemoteIp;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -16,21 +16,21 @@ import org.springframework.stereotype.Component;
 public class AppEventPublisher {
     private final ApplicationEventPublisher publisher;
 
-    public UUID publishAuditEvent(String message, AuditLevel auditLevel, HttpServletRequest request, String source, Long userId) {
+    public UUID publishAuditEvent(String message, AuditLevelEnum auditLevelEnum, HttpServletRequest request, String source, Long userId) {
         var traceId = UUID.randomUUID();
 
-        publishAuditEvent(message, auditLevel, request, source, userId, traceId);
+        publishAuditEvent(message, auditLevelEnum, request, source, userId, traceId);
         return traceId;
     }
 
-    public void publishAuditEvent(String message, AuditLevel auditLevel, HttpServletRequest request, String source, Long userId, UUID traceId) {
+    public void publishAuditEvent(String message, AuditLevelEnum auditLevelEnum, HttpServletRequest request, String source, Long userId, UUID traceId) {
         var address = getRemoteIp(request);
 
         log.debug("Publish audit event: {}", message);
         var appAuditEvent = AppAuditEvent.builder()
                                          .traceId(traceId.toString())
                                          .message(message)
-                                         .level(auditLevel)
+                                         .level(auditLevelEnum)
                                          .userId(userId)
                                          .address(address)
                                          .source(source)

@@ -1,6 +1,6 @@
 package io.oxalate.backend.api;
 
-public enum AuditLevel {
+public enum AuditLevelEnum {
     INFO,
     WARN,
     ERROR

@@ -8,6 +8,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_USER;
 import io.oxalate.backend.api.UserStatusEnum;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.PaymentRepository;
@@ -71,8 +72,8 @@ class PaymentServiceITC extends AbstractIntegrationTest {
         assertEquals(1, savedPayment.getPayments()
                                     .size());
         var paymentResponse = savedPayment.getPayments()
-                                  .iterator()
-                                  .next();
+                                          .iterator()
+                                          .next();
         var retrievedPayment = paymentRepository.findById(paymentResponse.getId());
         assertTrue(retrievedPayment.isPresent());
     }
@@ -95,6 +96,7 @@ class PaymentServiceITC extends AbstractIntegrationTest {
                        .language("de")
                        .lastSeen(Instant.now()
                                         .minus(1, ChronoUnit.DAYS))
+                       .primaryUserType(UserTypeEnum.SCUBA_DIVER)
                        .build();
 
         var newUser = userRepository.save(user);

@@ -9,7 +9,9 @@ import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START_POINT;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.CertificateRequest;
+import io.oxalate.backend.api.request.EventSubscribeRequest;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.Payment;
 import io.oxalate.backend.model.RandomNameResponse;
@@ -479,8 +481,15 @@ public class TestController implements TestAPI {
             var optionalParticipant = userService.findUserById(participantId);
             assert optionalParticipant.isPresent();
             var participant = optionalParticipant.get();
-
-            eventService.addUserToEvent(participant, event.getId());
+            // Randomly select one of the UserTypeEnum values
+            var userTypeValues = UserTypeEnum.values();
+            var userType = userTypeValues[RandomUtils.secure()
+                                                     .randomInt(0, userTypeValues.length)];
+            var eventSubscribeRequest = EventSubscribeRequest.builder()
+                                                             .diveEventId(event.getId())
+                                                             .userType(userType)
+                                                             .build();
+            eventService.addUserToEvent(participant, eventSubscribeRequest);
             var diveCount = RandomUtils.secure()
                                        .randomInt(1, 1000);
 

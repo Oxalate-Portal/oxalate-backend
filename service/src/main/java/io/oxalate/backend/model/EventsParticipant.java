@@ -2,6 +2,7 @@ package io.oxalate.backend.model;
 
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.PaymentTypeEnum;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.response.EventDiveResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -45,6 +46,10 @@ public class EventsParticipant {
 
     @Column(name = "created_at")
     private Instant createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "event_user_type")
+    private UserTypeEnum eventUserType;
 
     public EventDiveResponse toEventDiveResponse(String name) {
         return EventDiveResponse.builder()

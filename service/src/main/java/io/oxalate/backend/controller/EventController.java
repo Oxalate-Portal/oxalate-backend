@@ -1,13 +1,14 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevel.ERROR;
-import static io.oxalate.backend.api.AuditLevel.INFO;
-import static io.oxalate.backend.api.AuditLevel.WARN;
+import static io.oxalate.backend.api.AuditLevelEnum.ERROR;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import io.oxalate.backend.api.request.EventDiveListRequest;
 import io.oxalate.backend.api.request.EventDiveRequest;
 import io.oxalate.backend.api.request.EventRequest;
+import io.oxalate.backend.api.request.EventSubscribeRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
@@ -396,8 +397,9 @@ public class EventController implements EventAPI {
 
     @Override
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<EventResponse> subscribe(Authentication auth, long eventId, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(EVENTS_SUBSCRIBE_START + eventId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+    public ResponseEntity<EventResponse> subscribe(Authentication auth, EventSubscribeRequest eventSubscribeRequest, HttpServletRequest request) {
+        var auditUuid = appEventPublisher.publishAuditEvent(EVENTS_SUBSCRIBE_START + eventSubscribeRequest.getDiveEventId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+        var eventId = eventSubscribeRequest.getDiveEventId();
 
         if (!AuthTools.currentUserHasAcceptedTerms()) {
             appEventPublisher.publishAuditEvent(EVENTS_SUBSCRIBE_TERMS_NOT_ACCEPTED, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
@@ -425,7 +427,7 @@ public class EventController implements EventAPI {
 
         log.info("Adding user ID {} to event {}", optionalUser.get().getId(), eventId);
 
-        var newEventResponse = eventService.addUserToEvent(optionalUser.get(), eventId);
+        var newEventResponse = eventService.addUserToEvent(optionalUser.get(), eventSubscribeRequest);
 
         if (newEventResponse == null) {
             appEventPublisher.publishAuditEvent(EVENTS_SUBSCRIBE_FAIL + eventId, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
