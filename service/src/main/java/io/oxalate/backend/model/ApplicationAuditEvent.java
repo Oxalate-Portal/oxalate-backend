@@ -1,6 +1,6 @@
 package io.oxalate.backend.model;
 
-import io.oxalate.backend.api.AuditLevel;
+import io.oxalate.backend.api.AuditLevelEnum;
 import io.oxalate.backend.api.response.AuditEntryResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -38,7 +38,7 @@ public class ApplicationAuditEvent {
 
     @Column(name = "level")
     @Enumerated(EnumType.STRING)
-    private AuditLevel level;
+    private AuditLevelEnum level;
 
     @Column(name = "trace_id")
     private String traceId;

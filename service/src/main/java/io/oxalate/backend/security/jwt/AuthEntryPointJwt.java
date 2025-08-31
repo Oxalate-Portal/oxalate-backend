@@ -1,6 +1,6 @@
 package io.oxalate.backend.security.jwt;
 
-import static io.oxalate.backend.api.AuditLevel.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.security.service.UserDetailsImpl;
 import jakarta.servlet.http.HttpServletRequest;

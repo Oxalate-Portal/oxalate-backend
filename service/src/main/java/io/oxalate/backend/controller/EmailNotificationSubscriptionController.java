@@ -1,6 +1,6 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevel.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import io.oxalate.backend.api.request.EmailNotificationSubscriptionRequest;
 import io.oxalate.backend.api.response.EmailNotificationSubscriptionResponse;
 import static io.oxalate.backend.events.AppAuditMessages.EMAIL_SUBSCRIPTION_GET_ALL_OK;

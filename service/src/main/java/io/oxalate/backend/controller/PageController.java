@@ -1,7 +1,7 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevel.INFO;
-import static io.oxalate.backend.api.AuditLevel.WARN;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_NAVIGATION_ELEMENTS_OK;

@@ -31,10 +31,10 @@ public interface EventRepository extends CrudRepository<Event, Long> {
     List<Event> findByOrganizer(@Param("userId") long userId);
 
     @Modifying
-    @Query(nativeQuery = true, value = "INSERT INTO event_participants (user_id, event_id, participant_type, payment_type, created_at)  " +
-            "VALUES(:userId, :eventId, :participantType, :paymentType, :createTime)")
+    @Query(nativeQuery = true, value = "INSERT INTO event_participants (user_id, event_id, participant_type, payment_type, created_at, event_user_type)  " +
+            "VALUES(:userId, :eventId, :participantType, :paymentType, :createTime, :eventUserType)")
     void addParticipantToEvent(@Param("userId") long userId, @Param("eventId") long eventId, @Param("participantType") String participantType,
-            @Param("paymentType") String paymentType, @Param("createTime") Instant createTime);
+            @Param("paymentType") String paymentType, @Param("createTime") Instant createTime, @Param("eventUserType") String eventUserType);
 
     @Modifying
     @Query(nativeQuery = true, value = "DELETE FROM event_participants WHERE user_id = :userId AND event_id = :eventId")

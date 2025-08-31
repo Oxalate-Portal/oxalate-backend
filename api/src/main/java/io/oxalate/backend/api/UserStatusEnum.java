@@ -1,6 +1,6 @@
 package io.oxalate.backend.api;
 
-public enum UserStatus {
+public enum UserStatusEnum {
     REGISTERED,
     ACTIVE,
     LOCKED,

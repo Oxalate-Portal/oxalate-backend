@@ -3,9 +3,9 @@ package io.oxalate.backend.rest;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
+import io.oxalate.backend.api.request.AdminUserRequest;
 import io.oxalate.backend.api.request.TermRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
-import io.oxalate.backend.api.request.UserUpdateRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -64,7 +64,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<AdminUserResponse> updateUser(@RequestBody UserUpdateRequest updateRequest, HttpServletRequest request);
+    ResponseEntity<AdminUserResponse> updateUser(@RequestBody AdminUserRequest updateRequest, HttpServletRequest request);
 
     @Operation(description = "Update the status of the given user", tags = "UserAPI")
     @Parameter(name = "userId", description = "User ID whose status should be updated", example = "123", required = true)

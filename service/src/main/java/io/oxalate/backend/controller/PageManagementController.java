@@ -1,7 +1,7 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevel.ERROR;
-import static io.oxalate.backend.api.AuditLevel.INFO;
+import static io.oxalate.backend.api.AuditLevelEnum.ERROR;
+import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageRequest;
 import io.oxalate.backend.api.response.PageGroupResponse;
