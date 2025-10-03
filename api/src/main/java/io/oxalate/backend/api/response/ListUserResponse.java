@@ -44,4 +44,8 @@ public class ListUserResponse {
     @Schema(description = "In what capacity the user usually takes part in events", example = "SCUBA_DIVER", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("userType")
     protected UserTypeEnum userType;
+
+    @Schema(description = "List of tags associated with the user")
+    @JsonProperty("tags")
+    private Set<TagResponse> tags;
 }

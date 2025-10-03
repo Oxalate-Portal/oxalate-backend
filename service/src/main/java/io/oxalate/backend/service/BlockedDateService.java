@@ -54,11 +54,10 @@ public class BlockedDateService {
     }
 
     private BlockedDateResponse populateResponse(BlockedDate blockedDate) {
-        var optionalUser = userService.findUserById(blockedDate.getCreator());
+        var user = userService.findUserEntityById(blockedDate.getCreator());
         var username = "Unknown";
 
-        if (optionalUser.isPresent()) {
-            var user = optionalUser.get();
+        if (user != null) {
             username = user.getFirstName() + " " + user.getLastName();
         }
 

@@ -2,10 +2,12 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.RoleEnum;
+import static io.oxalate.backend.api.SecurityConstants.ANONYMIZED_STRING;
 import io.oxalate.backend.api.UserStatusEnum;
 import static io.oxalate.backend.api.UserStatusEnum.ANONYMIZED;
 import static io.oxalate.backend.api.UserStatusEnum.REGISTERED;
 import io.oxalate.backend.api.request.SignupRequest;
+import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.model.Role;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventRepository;
@@ -34,23 +36,48 @@ public class UserService {
     private final PaymentService paymentService;
     private final MembershipRepository membershipRepository;
 
-    private final String ANONYMIZED_STRING = "<Anonymized>";
+    private static List<AdminUserResponse> getAdminUserResponseList(List<User> users) {
+        var adminUserResponses = new ArrayList<AdminUserResponse>();
 
-    public List<User> findAll() {
+        for (User user : users) {
+            var adminUserResponse = user.toAdminUserResponse();
+            adminUserResponse.setStatus(user.getStatus());
+            adminUserResponses.add(adminUserResponse);
+        }
+
+        return adminUserResponses;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminUserResponse> findAll() {
         var users = userRepository.findAllByOrderByIdAsc();
 
         for (User user : users) {
             populateUser(user);
         }
 
-        return users;
+        return getAdminUserResponseList(users);
     }
 
-    public Optional<User> findUserById(long userId) {
+    @Transactional(readOnly = true)
+    public AdminUserResponse findAdminUserResponseById(long userId) {
         var optionalUser = userRepository.findById(userId);
 
-        optionalUser.ifPresent(this::populateUser);
-        return optionalUser;
+        if (optionalUser.isEmpty()) {
+            return null;
+        }
+
+        var user = optionalUser.get();
+
+        populateUser(user);
+        return user.toAdminUserResponse();
+    }
+
+
+    @Transactional(readOnly = true)
+    public User findUserEntityById(long userId) {
+        return userRepository.findById(userId)
+                             .orElse(null);
     }
 
     public Optional<User> findByUsername(String username) {
@@ -63,7 +90,9 @@ public class UserService {
     public User createNewUser(SignupRequest signupRequest) {
         User user = new User(signupRequest);
         var newUser = userRepository.save(user);
-        roleRepository.addUserRole(newUser.getId(),  roleService.getRoleId(user.getRoles().iterator().next()));
+        roleRepository.addUserRole(newUser.getId(), roleService.getRoleId(user.getRoles()
+                                                                              .iterator()
+                                                                              .next()));
         return newUser;
     }
 
@@ -151,7 +180,8 @@ public class UserService {
             return userList;
         }
 
-        var users = userRepository.findAllByRole(role.get().getId());
+        var users = userRepository.findAllByRole(role.get()
+                                                     .getId());
 
         for (User user : users) {
             populateUser(user);
@@ -190,18 +220,20 @@ public class UserService {
 
     /**
      * Deletes a user from the database. Note that this shall only be used for registered, but not active users
+     *
      * @param userId The ID of the user to delete
      */
     public void deleteUser(long userId) {
         var optionalUser = userRepository.findById(userId);
 
         if (optionalUser.isEmpty()) {
-            log.warn("Attempted to delete a non-existing user with ID " + userId);
+            log.warn("Attempted to delete a non-existing user with ID {}", userId);
             return;
         }
 
-        if (optionalUser.get().getStatus() != REGISTERED) {
-            log.warn("Attempted to delete a user which is not in REGISTERED-status with ID " + userId);
+        if (optionalUser.get()
+                        .getStatus() != REGISTERED) {
+            log.warn("Attempted to delete a user which is not in REGISTERED-status with ID {}", userId);
             return;
         }
 
@@ -213,7 +245,7 @@ public class UserService {
         var optionalUser = userRepository.findById(userId);
 
         if (optionalUser.isEmpty()) {
-            log.warn("Attempted to update status of a non-existing user with ID " + userId);
+            log.warn("Attempted to update status of a non-existing user with ID {}", userId);
             return;
         }
 
@@ -225,6 +257,7 @@ public class UserService {
     /**
      * Checks if a username is valid. A username is valid if it is not already taken and does not contain the % character
      * as we don't fully trust the @Email annotation checks. Besides the % character is a valid character in an email address which we don't want to allow.
+     *
      * @param username The username to check
      * @return True if the username is valid, false otherwise
      */
@@ -243,7 +276,8 @@ public class UserService {
         var user = userRepository.findById(userId);
 
         if (user.isPresent()) {
-            user.get().setApprovedTerms(termAnswer);
+            user.get()
+                .setApprovedTerms(termAnswer);
             userRepository.save(user.get());
         }
     }

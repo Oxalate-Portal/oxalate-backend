@@ -46,6 +46,7 @@ public class EventService {
     private final CommentService commentService;
     private final EventCommentRepository eventCommentRepository;
 
+    @Transactional(readOnly = true)
     public EventResponse findById(Long eventId) {
         var event = eventRepository.findById(eventId)
                                    .orElse(null);
@@ -88,7 +89,7 @@ public class EventService {
             }
 
             // Since the new participant is added by the organizer/administrator, we use the default user type of the added diver
-            var newDiver = userService.findUserById(participantId).get();
+            var newDiver = userService.findUserEntityById(participantId);
 
             var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
 
@@ -103,7 +104,8 @@ public class EventService {
                 }
 
                 eventRepository.addParticipantToEvent(participantId, eventRequest.getId(), ParticipantTypeEnum.USER.name(),
-                        paymentTypeEnum.name(), Instant.now(), newDiver.getPrimaryUserType().name());
+                        paymentTypeEnum.name(), Instant.now(), newDiver.getPrimaryUserType()
+                                                                       .name());
             }
         }
 
@@ -126,7 +128,9 @@ public class EventService {
             var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(currentParticipant.getUserId());
 
             if (optionalPaymentTypeEnum.isEmpty()) {
-                log.error("Failed to get payment type for user {}, will not update any payment information as the player should never have been able to subscribe to an event", currentParticipant.getUserId());
+                log.error(
+                        "Failed to get payment type for user {}, will not update any payment information as the player should never have been able to subscribe to an event",
+                        currentParticipant.getUserId());
             } else {
                 var paymentTypeEnum = optionalPaymentTypeEnum.get();
 
@@ -142,10 +146,11 @@ public class EventService {
         // We need to store the old status to determine if we need to send a notification
         var oldStatus = event.getStatus();
         // Finally add the event organizer, whether it is the current or a new one
-        var newOrganizer = userService.findUserById(eventRequest.getOrganizerId()).get();
+        var newOrganizer = userService.findUserEntityById(eventRequest.getOrganizerId());
 
         eventRepository.addParticipantToEvent(eventRequest.getOrganizerId(), eventRequest.getId(), ParticipantTypeEnum.ORGANIZER.name(),
-                PaymentTypeEnum.NONE.name(), Instant.now(), newOrganizer.getPrimaryUserType().name());
+                PaymentTypeEnum.NONE.name(), Instant.now(), newOrganizer.getPrimaryUserType()
+                                                                        .name());
 
         event.setType(eventRequest.getType());
         event.setTitle(eventRequest.getTitle());
@@ -258,7 +263,8 @@ public class EventService {
         }
 
         // If the event has already started, then we don't allow the diver to remove themselves
-        if (eventResponse.getStartTime().isBefore(Instant.now())) {
+        if (eventResponse.getStartTime()
+                         .isBefore(Instant.now())) {
             log.warn("Can not remove user from event {} as it has already started", eventId);
             return null;
         }
@@ -279,7 +285,9 @@ public class EventService {
         var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(user.getId());
 
         if (optionalPaymentTypeEnum.isEmpty()) {
-            log.error("Failed to get payment type for user {}, will not update any payment information as the player should never have been able to subscribe to an event", user.getId());
+            log.error(
+                    "Failed to get payment type for user {}, will not update any payment information as the player should never have been able to subscribe to an event",
+                    user.getId());
         } else {
             var paymentTypeEnum = optionalPaymentTypeEnum.get();
 
@@ -296,10 +304,11 @@ public class EventService {
     /**
      * Returns all events that have status PUBLISHED and have a start time after the given timestamp
      *
-     * @param instant Instant The instant after which the events should have started
+     * @param instant   Instant The instant after which the events should have started
      * @param allEvents boolean Whether to return all events or only published ones
      * @return List<EventResponse>
      */
+    @Transactional(readOnly = true)
     public List<EventResponse> findAllEventsAfter(Instant instant, boolean allEvents) {
         List<Event> events;
 
@@ -320,6 +329,7 @@ public class EventService {
         return eventResponses;
     }
 
+    @Transactional(readOnly = true)
     public List<EventResponse> findAllEventsBefore(Instant until) {
         var events = eventRepository.findAllEventsBefore(until);
         var eventList = new ArrayList<EventResponse>();
@@ -337,6 +347,7 @@ public class EventService {
         return eventList;
     }
 
+    @Transactional(readOnly = true)
     public List<EventResponse> findAllCurrentEvents() {
         var events = eventRepository.findAllCurrentEvents();
         var eventList = new ArrayList<EventResponse>();
@@ -399,9 +410,9 @@ public class EventService {
     }
 
     private Optional<EventResponse> getPopulatedEventResponse(Event event) {
-        var organizer = userService.findUserById(event.getOrganizerId());
+        var organizer = userService.findUserEntityById(event.getOrganizerId());
 
-        if (organizer.isEmpty()) {
+        if (organizer == null) {
             log.error("Event has an non-existing organizer: {}", event.getOrganizerId());
             return Optional.empty();
         }
@@ -420,8 +431,7 @@ public class EventService {
         }
 
         var eventResponse = event.toEventResponse();
-        eventResponse.setOrganizer(organizer.get()
-                                            .toUserResponse());
+        eventResponse.setOrganizer(organizer.toUserResponse());
         eventResponse.setParticipants(participantList);
 
         var eventCommentId = commentService.getEventCommentId(event.getId());
@@ -438,13 +448,13 @@ public class EventService {
     }
 
     private Optional<EventListResponse> getPopulatedEventListResponse(Event event) {
-        var optionalOrganizer = userService.findUserById(event.getOrganizerId());
+        var organizer = userService.findUserEntityById(event.getOrganizerId());
 
-        if (optionalOrganizer.isEmpty()) {
+        if (organizer == null) {
             log.error("Event has an non-existing organizer: {}", event.getOrganizerId());
             return Optional.empty();
         }
-        var organizer = optionalOrganizer.get();
+
         var participants = userService.findEventParticipants(event.getId());
 
         var eventListResponse = event.toEventListResponse();
@@ -482,8 +492,7 @@ public class EventService {
         var newEvent = eventRepository.save(event);
 
         // Add organizer as event participant with ORGANIZER type
-        var newOrganizer = userService.findUserById(eventRequest.getOrganizerId())
-                                      .get();
+        var newOrganizer = userService.findUserEntityById(eventRequest.getOrganizerId());
 
         eventRepository.addParticipantToEvent(userId, newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now(),
                 newOrganizer.getPrimaryUserType()
@@ -494,7 +503,7 @@ public class EventService {
             for (Long participantId : eventRequest.getParticipants()) {
 
                 // Since the new participant is added by the organizer/administrator, we use the default user type of the added diver
-                var newDiver = userService.findUserById(participantId).get();
+                var newDiver = userService.findUserEntityById(participantId);
 
                 var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
 
@@ -509,7 +518,8 @@ public class EventService {
                     }
 
                     eventRepository.addParticipantToEvent(participantId, newEvent.getId(), ParticipantTypeEnum.USER.name(),
-                            paymentTypeEnum.name(), Instant.now(), newDiver.getPrimaryUserType().name());
+                            paymentTypeEnum.name(), Instant.now(), newDiver.getPrimaryUserType()
+                                                                           .name());
                 }
             }
         }
@@ -643,7 +653,8 @@ public class EventService {
     @Transactional
     public Event save(Event event) {
         var newEvent = eventRepository.save(event);
-        eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now(),
+        eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(),
+                Instant.now(),
                 UserTypeEnum.SCUBA_DIVER.name());
         return newEvent;
     }
@@ -655,16 +666,14 @@ public class EventService {
         eventDiveListResponse.setDives(new HashSet<>());
 
         for (EventsParticipant eventsParticipant : eventDives) {
-            var optionalUser = userService.findUserById(eventsParticipant.getUserId());
+            var user = userService.findUserEntityById(eventsParticipant.getUserId());
 
-            if (optionalUser.isEmpty()) {
+            if (user == null) {
                 log.error("User {} does not exist", eventsParticipant.getUserId());
                 return null;
             }
 
-            var eventDiveResponse = eventsParticipant.toEventDiveResponse(optionalUser.get()
-                                                                                      .getLastName() + " " + optionalUser.get()
-                                                                                                                         .getFirstName());
+            var eventDiveResponse = eventsParticipant.toEventDiveResponse(user.getLastName() + " " + user.getFirstName());
             eventDiveListResponse.getDives()
                                  .add(eventDiveResponse);
         }

@@ -117,7 +117,7 @@ public class TestController implements TestAPI {
 
             // If the userData is emptied, then replenish it
             if (userData.isEmpty()) {
-                replenishUserData(50);
+                replenishUserData(49);
             }
 
             // Finally we move the pin forward 1-7 days
@@ -283,6 +283,7 @@ public class TestController implements TestAPI {
 
         var randomNameResponse = randomResponseMono.block();
 
+        assert randomNameResponse != null;
         for (RandomNameResponse.Result result : randomNameResponse.getResults()) {
             userInfos.add(result.getName()
                                 .getFirst()
@@ -317,13 +318,13 @@ public class TestController implements TestAPI {
         var userId = (Long) results.get(RandomUtils.secure()
                                                    .randomInt(0, results.size()));
 
-        var optionalUser = userService.findUserById(userId);
-        if (optionalUser.isEmpty()) {
+        var user = userService.findUserEntityById(userId);
+        if (user == null) {
             log.error("User with ID {} not found when generating payment", userId);
             return;
         }
 
-        generateRandomPaymentForUser(optionalUser.get(), createInstant);
+        generateRandomPaymentForUser(user, createInstant);
     }
 
     private void replenishUserData(int numberOfNames) {
@@ -346,7 +347,7 @@ public class TestController implements TestAPI {
         }
     }
 
-    private User generateRandomUser(RandomUserInfo userInfo, Instant createInstant) {
+    private void generateRandomUser(RandomUserInfo userInfo, Instant createInstant) {
         var password = authService.generatePasswordHash(PASSWORD);
         var phoneNumber = String.valueOf(RandomUtils.secure()
                                                     .randomLong(30000000000L, 99999999999L));
@@ -390,7 +391,7 @@ public class TestController implements TestAPI {
         generateRandomCertificatesForUser(newUser, createInstant);
         // When a user registers, they always also make an payment, either period or one time
         generateRandomPaymentForUser(newUser, createInstant);
-        return userService.save(newUser);
+        userService.save(newUser);
     }
 
     private void generateRandomPaymentForUser(User user, Instant createInstant) {
@@ -475,12 +476,11 @@ public class TestController implements TestAPI {
                      .equals(SURFACE)) {
                 addEventPaymentFromUser(participantId);
             } else {
-                deductEventPaymentFromUser(participantId, event.getStartTime());
+                deductEventPaymentFromUser(participantId);
             }
 
-            var optionalParticipant = userService.findUserById(participantId);
-            assert optionalParticipant.isPresent();
-            var participant = optionalParticipant.get();
+            var participant = userService.findUserEntityById(participantId);
+            assert participant != null;
             // Randomly select one of the UserTypeEnum values
             var userTypeValues = UserTypeEnum.values();
             var userType = userTypeValues[RandomUtils.secure()
@@ -533,7 +533,7 @@ public class TestController implements TestAPI {
         paymentRepository.save(payment);
     }
 
-    private void deductEventPaymentFromUser(long participantId, Instant eventStartTime) {
+    private void deductEventPaymentFromUser(long participantId) {
         // Check first if the user has an active period payment, if it is present, then we 'use' it, otherwise we try to use a one-time payment
         var optionalPeriodPayment = paymentRepository.findByUserIdAndAndPaymentType(participantId, PERIOD.name());
 

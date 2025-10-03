@@ -3,8 +3,6 @@ package io.oxalate.backend.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
@@ -69,8 +67,6 @@ public abstract class AbstractUser {
     @JsonProperty("approvedTerms")
     private boolean approvedTerms;
 
-    @NotNull
-    @NotEmpty
     @Schema(description = "Primary user type", example = "FREE_DIVER", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("primaryUserType")
     private UserTypeEnum primaryUserType;

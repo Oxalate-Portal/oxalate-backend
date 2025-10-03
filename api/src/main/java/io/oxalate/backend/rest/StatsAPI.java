@@ -3,7 +3,7 @@ package io.oxalate.backend.rest;
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
-import io.oxalate.backend.api.response.stats.MultiYearValue;
+import io.oxalate.backend.api.response.stats.MultiYearValueResponse;
 import io.oxalate.backend.api.response.stats.YearlyDiversListResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,7 +27,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-registrations", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MultiYearValue>> getYearlyRegistrations(HttpServletRequest request);
+    ResponseEntity<List<MultiYearValueResponse>> getYearlyRegistrations(HttpServletRequest request);
 
     @Operation(description = "Produces a multivalue (events, cumulative) yearly table for number of events as well as cumulative number", tags = "StatsAPI")
     @ApiResponses(value = {
@@ -36,7 +36,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-events", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MultiYearValue>> getYearlyEvents(HttpServletRequest request);
+    ResponseEntity<List<MultiYearValueResponse>> getYearlyEvents(HttpServletRequest request);
 
     @Operation(description = "Produces a multivalue (events, cumulative) yearly table for number of events as well as cumulative number", tags = "StatsAPI")
     @ApiResponses(value = {
@@ -45,7 +45,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-organizers", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MultiYearValue>> getYearlyOrganizers(HttpServletRequest request);
+    ResponseEntity<List<MultiYearValueResponse>> getYearlyOrganizers(HttpServletRequest request);
 
     @Operation(description = "Produces a multivalue (period, one time) yearly table for number of payments by their types", tags = "StatsAPI")
     @ApiResponses(value = {
@@ -54,7 +54,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-payments", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MultiYearValue>> getYearlyPayments(HttpServletRequest request);
+    ResponseEntity<List<MultiYearValueResponse>> getYearlyPayments(HttpServletRequest request);
 
     @Operation(description = "Produces the 6 months report of events for every year since the data begins", tags = "StatsAPI")
     @ApiResponses(value = {

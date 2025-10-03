@@ -54,7 +54,7 @@ public class PageService {
         var supportedLanguages = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
 
         if (language != null && !supportedLanguages.contains(language)) {
-            log.error("Requested language {} is not supported", language);
+            log.error("Requested language {} is not supported when fetching page", language);
             return null;
         }
 
@@ -110,8 +110,8 @@ public class PageService {
 
         var supportedLanguages = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
 
-        if (!supportedLanguages.contains(language)) {
-            log.error("Requested language {} is not supported", language);
+        if (language != null && !supportedLanguages.contains(language)) {
+            log.error("Requested language {} is not supported when fetching page groups", language);
             return pageGroupResponses;
         }
 

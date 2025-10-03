@@ -53,7 +53,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,17 +87,16 @@ public class UserController implements UserAPI {
                                  .build();
         }
 
-        var optionalUser = userService.findUserById(userId);
+        var adminUserResponse = userService.findAdminUserResponseById(userId);
 
-        if (optionalUser.isEmpty()) {
+        if (adminUserResponse == null) {
             appEventPublisher.publishAuditEvent(USERS_GET_DETAILS_NOT_FOUND + userId, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        var user = optionalUser.get();
 
         appEventPublisher.publishAuditEvent(USERS_GET_DETAILS_OK + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return ResponseEntity.ok(user.toAdminUserResponse());
+        return ResponseEntity.ok(adminUserResponse);
     }
 
     /**
@@ -123,9 +121,9 @@ public class UserController implements UserAPI {
         }
 
         try {
-            Optional<User> optionalUser = userService.findUserById(updateRequest.getId());
+            var user = userService.findUserEntityById(updateRequest.getId());
 
-            if (optionalUser.isEmpty()) {
+            if (user == null) {
                 appEventPublisher.publishAuditEvent(USERS_UPDATE_NOT_FOUND + updateRequest.getId(), ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
                         auditUuid);
                 log.warn("Non-existing user {} tried to update their data with {}", updateRequest.getId(), updateRequest);
@@ -143,7 +141,6 @@ public class UserController implements UserAPI {
                                      .body(null);
             }
 
-            var user = optionalUser.get();
 
             // Currently we do not allow changing the username/email
             if (!user.getUsername()
@@ -199,16 +196,15 @@ public class UserController implements UserAPI {
         // Either the call is made by the user itself or by an admin
         if (AuthTools.isUserIdCurrentUser(userId) || AuthTools.currentUserHasRole(ROLE_ADMIN)) {
             try {
-                Optional<User> optionalUser = userService.findUserById(userId);
+                var user = userService.findUserEntityById(userId);
 
-                if (optionalUser.isEmpty()) {
+                if (user == null) {
                     appEventPublisher.publishAuditEvent(USERS_UPDATE_STATUS_NOT_FOUND + userId, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
                             auditUuid);
                     return ResponseEntity.status(HttpStatus.NOT_FOUND)
                                          .body(null);
                 }
 
-                User user = optionalUser.get();
                 user.setStatus(userStatusRequest.getStatus());
                 userService.updateUser(user);
 
@@ -247,7 +243,7 @@ public class UserController implements UserAPI {
 
         var users = userService.findAll();
         appEventPublisher.publishAuditEvent(USERS_GET_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return getAdminUserResponseList(users);
+        return ResponseEntity.ok(users);
     }
 
     @Override
@@ -315,18 +311,5 @@ public class UserController implements UserAPI {
         appEventPublisher.publishAuditEvent(USERS_RESET_TERM_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.status(HttpStatus.OK)
                              .body(null);
-    }
-
-    private static ResponseEntity<List<AdminUserResponse>> getAdminUserResponseList(List<User> users) {
-        var adminUserResponses = new ArrayList<AdminUserResponse>();
-
-        for (User user : users) {
-            var adminUserResponse = user.toAdminUserResponse();
-            adminUserResponse.setStatus(user.getStatus());
-            adminUserResponses.add(adminUserResponse);
-        }
-
-        return ResponseEntity.status(HttpStatus.OK)
-                             .body(adminUserResponses);
     }
 }

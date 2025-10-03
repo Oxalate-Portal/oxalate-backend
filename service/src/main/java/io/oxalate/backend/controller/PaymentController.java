@@ -173,15 +173,14 @@ public class PaymentController implements PaymentAPI {
     private ResponseEntity<List<PaymentStatusResponse>> appendNameToPaymentStatusResponse(HttpServletRequest request, UUID auditUuid,
             List<PaymentStatusResponse> responseList, String paymentsGetAllActiveWithTypeFail, String paymentsGetAllActiveWithTypeOk) {
         for (PaymentStatusResponse response : responseList) {
-            var optionalUser = userService.findUserById(response.getUserId());
+            var user = userService.findUserEntityById(response.getUserId());
 
-            if (optionalUser.isEmpty()) {
+            if (user == null) {
                 appEventPublisher.publishAuditEvent(paymentsGetAllActiveWithTypeFail, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
                 log.error("User ID {} from payments could not found", response.getUserId());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
             }
 
-            var user = optionalUser.get();
             response.setName(user.getLastName() + " " + user.getFirstName());
         }
 

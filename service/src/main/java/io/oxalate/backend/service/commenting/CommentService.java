@@ -68,14 +68,12 @@ public class CommentService {
     public CommentResponse createComment(long userId, CommentRequest commentRequest) {
         log.info("Creating comment: {}", commentRequest);
 
-        var optionalUser = userService.findUserById(userId);
+        var user = userService.findUserEntityById(userId);
 
-        if (optionalUser.isEmpty()) {
+        if (user == null) {
             log.error("Attempting to create a comment with a nonexistent user ID: {}", userId);
             return null;
         }
-
-        var user = optionalUser.get();
 
         var optionalParentComment = commentRepository.findById(commentRequest.getParentCommentId());
 
@@ -173,14 +171,13 @@ public class CommentService {
         }
 
         var originalComment = originalOptionalComment.get();
-        var optionalUser = userService.findUserById(originalComment.getUserId());
+        var user = userService.findUserEntityById(originalComment.getUserId());
 
-        if (optionalUser.isEmpty()) {
+        if (user == null) {
             log.error("Attempting to update a comment with a nonexistent user ID: {}", userId);
             return null;
         }
 
-        var user = optionalUser.get();
         var isAdmin = false;
 
         if (!user.getId()
@@ -195,13 +192,11 @@ public class CommentService {
             isAdmin = true;
         }
 
-        var originalOptionalUser = userService.findUserById(originalComment.getUserId());
-        if (originalOptionalUser.isEmpty()) {
+        var originalUser = userService.findUserEntityById(originalComment.getUserId());
+        if (originalUser == null) {
             log.error("Original user with ID: {} referenced by comment ID {} not found", originalComment.getUserId(), commentRequest.getId());
             return null;
         }
-
-        var originalUser = originalOptionalUser.get();
 
         // Admin only updates the status of the comment
         if (isAdmin) {
@@ -374,8 +369,12 @@ public class CommentService {
                 var reportResponses = new ArrayList<CommentReportResponse>();
 
                 for (var report : commentReports) {
-                    var reporter = userService.findUserById(report.getUserId())
-                                              .orElseThrow(() -> new EntityNotFoundException("Reporter not found"));
+                    var reporter = userService.findUserEntityById(report.getUserId());
+
+                    if (reporter == null) {
+                        throw new EntityNotFoundException("Reporter not found");
+                    }
+
                     var commentReportResponse = CommentReportResponse.builder()
                                                                      .id(report.getId())
                                                                      .reporterId(reporter.getId())
@@ -421,54 +420,54 @@ public class CommentService {
     public List<CommentResponse> getFilteredComments(CommentFilterRequest commentFilterRequest) {
         log.info("Filtering comments with request: {}", commentFilterRequest);
 
-        Specification<Comment> spec = Specification.where(null);
+        // Build a list of Specifications and compose with Specification.allOf(...) to avoid deprecated Specification.where(...)
+        var specs = new ArrayList<Specification<Comment>>();
 
         if (commentFilterRequest.getUserId() > 0) {
-            spec = spec.and(hasUserId(commentFilterRequest.getUserId()));
+            specs.add(hasUserId(commentFilterRequest.getUserId()));
         }
         if (commentFilterRequest.getForumId() > 0) {
-            spec = spec.and(belongsToForum(commentFilterRequest.getForumId()));
+            specs.add(belongsToForum(commentFilterRequest.getForumId()));
         }
         if (commentFilterRequest.getDiveEventId() > 0) {
-            spec = spec.and(belongsToDiveEvent(commentFilterRequest.getDiveEventId()));
+            specs.add(belongsToDiveEvent(commentFilterRequest.getDiveEventId()));
         }
         if (commentFilterRequest.getCommentId() > 0) {
-            spec = spec.and(hasCommentId(commentFilterRequest.getCommentId()));
+            specs.add(hasCommentId(commentFilterRequest.getCommentId()));
         }
         if (commentFilterRequest.getParentId() > 0) {
-            spec = spec.and(hasParentId(commentFilterRequest.getParentId()));
+            specs.add(hasParentId(commentFilterRequest.getParentId()));
         }
         if (commentFilterRequest.getDepth() > 0) {
-            spec = spec.and(hasDepth(commentFilterRequest.getDepth()));
+            specs.add(hasDepth(commentFilterRequest.getDepth()));
         }
         if (commentFilterRequest.getCommentStatus() != null) {
-            spec = spec.and(hasStatus(commentFilterRequest.getCommentStatus()));
+            specs.add(hasStatus(commentFilterRequest.getCommentStatus()));
         }
         if (commentFilterRequest.getCommentType() != null) {
-            spec = spec.and(hasType(commentFilterRequest.getCommentType()));
+            specs.add(hasType(commentFilterRequest.getCommentType()));
         }
         if (commentFilterRequest.getTitleSearch() != null) {
-            spec = spec.and(titleContains(commentFilterRequest.getTitleSearch()));
+            specs.add(titleContains(commentFilterRequest.getTitleSearch()));
         }
         if (commentFilterRequest.getBodySearch() != null) {
-            spec = spec.and(bodyContains(commentFilterRequest.getBodySearch()));
+            specs.add(bodyContains(commentFilterRequest.getBodySearch()));
         }
         if (commentFilterRequest.getBeforeDate() != null) {
-            spec = spec.and(createdBefore(commentFilterRequest.getBeforeDate()));
+            specs.add(createdBefore(commentFilterRequest.getBeforeDate()));
         }
         if (commentFilterRequest.getAfterDate() != null) {
-            spec = spec.and(createdAfter(commentFilterRequest.getAfterDate()));
+            specs.add(createdAfter(commentFilterRequest.getAfterDate()));
         }
         if (commentFilterRequest.getReportCount() > 0) {
-            spec = spec.and(hasReportCount(commentFilterRequest.getReportCount()));
+            specs.add(hasReportCount(commentFilterRequest.getReportCount()));
         }
-        // Apply filtering based on comment class
         if (commentFilterRequest.getCommentClass() != null) {
-            spec = spec.and(belongsToCommentClass(commentFilterRequest.getCommentClass()));
+            specs.add(belongsToCommentClass(commentFilterRequest.getCommentClass()));
         }
 
-        // Apply the specification to the repository
-        var comments = commentRepository.findAll(spec);
+        var spec = Specification.allOf(specs);
+        var comments = specs.isEmpty() ? commentRepository.findAll() : commentRepository.findAll(spec);
 
         // Convert to CommentResponse
         List<CommentResponse> responseList = new ArrayList<>();
@@ -487,22 +486,21 @@ public class CommentService {
             Join<Comment, PageComment> pageJoin;
             Join<Comment, ForumTopic> forumJoin;
 
-            switch (commentClass) {
-            case EVENT_COMMENTS:
-                eventJoin = root.join("eventComments", JoinType.INNER);
-                return cb.isNotNull(eventJoin.get("comment"));
-
-            case PAGE_COMMENTS:
-                pageJoin = root.join("pageComments", JoinType.INNER);
-                return cb.isNotNull(pageJoin.get("comment"));
-
-            case FORUM_COMMENTS:
-                forumJoin = root.join("forumTopics", JoinType.INNER);
-                return cb.isNotNull(forumJoin.get("comment"));
-
-            default:
-                return cb.conjunction();
-            }
+            return switch (commentClass) {
+                case EVENT_COMMENTS -> {
+                    eventJoin = root.join("eventComments", JoinType.INNER);
+                    yield cb.isNotNull(eventJoin.get("comment"));
+                }
+                case PAGE_COMMENTS -> {
+                    pageJoin = root.join("pageComments", JoinType.INNER);
+                    yield cb.isNotNull(pageJoin.get("comment"));
+                }
+                case FORUM_COMMENTS -> {
+                    forumJoin = root.join("forumTopics", JoinType.INNER);
+                    yield cb.isNotNull(forumJoin.get("comment"));
+                }
+                default -> cb.conjunction();
+            };
         };
     }
 
@@ -597,9 +595,8 @@ public class CommentService {
     }
 
     private void populateUserInformation(long userId, CommentResponse commentResponse) {
-        var optionalUser = userService.findUserById(userId);
-        if (optionalUser.isPresent()) {
-            var user = optionalUser.get();
+        var user = userService.findUserEntityById(userId);
+        if (user != null) {
             commentResponse.setUsername(user.getLastName() + " " + user.getFirstName());
             commentResponse.setRegisteredAt(user.getRegistered());
             commentResponse.setAvatarUrl(getUserAvatarUrl(userId));
