@@ -31,9 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MembershipService {
 
+    private static final String MEMBERSHIP_DISABLED_WARNING = "Membership creation is disabled";
     private final MembershipRepository membershipRepository;
     private final PortalConfigurationService portalConfigurationService;
-    private static final String MEMBERSHIP_DISABLED_WARNING = "Membership creation is disabled";
     private final UserService userService;
 
     public List<MembershipResponse> getAllActiveMemberships() {
@@ -101,7 +101,7 @@ public class MembershipService {
                                                     .filter(membership -> membership.getStatus()
                                                                                     .equals(MembershipStatusEnum.ACTIVE) && membership.getEndDate()
                                                                                                                                       .isAfter(LocalDate.now()))
-                                                    .collect(Collectors.toList());
+                                                    .toList();
 
         if (!activeMemberships.isEmpty()) {
             log.warn("User already has an active membership: {}", activeMemberships.getFirst());
@@ -136,15 +136,13 @@ public class MembershipService {
                                           .build();
         var newMembership = membershipRepository.save(membership);
         // The saved object does not have the user populated, so we fetch it
-        var optionalUser = userService.findUserById(newMembership.getUserId());
+        var user = userService.findUserEntityById(newMembership.getUserId());
 
-        if (optionalUser.isEmpty()) {
+        if (user == null) {
             log.error("Could not find user for id: {}", newMembership.getUserId());
             return MembershipResponse.builder()
                                      .build();
         }
-
-        var user = optionalUser.get();
 
         newMembership.setUser(user);
         return newMembership.toResponse();
@@ -172,7 +170,7 @@ public class MembershipService {
 
         // We only allow updating the type from non-configured to the configured type
         if (!membership.getType()
-                        .equals(membershipType)) {
+                       .equals(membershipType)) {
             log.error("Membership type cannot be updated");
             return membership.toResponse();
         }
@@ -182,7 +180,7 @@ public class MembershipService {
         membership.setStatus(membershipRequest.getStatus());
         // If the new status is not active, we set the end date to now
         if (!membershipRequest.getStatus()
-                            .equals(MembershipStatusEnum.ACTIVE)) {
+                              .equals(MembershipStatusEnum.ACTIVE)) {
             membership.setEndDate(LocalDate.now());
         }
 

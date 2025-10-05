@@ -4,6 +4,7 @@ import io.oxalate.backend.api.DiveTypeEnum;
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
+import static io.oxalate.backend.tools.TagTools.collectTagResponses;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -12,9 +13,14 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -68,12 +74,21 @@ public class Event {
     @Column(name = "status", nullable = false)
     private EventStatusEnum status;
 
+    @ManyToMany
+    @JoinTable(
+        name = "event_tags",
+        joinColumns = @JoinColumn(name = "event_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
+
     /**
      * Converts this Event to EventResponse. Note that organizer and participants are not populated.
      *
      * @return EventResponse without the organizer and participants populated
      */
     public EventResponse toEventResponse() {
+        var tagResponses = collectTagResponses(this.tags);
 
         return EventResponse.builder()
                 .id(this.id)
@@ -89,10 +104,13 @@ public class Event {
                 .title(this.title)
                 .type(this.type)
                 .eventCommentId(0L)
+                .tags(tagResponses)
                 .build();
     }
 
     public EventListResponse toEventListResponse() {
+        var tagResponses = collectTagResponses(this.tags);
+
         return EventListResponse.builder()
                 .id(this.id)
                 .description(this.description)
@@ -105,6 +123,7 @@ public class Event {
                 .title(this.title)
                 .type(this.type)
                 .eventCommentId(0L)
+                .tags(tagResponses)
                 .build();
     }
 }

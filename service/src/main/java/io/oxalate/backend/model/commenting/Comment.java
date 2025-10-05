@@ -75,6 +75,7 @@ public class Comment {
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ForumTopic> forumTopics;
 
+    @Builder.Default
     @Transient
     private List<Comment> childComments = new ArrayList<>();
 

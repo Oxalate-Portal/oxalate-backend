@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.AbstractEvent;
 import io.oxalate.backend.api.EventStatusEnum;
 import java.util.List;
+import java.util.Set;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
@@ -22,4 +23,7 @@ public class EventResponse extends AbstractEvent {
 
     @JsonProperty("eventCommentId")
     private long eventCommentId;
+
+    @JsonProperty("tags")
+    private Set<TagResponse> tags;
 }

@@ -444,6 +444,60 @@ public class AppAuditMessages {
     public static final String PORTAL_CONFIG_GET_FRONTEND_START = "Getting frontend configurations";
     public static final String PORTAL_CONFIG_GET_FRONTEND_OK = "Return frontend configurations";
 
+    // TagController - Tag Groups
+    public static final String TAGS_GROUP_GET_ALL_START = "Getting all tag groups";
+    public static final String TAGS_GROUP_GET_ALL_UNAUTHORIZED = "User not authorized to get tag groups";
+    public static final String TAGS_GROUP_GET_ALL_OK = "Return list of tag groups";
+
+    public static final String TAGS_GROUP_GET_START = "Getting tag group with ID: ";
+    public static final String TAGS_GROUP_GET_NOT_FOUND = "Tag group not found with ID: ";
+    public static final String TAGS_GROUP_GET_OK = "Return tag group with ID: ";
+
+    public static final String TAGS_GROUP_CREATE_START = "Creating new tag group";
+    public static final String TAGS_GROUP_CREATE_UNAUTHORIZED = "User not authorized to create tag group";
+    public static final String TAGS_GROUP_CREATE_OK = "Tag group created";
+
+    public static final String TAGS_GROUP_UPDATE_START = "Updating tag group with ID: ";
+    public static final String TAGS_GROUP_UPDATE_UNAUTHORIZED = "User not authorized to update tag group";
+    public static final String TAGS_GROUP_UPDATE_NOT_FOUND = "Tag group not found with ID: ";
+    public static final String TAGS_GROUP_UPDATE_OK = "Tag group updated with ID: ";
+
+    public static final String TAGS_GROUP_DELETE_START = "Deleting tag group with ID: ";
+    public static final String TAGS_GROUP_DELETE_UNAUTHORIZED = "User not authorized to delete tag group";
+    public static final String TAGS_GROUP_DELETE_NOT_FOUND = "Tag group not found with ID: ";
+    public static final String TAGS_GROUP_DELETE_OK = "Tag group deleted with ID: ";
+
+    public static final String TAGS_GROUP_GET_BY_TYPE_START = "Getting tag groups by type: ";
+    public static final String TAGS_GROUP_GET_BY_TYPE_UNAUTHORIZED = "User not authorized to get tag groups by type";
+    public static final String TAGS_GROUP_GET_BY_TYPE_OK = "Return list of tag groups by type: ";
+
+    // TagController - Tags
+    public static final String TAGS_GET_ALL_START = "Getting all tags";
+    public static final String TAGS_GET_ALL_UNAUTHORIZED = "User not authorized to get tags";
+    public static final String TAGS_GET_ALL_OK = "Return list of tags";
+
+    public static final String TAGS_GET_START = "Getting tag with ID: ";
+    public static final String TAGS_GET_NOT_FOUND = "Tag not found with ID: ";
+    public static final String TAGS_GET_OK = "Return tag with ID: ";
+
+    public static final String TAGS_CREATE_START = "Creating new tag";
+    public static final String TAGS_CREATE_UNAUTHORIZED = "User not authorized to create tag";
+    public static final String TAGS_CREATE_OK = "Tag created";
+
+    public static final String TAGS_UPDATE_START = "Updating tag with ID: ";
+    public static final String TAGS_UPDATE_UNAUTHORIZED = "User not authorized to update tag";
+    public static final String TAGS_UPDATE_NOT_FOUND = "Tag not found with ID: ";
+    public static final String TAGS_UPDATE_OK = "Tag updated with ID: ";
+
+    public static final String TAGS_DELETE_START = "Deleting tag with ID: ";
+    public static final String TAGS_DELETE_UNAUTHORIZED = "User not authorized to delete tag";
+    public static final String TAGS_DELETE_NOT_FOUND = "Tag not found with ID: ";
+    public static final String TAGS_DELETE_OK = "Tag deleted with ID: ";
+
+    public static final String TAGS_GET_BY_GROUP_TYPE_START = "Getting tags by group type: ";
+    public static final String TAGS_GET_BY_GROUP_TYPE_UNAUTHORIZED = "User not authorized to get tags by group type";
+    public static final String TAGS_GET_BY_GROUP_TYPE_OK = "Return list of tags by group type: ";
+
     private AppAuditMessages() {
     }
 }

@@ -6,7 +6,7 @@ import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import static io.oxalate.backend.api.RoleEnum.ROLE_USER;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
-import io.oxalate.backend.api.response.stats.MultiYearValue;
+import io.oxalate.backend.api.response.stats.MultiYearValueResponse;
 import io.oxalate.backend.api.response.stats.YearlyDiversListResponse;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_DIVER_LIST_OK;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_DIVER_LIST_START;
@@ -49,7 +49,7 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValue>> getYearlyRegistrations(HttpServletRequest request) {
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyRegistrations(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_REGISTRATION_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
@@ -66,7 +66,7 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValue>> getYearlyEvents(HttpServletRequest request) {
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyEvents(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_EVENTS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
@@ -83,7 +83,7 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValue>> getYearlyOrganizers(HttpServletRequest request) {
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyOrganizers(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_ORGANIZERS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
@@ -100,7 +100,7 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValue>> getYearlyPayments(HttpServletRequest request) {
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyPayments(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_PAYMENTS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {

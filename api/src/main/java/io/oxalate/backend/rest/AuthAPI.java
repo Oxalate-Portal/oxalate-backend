@@ -8,6 +8,7 @@ import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.request.TokenRequest;
 import io.oxalate.backend.api.request.UserResetPasswordRequest;
 import io.oxalate.backend.api.request.UserUpdatePasswordRequest;
+import io.oxalate.backend.api.response.ConfirmationResponse;
 import io.oxalate.backend.api.response.RegistrationResponse;
 import io.oxalate.backend.api.response.UserUpdateStatus;
 import io.swagger.v3.oas.annotations.Operation;
@@ -92,17 +93,16 @@ public interface AuthAPI {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     @PostMapping(path = BASE_PATH + "/registrations/resend-confirmation")
-    ResponseEntity<?> resendConfirmationEmail(@RequestBody TokenRequest tokenRequest, HttpServletRequest request);
+    ResponseEntity<ConfirmationResponse> resendConfirmationEmail(@RequestBody TokenRequest tokenRequest, HttpServletRequest request);
 
-    @Operation(description = "Endpoint used to resend confirmation email link", tags = "AuthAPI")
+    @Operation(description = "Endpoint used to send a renew password email", tags = "AuthAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "EmailRequest", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Request was OK. Endpoint does not reveal whether mail sending was successful to prevent "
-                    + "email phishing."),
-            @ApiResponse(responseCode = "400", description = "Invalid request")
+                    + "email phishing.")
     })
     @PostMapping(path = BASE_PATH + "/lost-password")
-    ResponseEntity<?> lostPassword(@RequestBody EmailRequest emailRequest, HttpServletRequest request);
+    ResponseEntity<ConfirmationResponse> lostPassword(@RequestBody EmailRequest emailRequest, HttpServletRequest request);
 
     @Operation(description = "Endpoint used to reset a forgotten password. This is different from the /api/auth/{userId}/password as the latter does "
             + "not require authentication. This requires a valid token", tags = "AuthAPI")
@@ -113,5 +113,5 @@ public interface AuthAPI {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     @PostMapping(path = BASE_PATH + "/reset-password")
-    ResponseEntity<?> resetPassword(@RequestBody UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request);
+    ResponseEntity<ConfirmationResponse> resetPassword(@RequestBody UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request);
 }

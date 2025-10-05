@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MultiYearValue {
+public class MultiYearValueResponse {
     private long year;
     private long value;
     private String type;

@@ -27,4 +27,8 @@ public class UserResponse extends AbstractUser {
     @Schema(description = "List of memberships of the user", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("memberships")
     private List<MembershipResponse> memberships;
+
+    @Schema(description = "List of tags associated with the user")
+    @JsonProperty("tags")
+    private Set<TagResponse> tags;
 }

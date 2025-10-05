@@ -253,9 +253,9 @@ public class EventController implements EventAPI {
                                  .body(null);
         }
 
-        var optionalOrganizer = userService.findUserById(eventRequest.getOrganizerId());
+        var organizer = userService.findUserEntityById(eventRequest.getOrganizerId());
 
-        if (optionalOrganizer.isEmpty()) {
+        if (organizer == null) {
             appEventPublisher.publishAuditEvent(EVENTS_UPDATE_ORGANIZER_NOT_FOUND + eventRequest.getOrganizerId(), ERROR, request, AUDIT_NAME,
                     AuthTools.getCurrentUserId(), auditUuid);
             log.error("Event has an non-existing organizer: {}", eventRequest.getOrganizerId());

@@ -4,7 +4,7 @@ import io.oxalate.backend.api.PortalConfigEnum;
 import io.oxalate.backend.api.response.stats.DiverListItemResponse;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
 import io.oxalate.backend.api.response.stats.EventReportResponse;
-import io.oxalate.backend.api.response.stats.MultiYearValue;
+import io.oxalate.backend.api.response.stats.MultiYearValueResponse;
 import io.oxalate.backend.api.response.stats.YearlyDiversListResponse;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -24,7 +24,7 @@ public class StatsService {
     private final EntityManager entityManager;
     private final PortalConfigurationService portalConfigurationService;
 
-    public List<MultiYearValue> getYearlyRegistrations() {
+    public List<MultiYearValueResponse> getYearlyRegistrations() {
 
         var queryString = """
                 SELECT
@@ -37,7 +37,7 @@ public class StatsService {
         return getMultiYearValues(queryString, "registrations");
     }
 
-    public List<MultiYearValue> getYearlyEvents() {
+    public List<MultiYearValueResponse> getYearlyEvents() {
         var queryString = """
                 SELECT
                   EXTRACT(YEAR FROM e.start_time) AS year,
@@ -51,7 +51,7 @@ public class StatsService {
         return getMultiYearValues(queryString, "events");
     }
 
-    public List<MultiYearValue> getYearlyOrganizers() {
+    public List<MultiYearValueResponse> getYearlyOrganizers() {
         var queryString = """
                 SELECT
                   CONCAT(u.first_name, ' ', u.last_name) AS organizer_name,
@@ -68,7 +68,7 @@ public class StatsService {
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> results = query.getResultList();
 
-        var multiYearValues = new ArrayList<MultiYearValue>();
+        var multiYearValues = new ArrayList<MultiYearValueResponse>();
 
         if (!results.isEmpty()) {
             var cumulativeHash = new HashMap<String, Long>();
@@ -84,13 +84,13 @@ public class StatsService {
                     cumulativeHash.put(organizerName, eventCount);
                 }
 
-                var response = MultiYearValue.builder()
+                var response = MultiYearValueResponse.builder()
                                              .year(year.longValue())
                                              .value(eventCount)
                                              .type(organizerName)
                                              .build();
                 multiYearValues.add(response);
-                var responseCum = MultiYearValue.builder()
+                var responseCum = MultiYearValueResponse.builder()
                                                 .year(year.longValue())
                                                 .value(cumulativeHash.get(organizerName))
                                                 .type("cumulative-" + organizerName)
@@ -102,7 +102,7 @@ public class StatsService {
         return multiYearValues;
     }
 
-    public List<MultiYearValue> getYearlyPayments() {
+    public List<MultiYearValueResponse> getYearlyPayments() {
         var queryString = """
                 SELECT
                   EXTRACT(YEAR FROM p.created_at) AS year,
@@ -116,7 +116,7 @@ public class StatsService {
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> results = query.getResultList();
 
-        var multiYearValues = new ArrayList<MultiYearValue>();
+        var multiYearValues = new ArrayList<MultiYearValueResponse>();
 
         if (!results.isEmpty()) {
             for (Object[] o : results) {
@@ -124,7 +124,7 @@ public class StatsService {
                 var paymentType = (String) o[1];
                 var paymentCount = (Long) o[2];
 
-                var response = MultiYearValue.builder()
+                var response = MultiYearValueResponse.builder()
                                              .year(year.longValue())
                                              .value(paymentCount)
                                              .type(paymentType)
@@ -317,11 +317,11 @@ public class StatsService {
         return eventReportResponses;
     }
 
-    private List<MultiYearValue> getMultiYearValues(String queryString, String keyName) {
+    private List<MultiYearValueResponse> getMultiYearValues(String queryString, String keyName) {
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> results = query.getResultList();
 
-        var multiYearValues = new ArrayList<MultiYearValue>();
+        var multiYearValues = new ArrayList<MultiYearValueResponse>();
 
         if (!results.isEmpty()) {
             var cumulative = 0L;
@@ -331,13 +331,13 @@ public class StatsService {
                 var count = (Long) o[1];
                 cumulative += count;
 
-                var response = MultiYearValue.builder()
+                var response = MultiYearValueResponse.builder()
                                              .year(year.longValue())
                                              .value(count)
                                              .type(keyName)
                                              .build();
                 multiYearValues.add(response);
-                var responseCum = MultiYearValue.builder()
+                var responseCum = MultiYearValueResponse.builder()
                                                 .year(year.longValue())
                                                 .value(cumulative)
                                                 .type("cumulative")

@@ -100,10 +100,9 @@ public class ApplicationAuditEventService {
     private void insertUsernames(Page<AuditEntryResponse> auditEntryResponses) {
         for (var entry : auditEntryResponses) {
             if (entry.getUserId() > 0) {
-                var optionalUser = userService.findUserById(entry.getUserId());
+                var user = userService.findUserEntityById(entry.getUserId());
 
-                if (optionalUser.isPresent()) {
-                    var user = optionalUser.get();
+                if (user != null) {
                     entry.setUserName(user.getLastName() + " " + user.getFirstName());
                 } else {
                     if (entry.getUserId() > 0) {

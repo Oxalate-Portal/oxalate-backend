@@ -9,7 +9,9 @@ import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
 import io.oxalate.backend.api.response.MembershipResponse;
 import io.oxalate.backend.api.response.PaymentResponse;
+import io.oxalate.backend.api.response.TagResponse;
 import io.oxalate.backend.api.response.UserResponse;
+import static io.oxalate.backend.tools.TagTools.collectTagResponses;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,6 +19,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Email;
@@ -126,6 +131,14 @@ public class User {
     @Transient
     private List<Membership> membership;
 
+    @ManyToMany
+    @JoinTable(
+            name = "user_tags",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
+
     public User(SignupRequest signupRequest) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         this.username = signupRequest.getUsername();
@@ -161,6 +174,25 @@ public class User {
                                               .anyMatch(membership -> membership.getStatus()
                                                                                 .equals(MembershipStatusEnum.ACTIVE));
 
+        var tagResponses = new HashSet<TagResponse>();
+        if (this.tags != null && !this.tags.isEmpty()) {
+            this.tags.stream()
+                     .map(tag -> TagResponse.builder()
+                                            .id(tag.getId())
+                                            .code(tag.getCode())
+                                            .names(tag.getTranslatedNames())
+                                            .tagGroupId(tag.getTagGroup() != null ?
+                                                    tag.getTagGroup()
+                                                       .getId() :
+                                                    null)
+                                            .tagGroupCode(tag.getTagGroup() != null ?
+                                                    tag.getTagGroup()
+                                                       .getCode() :
+                                                    null)
+                                            .build())
+                     .forEach(tagResponses::add);
+        }
+
         return ListUserResponse.builder()
                                .id(this.id)
                                .name(this.lastName + " " + this.firstName)
@@ -168,6 +200,7 @@ public class User {
                                .createdAt(null)
                                .payments(paymentResponses)
                                .membershipActive(activeMembership)
+                               .tags(tagResponses)
                                .build();
     }
 
@@ -179,6 +212,8 @@ public class User {
                 paymentResponses.add(payment.toPaymentResponse());
             }
         }
+
+        var tagResponses = collectTagResponses(this.tags);
 
         return UserResponse.builder()
                            .id(this.id)
@@ -192,6 +227,7 @@ public class User {
                            .approvedTerms(this.approvedTerms)
                            .language(this.language)
                            .primaryUserType(this.primaryUserType)
+                           .tags(tagResponses)
                            .build();
     }
 
@@ -217,6 +253,8 @@ public class User {
             membershipResponses.add(membership.toResponse());
         }
 
+        var tagResponses = collectTagResponses(this.tags);
+
         return AdminUserResponse.builder()
                                 .id(this.id)
                                 .firstName(this.firstName)
@@ -235,6 +273,7 @@ public class User {
                                 .language(this.language)
                                 .lastSeen(this.lastSeen)
                                 .primaryUserType(this.primaryUserType)
+                                .tags(tagResponses)
                                 .build();
     }
 }

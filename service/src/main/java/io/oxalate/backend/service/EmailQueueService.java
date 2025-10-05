@@ -126,14 +126,12 @@ public class EmailQueueService {
     }
 
     private void processQueueEntry(EmailQueueEntry sendingMessage) {
-        var optionalUser = userService.findUserById(sendingMessage.getUserId());
+        var user = userService.findUserEntityById(sendingMessage.getUserId());
 
-        if (optionalUser.isEmpty()) {
+        if (user == null) {
             log.error("User with ID {} not found when attempting to send event email notification", sendingMessage.getUserId());
             return;
         }
-
-        var user = optionalUser.get();
 
         // We only send notifications to active users
         if (!user.getStatus().equals(UserStatusEnum.ACTIVE)) {
