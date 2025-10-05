@@ -3,6 +3,7 @@ package io.oxalate.backend.controller;
 import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
+import io.oxalate.backend.api.TagGroupEnum;
 import io.oxalate.backend.api.request.TagGroupRequest;
 import io.oxalate.backend.api.request.TagRequest;
 import io.oxalate.backend.api.response.TagGroupResponse;
@@ -17,6 +18,9 @@ import static io.oxalate.backend.events.AppAuditMessages.TAGS_DELETE_UNAUTHORIZE
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_ALL_OK;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_ALL_START;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_ALL_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_BY_GROUP_TYPE_OK;
+import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_BY_GROUP_TYPE_START;
+import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_BY_GROUP_TYPE_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_OK;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GET_START;
@@ -30,6 +34,9 @@ import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_DELETE_UNAUT
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_ALL_OK;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_ALL_START;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_ALL_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_BY_TYPE_OK;
+import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_BY_TYPE_START;
+import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_BY_TYPE_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_OK;
 import static io.oxalate.backend.events.AppAuditMessages.TAGS_GROUP_GET_START;
@@ -124,9 +131,9 @@ public class TagController implements TagAPI {
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<TagGroupResponse> updateTagGroup(long id, TagGroupRequest tagGroupRequest, HttpServletRequest request) {
+    public ResponseEntity<TagGroupResponse> updateTagGroup(TagGroupRequest tagGroupRequest, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
-        var auditUuid = appEventPublisher.publishAuditEvent(TAGS_GROUP_UPDATE_START + id, INFO, request, AUDIT_NAME, userId);
+        var auditUuid = appEventPublisher.publishAuditEvent(TAGS_GROUP_UPDATE_START + tagGroupRequest.getId(), INFO, request, AUDIT_NAME, userId);
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
             appEventPublisher.publishAuditEvent(TAGS_GROUP_UPDATE_UNAUTHORIZED, INFO, request, AUDIT_NAME, userId, auditUuid);
@@ -134,12 +141,12 @@ public class TagController implements TagAPI {
         }
 
         try {
-            var updated = tagService.updateTagGroup(id, tagGroupRequest);
+            var updated = tagService.updateTagGroup(tagGroupRequest);
             if (updated == null) {
-                appEventPublisher.publishAuditEvent(TAGS_GROUP_UPDATE_NOT_FOUND + id, INFO, request, AUDIT_NAME, userId, auditUuid);
+                appEventPublisher.publishAuditEvent(TAGS_GROUP_UPDATE_NOT_FOUND + tagGroupRequest.getId(), INFO, request, AUDIT_NAME, userId, auditUuid);
                 return ResponseEntity.notFound().build();
             }
-            appEventPublisher.publishAuditEvent(TAGS_GROUP_UPDATE_OK + id, INFO, request, AUDIT_NAME, userId, auditUuid);
+            appEventPublisher.publishAuditEvent(TAGS_GROUP_UPDATE_OK + tagGroupRequest.getId(), INFO, request, AUDIT_NAME, userId, auditUuid);
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().build();
@@ -166,6 +173,22 @@ public class TagController implements TagAPI {
         tagService.deleteTagGroup(id);
         appEventPublisher.publishAuditEvent(TAGS_GROUP_DELETE_OK + id, INFO, request, AUDIT_NAME, userId, auditUuid);
         return ResponseEntity.ok().build();
+    }
+
+    @Override
+    public ResponseEntity<List<TagGroupResponse>> getTagGroupsByType(TagGroupEnum type, HttpServletRequest request) {
+        var userId = AuthTools.getCurrentUserId();
+        var auditUuid = appEventPublisher.publishAuditEvent(TAGS_GROUP_GET_BY_TYPE_START + type, INFO, request, AUDIT_NAME, userId);
+
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
+            appEventPublisher.publishAuditEvent(TAGS_GROUP_GET_BY_TYPE_UNAUTHORIZED, INFO, request, AUDIT_NAME, userId, auditUuid);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                 .build();
+        }
+
+        var groups = tagService.getTagGroupsByType(type);
+        appEventPublisher.publishAuditEvent(TAGS_GROUP_GET_BY_TYPE_OK + type, INFO, request, AUDIT_NAME, userId, auditUuid);
+        return ResponseEntity.ok(groups);
     }
 
     // ---- Tags ----
@@ -229,9 +252,9 @@ public class TagController implements TagAPI {
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<TagResponse> updateTag(long id, TagRequest tag, HttpServletRequest request) {
+    public ResponseEntity<TagResponse> updateTag(TagRequest tagRequest, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
-        var auditUuid = appEventPublisher.publishAuditEvent(TAGS_UPDATE_START + id, INFO, request, AUDIT_NAME, userId);
+        var auditUuid = appEventPublisher.publishAuditEvent(TAGS_UPDATE_START + tagRequest.getId(), INFO, request, AUDIT_NAME, userId);
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
             appEventPublisher.publishAuditEvent(TAGS_UPDATE_UNAUTHORIZED, INFO, request, AUDIT_NAME, userId, auditUuid);
@@ -239,12 +262,12 @@ public class TagController implements TagAPI {
         }
 
         try {
-            var updated = tagService.updateTag(id, tag);
+            var updated = tagService.updateTag(tagRequest);
             if (updated == null) {
-                appEventPublisher.publishAuditEvent(TAGS_UPDATE_NOT_FOUND + id, INFO, request, AUDIT_NAME, userId, auditUuid);
+                appEventPublisher.publishAuditEvent(TAGS_UPDATE_NOT_FOUND + tagRequest.getId(), INFO, request, AUDIT_NAME, userId, auditUuid);
                 return ResponseEntity.notFound().build();
             }
-            appEventPublisher.publishAuditEvent(TAGS_UPDATE_OK + id, INFO, request, AUDIT_NAME, userId, auditUuid);
+            appEventPublisher.publishAuditEvent(TAGS_UPDATE_OK + tagRequest.getId(), INFO, request, AUDIT_NAME, userId, auditUuid);
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().build();
@@ -272,5 +295,20 @@ public class TagController implements TagAPI {
         appEventPublisher.publishAuditEvent(TAGS_DELETE_OK + id, INFO, request, AUDIT_NAME, userId, auditUuid);
         return ResponseEntity.ok().build();
     }
-}
 
+    @Override
+    public ResponseEntity<List<TagResponse>> getTagsByGroupType(TagGroupEnum type, HttpServletRequest request) {
+        var userId = AuthTools.getCurrentUserId();
+        var auditUuid = appEventPublisher.publishAuditEvent(TAGS_GET_BY_GROUP_TYPE_START + type, INFO, request, AUDIT_NAME, userId);
+
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
+            appEventPublisher.publishAuditEvent(TAGS_GET_BY_GROUP_TYPE_UNAUTHORIZED, INFO, request, AUDIT_NAME, userId, auditUuid);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                 .build();
+        }
+
+        var tags = tagService.getTagsByGroupType(type);
+        appEventPublisher.publishAuditEvent(TAGS_GET_BY_GROUP_TYPE_OK + type, INFO, request, AUDIT_NAME, userId, auditUuid);
+        return ResponseEntity.ok(tags);
+    }
+}

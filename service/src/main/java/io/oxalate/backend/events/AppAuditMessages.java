@@ -467,6 +467,10 @@ public class AppAuditMessages {
     public static final String TAGS_GROUP_DELETE_NOT_FOUND = "Tag group not found with ID: ";
     public static final String TAGS_GROUP_DELETE_OK = "Tag group deleted with ID: ";
 
+    public static final String TAGS_GROUP_GET_BY_TYPE_START = "Getting tag groups by type: ";
+    public static final String TAGS_GROUP_GET_BY_TYPE_UNAUTHORIZED = "User not authorized to get tag groups by type";
+    public static final String TAGS_GROUP_GET_BY_TYPE_OK = "Return list of tag groups by type: ";
+
     // TagController - Tags
     public static final String TAGS_GET_ALL_START = "Getting all tags";
     public static final String TAGS_GET_ALL_UNAUTHORIZED = "User not authorized to get tags";
@@ -489,6 +493,10 @@ public class AppAuditMessages {
     public static final String TAGS_DELETE_UNAUTHORIZED = "User not authorized to delete tag";
     public static final String TAGS_DELETE_NOT_FOUND = "Tag not found with ID: ";
     public static final String TAGS_DELETE_OK = "Tag deleted with ID: ";
+
+    public static final String TAGS_GET_BY_GROUP_TYPE_START = "Getting tags by group type: ";
+    public static final String TAGS_GET_BY_GROUP_TYPE_UNAUTHORIZED = "User not authorized to get tags by group type";
+    public static final String TAGS_GET_BY_GROUP_TYPE_OK = "Return list of tags by group type: ";
 
     private AppAuditMessages() {
     }

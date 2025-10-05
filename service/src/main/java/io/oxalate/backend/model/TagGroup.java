@@ -1,8 +1,11 @@
 package io.oxalate.backend.model;
 
+import io.oxalate.backend.api.TagGroupEnum;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -48,6 +51,10 @@ public class TagGroup {
 
     @OneToMany(mappedBy = "tagGroup")
     private Set<Tag> tags = new HashSet <>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tag_type")
+    private TagGroupEnum type;
 
     @PrePersist
     protected void onCreate() {

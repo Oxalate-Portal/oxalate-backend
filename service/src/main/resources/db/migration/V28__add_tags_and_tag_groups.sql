@@ -2,6 +2,7 @@
 CREATE TABLE tag_groups (
     id BIGSERIAL PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
+    tag_type VARCHAR(20),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
@@ -53,4 +54,3 @@ CREATE INDEX idx_tag_translations_tag_id ON tag_translations(tag_id);
 CREATE INDEX idx_tag_group_translations_tag_group_id ON tag_group_translations(tag_group_id);
 CREATE INDEX idx_user_tags_tag_id ON user_tags(tag_id);
 CREATE INDEX idx_event_tags_tag_id ON event_tags(tag_id);
-

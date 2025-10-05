@@ -1,6 +1,7 @@
 package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.oxalate.backend.api.TagGroupEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
@@ -31,5 +32,8 @@ public class TagGroupResponse {
     @Schema(description = "List of tags in this group")
     @JsonProperty("tags")
     private List<TagResponse> tags;
-}
 
+    @Schema(description = "Type of tag group", example = "USER", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("type")
+    private TagGroupEnum type;
+}

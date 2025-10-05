@@ -1,6 +1,7 @@
 package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
+import io.oxalate.backend.api.TagGroupEnum;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.TagGroupRequest;
 import io.oxalate.backend.api.request.TagRequest;
@@ -63,7 +64,6 @@ public interface TagAPI {
     ResponseEntity<TagGroupResponse> createTagGroup(@RequestBody TagGroupRequest tagGroupRequest, HttpServletRequest request);
 
     @Operation(description = "Update an existing tag group", tags = "TagAPI")
-    @Parameter(name = "id", description = "Tag group ID", example = "1")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Updated tag group", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tag group updated successfully"),
@@ -72,8 +72,8 @@ public interface TagAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @PutMapping(path = GROUPS_PATH + "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<TagGroupResponse> updateTagGroup(@PathVariable(name = "id") long id, @RequestBody TagGroupRequest tagGroupRequest,
+    @PutMapping(path = GROUPS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<TagGroupResponse> updateTagGroup(@RequestBody TagGroupRequest tagGroupRequest,
             HttpServletRequest request);
 
     @Operation(description = "Delete a tag group", tags = "TagAPI")
@@ -86,6 +86,18 @@ public interface TagAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = GROUPS_PATH + "/{id}")
     ResponseEntity<Void> deleteTagGroup(@PathVariable(name = "id") long id, HttpServletRequest request);
+
+    @Operation(description = "Get tag groups by type", tags = "TagAPI")
+    @Parameter(name = "type", description = "Tag group type", example = "USER")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @GetMapping(path = GROUPS_PATH + "/type/{type}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<TagGroupResponse>> getTagGroupsByType(
+            @PathVariable(name = "type") TagGroupEnum type,
+            HttpServletRequest request);
 
     // ---- Tags ----
 
@@ -122,7 +134,6 @@ public interface TagAPI {
     ResponseEntity<TagResponse> createTag(@RequestBody TagRequest tag, HttpServletRequest request);
 
     @Operation(description = "Update an existing tag", tags = "TagAPI")
-    @Parameter(name = "id", description = "Tag ID", example = "1")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Updated tag", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Tag updated successfully"),
@@ -131,8 +142,8 @@ public interface TagAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @PutMapping(path = TAG_PATH + "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<TagResponse> updateTag(@PathVariable(name = "id") long id, @RequestBody TagRequest tag, HttpServletRequest request);
+    @PutMapping(path = TAG_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<TagResponse> updateTag(@RequestBody TagRequest tag, HttpServletRequest request);
 
     @Operation(description = "Delete a tag", tags = "TagAPI")
     @Parameter(name = "id", description = "Tag ID", example = "1")
@@ -144,4 +155,16 @@ public interface TagAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = TAG_PATH + "/{id}")
     ResponseEntity<Void> deleteTag(@PathVariable(name = "id") long id, HttpServletRequest request);
+
+    @Operation(description = "Get tags by group type", tags = "TagAPI")
+    @Parameter(name = "type", description = "Tag group type", example = "USER")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @GetMapping(path = TAG_PATH + "/group-type/{type}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<TagResponse>> getTagsByGroupType(
+            @PathVariable(name = "type") TagGroupEnum type,
+            HttpServletRequest request);
 }
