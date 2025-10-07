@@ -85,7 +85,7 @@ oxalate:
     jwt-secure: true
     jwt-same-site: Strict
   cors:
-    allowed-origins: ${oxalate.app.frontend-url} http://localhost:8081
+    allowed-origins: ${oxalate.app.frontend-url},http://localhost:8081
     cors-pattern: '/**'
     max-age: 3600
   captcha:
