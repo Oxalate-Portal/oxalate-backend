@@ -9,6 +9,7 @@ import static io.oxalate.backend.api.UserStatusEnum.REGISTERED;
 import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.model.Role;
+import io.oxalate.backend.model.Tag;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.MembershipRepository;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -96,7 +98,7 @@ public class UserService {
         return newUser;
     }
 
-    @Transactional()
+    @Transactional
     public User updateUser(User user) {
         roleRepository.removeUserRoles(user.getId());
 
@@ -111,6 +113,17 @@ public class UserService {
 
         var newUser = userRepository.save(user);
         populateUser(newUser);
+
+        // Initialize lazy associations needed by toAdminUserResponse()
+        Hibernate.initialize(newUser.getTags());
+        for (Tag tag : newUser.getTags()) {
+            Hibernate.initialize(tag.getTranslations());
+            Hibernate.initialize(tag.getTagGroup());
+            if (tag.getTagGroup() != null) {
+                Hibernate.initialize(tag.getTagGroup()
+                                        .getTranslations());
+            }
+        }
 
         return newUser;
     }
@@ -172,6 +185,7 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<User> findAllByRole(RoleEnum roleEnum) {
         var userList = new ArrayList<User>();
         var role = roleRepository.findByName(roleEnum);
@@ -185,6 +199,14 @@ public class UserService {
 
         for (User user : users) {
             populateUser(user);
+
+            // Initialize lazy associations needed by toEventUserResponse()
+            Hibernate.initialize(user.getTags());
+            for (Tag tag : user.getTags()) {
+                Hibernate.initialize(tag.getTranslations());
+                Hibernate.initialize(tag.getTagGroup());
+            }
+
             userList.add(user);
         }
 
@@ -197,7 +219,6 @@ public class UserService {
      * @param name The name(s) to search for
      * @return List of users matching the given name(s)
      */
-
     public List<User> findUsersByName(String name) {
         var userList = new ArrayList<User>();
 
