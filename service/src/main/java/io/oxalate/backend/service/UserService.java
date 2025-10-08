@@ -100,15 +100,17 @@ public class UserService {
 
     @Transactional
     public User updateUser(User user) {
-        roleRepository.removeUserRoles(user.getId());
+        if (user.getRoles() != null) {
+            roleRepository.removeUserRoles(user.getId());
 
-        for (Role role : user.getRoles()) {
-            // Get the role from the database
-            var optionalRole = roleRepository.findByName(role.getName());
-            if (optionalRole.isPresent()) {
-                role = optionalRole.get();
+            for (Role role : user.getRoles()) {
+                // Get the role from the database
+                var optionalRole = roleRepository.findByName(role.getName());
+                if (optionalRole.isPresent()) {
+                    role = optionalRole.get();
+                }
+                roleRepository.addUserRole(user.getId(), role.getId());
             }
-            roleRepository.addUserRole(user.getId(), role.getId());
         }
 
         var newUser = userRepository.save(user);
