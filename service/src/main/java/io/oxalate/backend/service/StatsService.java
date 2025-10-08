@@ -299,7 +299,7 @@ public class StatsService {
 
         for (Object[] o : results) {
             var eventId = (Long) o[0];
-            var eventDateTime = (Instant) o[1];
+            var eventDateTime = ((java.sql.Timestamp) o[1]).toInstant();
             var organizerName = (String) o[2];
             var eventCount = (Long) o[3];
             var diveCount = (Long) o[4];

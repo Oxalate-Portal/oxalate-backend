@@ -390,6 +390,167 @@ public class EventService {
         eventRepository.updateEventStatus(eventId, EventStatusEnum.CANCELLED);
     }
 
+    @Transactional
+    public EventResponse createEvent(EventRequest eventRequest, Long userId) {
+        if (!verifyEventRequest(eventRequest)) {
+            return null;
+        }
+
+        var event = Event.builder()
+                         .title(eventRequest.getTitle())
+                         .description(eventRequest.getDescription())
+                         .startTime(eventRequest.getStartTime())
+                         .eventDuration(eventRequest.getEventDuration())
+                         .maxDuration(eventRequest.getMaxDuration())
+                         .maxDepth(eventRequest.getMaxDepth())
+                         .maxParticipants(eventRequest.getMaxParticipants())
+                         .status(eventRequest.getStatus())
+                         .organizerId(userId)
+                         .type(eventRequest.getType())
+                         .build();
+
+        var newEvent = eventRepository.save(event);
+
+        // Add organizer as event participant with ORGANIZER type
+        var newOrganizer = userService.findUserEntityById(eventRequest.getOrganizerId());
+
+        eventRepository.addParticipantToEvent(userId, newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now(),
+                newOrganizer.getPrimaryUserType()
+                            .name());
+
+        // Add participants
+        if (eventRequest.getParticipants() != null) {
+            for (Long participantId : eventRequest.getParticipants()) {
+
+                // Since the new participant is added by the organizer/administrator, we use the default user type of the added diver
+                var newDiver = userService.findUserEntityById(participantId);
+
+                var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
+
+                if (optionalPaymentTypeEnum.isEmpty()) {
+                    log.error("Failed to get payment type for user {}, will not add user to event", participantId);
+                } else {
+                    var paymentTypeEnum = optionalPaymentTypeEnum.get();
+
+                    if (paymentTypeEnum.equals(ONE_TIME)) {
+                        paymentService.decreaseOneTimePayment(participantId);
+
+                    }
+
+                    eventRepository.addParticipantToEvent(participantId, newEvent.getId(), ParticipantTypeEnum.USER.name(),
+                            paymentTypeEnum.name(), Instant.now(), newDiver.getPrimaryUserType()
+                                                                           .name());
+                }
+            }
+        }
+
+        // Now we can create the event topic in comments
+        commentService.createEventTopicComment(newEvent.getId(), userId);
+        // Now we can get the repopulated response
+        var optionalEventResponse = getPopulatedEventResponse(newEvent);
+
+        if (optionalEventResponse.isEmpty()) {
+            log.error("Failed to populate the event ID {} response", newEvent.getId());
+            return null;
+        }
+
+        var eventResponse = optionalEventResponse.get();
+
+        log.debug("Created new event: title '{}', ID '{}'", eventResponse.getTitle(), eventResponse.getId());
+
+        // Send notification only if the event is in a published state
+        if (newEvent.getStatus()
+                    .equals(EventStatusEnum.PUBLISHED)) {
+            emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.NEW, eventResponse.getId());
+        }
+
+        return eventResponse;
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventListResponse> findEventsForUser(long userId) {
+        var events = findEventsForUserAsOrganizer(userId);
+        events.addAll(findEventsForUserAsParticipant(userId));
+
+        var eventSet = new HashSet<EventListResponse>();
+
+        for (Event event : events) {
+            var eventListResponse = getPopulatedEventListResponse(event);
+
+            if (eventListResponse.isPresent()) {
+                eventSet.add(eventListResponse.get());
+            } else {
+                log.error("Event {} can not be populated to a EventListResponse, the event may be in an incoherent state", event);
+            }
+        }
+
+        return eventSet.stream()
+                       .sorted(Comparator.comparing(EventListResponse::getStartTime))
+                       .toList();
+    }
+
+    /**
+     * This actually removes the member participation from all future events. The method is nonetheless called "anonymize" because it is used in anonymization
+     * process.
+     *
+     * @param userId The user ID to anonymize
+     */
+    @Transactional
+    public void anonymize(long userId) {
+        var events = eventRepository.findFutureEventsByUserId(userId);
+
+        if (events.isEmpty()) {
+            log.info("No events to anonymize for user {}", userId);
+            return;
+        }
+
+        for (Event event : events) {
+            eventRepository.removeParticipantFromEvent(userId, event.getId());
+        }
+    }
+
+    /**
+     * DO NOT USE THIS method! This save-method should _only_ be used by the test controller and is used as an alternative to createEvent.
+     */
+    @Transactional
+    public Event save(Event event) {
+        var newEvent = eventRepository.save(event);
+        eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(),
+                Instant.now(),
+                UserTypeEnum.SCUBA_DIVER.name());
+        return newEvent;
+    }
+
+    public EventDiveListResponse getEventDives(long eventId) {
+        var eventDives = eventParticipantsRepository.findEventDives(eventId);
+
+        var eventDiveListResponse = new EventDiveListResponse();
+        eventDiveListResponse.setDives(new HashSet<>());
+
+        for (EventsParticipant eventsParticipant : eventDives) {
+            var user = userService.findUserEntityById(eventsParticipant.getUserId());
+
+            if (user == null) {
+                log.error("User {} does not exist", eventsParticipant.getUserId());
+                return null;
+            }
+
+            var eventDiveResponse = eventsParticipant.toEventDiveResponse(user.getLastName() + " " + user.getFirstName());
+            eventDiveListResponse.getDives()
+                                 .add(eventDiveResponse);
+        }
+
+        return eventDiveListResponse;
+    }
+
+    private List<Event> findEventsForUserAsOrganizer(Long userId) {
+        return eventRepository.findByOrganizer(userId);
+    }
+
+    private List<Event> findEventsForUserAsParticipant(Long userId) {
+        return eventRepository.findByUserId(userId);
+    }
+
     private Optional<EventResponse> getRefreshedEventResponse(long eventId) {
         var event = eventRepository.findById(eventId)
                                    .orElse(null);
@@ -470,112 +631,6 @@ public class EventService {
         return Optional.of(eventListResponse);
     }
 
-    @Transactional
-    public EventResponse createEvent(EventRequest eventRequest, Long userId) {
-        if (!verifyEventRequest(eventRequest)) {
-            return null;
-        }
-
-        var event = Event.builder()
-                         .title(eventRequest.getTitle())
-                         .description(eventRequest.getDescription())
-                         .startTime(eventRequest.getStartTime())
-                         .eventDuration(eventRequest.getEventDuration())
-                         .maxDuration(eventRequest.getMaxDuration())
-                         .maxDepth(eventRequest.getMaxDepth())
-                         .maxParticipants(eventRequest.getMaxParticipants())
-                         .status(eventRequest.getStatus())
-                         .organizerId(userId)
-                         .type(eventRequest.getType())
-                         .build();
-
-        var newEvent = eventRepository.save(event);
-
-        // Add organizer as event participant with ORGANIZER type
-        var newOrganizer = userService.findUserEntityById(eventRequest.getOrganizerId());
-
-        eventRepository.addParticipantToEvent(userId, newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(), Instant.now(),
-                newOrganizer.getPrimaryUserType()
-                            .name());
-
-        // Add participants
-        if (eventRequest.getParticipants() != null) {
-            for (Long participantId : eventRequest.getParticipants()) {
-
-                // Since the new participant is added by the organizer/administrator, we use the default user type of the added diver
-                var newDiver = userService.findUserEntityById(participantId);
-
-                var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(participantId);
-
-                if (optionalPaymentTypeEnum.isEmpty()) {
-                    log.error("Failed to get payment type for user {}, will not add user to event", participantId);
-                } else {
-                    var paymentTypeEnum = optionalPaymentTypeEnum.get();
-
-                    if (paymentTypeEnum.equals(ONE_TIME)) {
-                        paymentService.decreaseOneTimePayment(participantId);
-
-                    }
-
-                    eventRepository.addParticipantToEvent(participantId, newEvent.getId(), ParticipantTypeEnum.USER.name(),
-                            paymentTypeEnum.name(), Instant.now(), newDiver.getPrimaryUserType()
-                                                                           .name());
-                }
-            }
-        }
-
-        // Now we can create the event topic in comments
-        commentService.createEventTopicComment(newEvent.getId(), userId);
-        // Now we can get the repopulated response
-        var optionalEventResponse = getPopulatedEventResponse(newEvent);
-
-        if (optionalEventResponse.isEmpty()) {
-            log.error("Failed to populate the event ID {} response", newEvent.getId());
-            return null;
-        }
-
-        var eventResponse = optionalEventResponse.get();
-
-        log.debug("Created new event: title '{}', ID '{}'", eventResponse.getTitle(), eventResponse.getId());
-
-        // Send notification only if the event is in a published state
-        if (newEvent.getStatus()
-                    .equals(EventStatusEnum.PUBLISHED)) {
-            emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.NEW, eventResponse.getId());
-        }
-
-        return eventResponse;
-    }
-
-    public List<Event> findEventsForUserAsParticipant(Long userId) {
-        return eventRepository.findByUserId(userId);
-    }
-
-    public List<Event> findEventsForUserAsOrganizer(Long userId) {
-        return eventRepository.findByOrganizer(userId);
-    }
-
-    public List<EventListResponse> findEventsForUser(long userId) {
-        var events = findEventsForUserAsOrganizer(userId);
-        events.addAll(findEventsForUserAsParticipant(userId));
-
-        var eventSet = new HashSet<EventListResponse>();
-
-        for (Event event : events) {
-            var eventListResponse = getPopulatedEventListResponse(event);
-
-            if (eventListResponse.isPresent()) {
-                eventSet.add(eventListResponse.get());
-            } else {
-                log.error("Event {} can not be populated to a EventListResponse, the event may be in an incoherent state", event);
-            }
-        }
-
-        return eventSet.stream()
-                       .sorted(Comparator.comparing(EventListResponse::getStartTime))
-                       .toList();
-    }
-
     private boolean verifyEventRequest(EventRequest eventRequest) {
         var result = true;
 
@@ -625,59 +680,5 @@ public class EventService {
         }
 
         return result;
-    }
-
-    /**
-     * This actually removes the member participation from all future events. The method is nonetheless called "anonymize" because it is used in anonymization
-     * process.
-     *
-     * @param userId The user ID to anonymize
-     */
-    @Transactional
-    public void anonymize(long userId) {
-        var events = eventRepository.findFutureEventsByUserId(userId);
-
-        if (events.isEmpty()) {
-            log.info("No events to anonymize for user {}", userId);
-            return;
-        }
-
-        for (Event event : events) {
-            eventRepository.removeParticipantFromEvent(userId, event.getId());
-        }
-    }
-
-    /**
-     * DO NOT USE THIS method! This save-method should _only_ be used by the test controller and is used as an alternative to createEvent.
-     */
-    @Transactional
-    public Event save(Event event) {
-        var newEvent = eventRepository.save(event);
-        eventRepository.addParticipantToEvent(newEvent.getOrganizerId(), newEvent.getId(), ParticipantTypeEnum.ORGANIZER.name(), PaymentTypeEnum.NONE.name(),
-                Instant.now(),
-                UserTypeEnum.SCUBA_DIVER.name());
-        return newEvent;
-    }
-
-    public EventDiveListResponse getEventDives(long eventId) {
-        var eventDives = eventParticipantsRepository.findEventDives(eventId);
-
-        var eventDiveListResponse = new EventDiveListResponse();
-        eventDiveListResponse.setDives(new HashSet<>());
-
-        for (EventsParticipant eventsParticipant : eventDives) {
-            var user = userService.findUserEntityById(eventsParticipant.getUserId());
-
-            if (user == null) {
-                log.error("User {} does not exist", eventsParticipant.getUserId());
-                return null;
-            }
-
-            var eventDiveResponse = eventsParticipant.toEventDiveResponse(user.getLastName() + " " + user.getFirstName());
-            eventDiveListResponse.getDives()
-                                 .add(eventDiveResponse);
-        }
-
-        return eventDiveListResponse;
     }
 }
