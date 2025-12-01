@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.7</version> <!-- Keep this in sync with spring.boot.version -->
+        <version>4.0.0</version> <!-- Keep this in sync with spring.boot.version -->
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -17,10 +17,10 @@
 
     <properties>
         <java.version>25</java.version>
-        <spring.boot.version>3.5.7</spring.boot.version> <!-- Keep this in sync with the parent version -->
-        <flyway.version>11.17.0</flyway.version>
+        <spring.boot.version>4.0.0</spring.boot.version> <!-- Keep this in sync with the parent version -->
+        <flyway.version>11.18.0</flyway.version>
         <jjwt.version>0.13.0</jjwt.version>
-        <swagger.version>2.2.40</swagger.version>
+        <swagger.version>2.2.41</swagger.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <apache-maven.version>3.5.4</apache-maven.version>
         <jboss-logging.component.version>3.0.4.Final</jboss-logging.component.version>
