@@ -4,7 +4,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import io.oxalate.backend.api.UploadDirectoryConstants;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
-import io.oxalate.backend.api.response.FileRemovalResponse;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.CertificateFileResponse;
 import io.oxalate.backend.model.filetransfer.CertificateFile;
@@ -228,7 +228,7 @@ public class CertificateFileTransferService {
      */
 
     @Transactional
-    public FileRemovalResponse removeCertificateFile(long certificateId, long userId) {
+    public ActionResponse removeCertificateFile(long certificateId, long userId) {
         // Fetch the certificate document
 
         var optionalCertificateDocument = certificateDocumentRepository.findByCertificateId(certificateId);
@@ -263,7 +263,7 @@ public class CertificateFileTransferService {
         // Delete the certificate document from the database
         certificateDocumentRepository.delete(certificateDocument);
 
-        return FileRemovalResponse.builder()
+        return ActionResponse.builder()
                                   .status(OK)
                                   .message("Certificate file removed")
                                   .build();

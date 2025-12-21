@@ -2,7 +2,7 @@ package io.oxalate.backend.service.filetransfer;
 
 import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
-import io.oxalate.backend.api.response.FileRemovalResponse;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.AvatarFileResponse;
 import io.oxalate.backend.model.filetransfer.AvatarFile;
@@ -159,7 +159,7 @@ public class AvatarFileTransferService {
      */
 
     @Transactional
-    public FileRemovalResponse removeAvatarFile(long avatarId, long userId) {
+    public ActionResponse removeAvatarFile(long avatarId, long userId) {
         // Only the user who owns the avatar file can remove it
         var avatarFile = avatarFileRepository.findById(avatarId)
                                              .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Avatar file not found"));
@@ -179,7 +179,7 @@ public class AvatarFileTransferService {
         removeFile(file.toPath(), "Avatar file");
         avatarFileRepository.delete(avatarFile);
 
-        return FileRemovalResponse.builder()
+        return ActionResponse.builder()
                                   .status(OK)
                                   .message("Avatar file removed")
                                   .build();

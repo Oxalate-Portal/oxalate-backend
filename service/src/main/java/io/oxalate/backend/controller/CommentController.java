@@ -3,9 +3,9 @@ package io.oxalate.backend.controller;
 import io.oxalate.backend.api.request.commenting.CommentFilterRequest;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.request.commenting.ReportRequest;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
-import io.oxalate.backend.api.response.commenting.ReportResponse;
 import io.oxalate.backend.rest.CommentAPI;
 import io.oxalate.backend.service.commenting.CommentService;
 import io.oxalate.backend.tools.AuthTools;
@@ -88,7 +88,7 @@ public class CommentController implements CommentAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<ReportResponse> report(ReportRequest reportRequest, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> report(ReportRequest reportRequest, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var reportResponse = commentService.reportComment(reportRequest, userId);
         return ResponseEntity.ok(reportResponse);
@@ -96,7 +96,7 @@ public class CommentController implements CommentAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<ReportResponse> cancelReport(long commentId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> cancelReport(long commentId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         var reportResponse = commentService.cancelReport(commentId, userId);
         return ResponseEntity.ok(reportResponse);
@@ -111,28 +111,28 @@ public class CommentController implements CommentAPI {
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ReportResponse> rejectComment(long commentId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> rejectComment(long commentId, HttpServletRequest request) {
         var reportResponse = commentService.rejectComment(commentId);
         return ResponseEntity.ok(reportResponse);
     }
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ReportResponse> rejectReports(long commentId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> rejectReports(long commentId, HttpServletRequest request) {
         var reportResponse = commentService.rejectReports(commentId);
         return ResponseEntity.ok(reportResponse);
     }
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ReportResponse> acceptReport(long reportId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> acceptReport(long reportId, HttpServletRequest request) {
         var reportResponse = commentService.acceptReport(reportId);
         return ResponseEntity.ok(reportResponse);
     }
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ReportResponse> dismissReport(long reportId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> dismissReport(long reportId, HttpServletRequest request) {
         var reportResponse = commentService.dismissReport(reportId);
         return ResponseEntity.ok(reportResponse);
     }
