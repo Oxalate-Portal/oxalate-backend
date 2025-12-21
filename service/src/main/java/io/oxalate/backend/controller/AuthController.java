@@ -11,7 +11,7 @@ import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.request.TokenRequest;
 import io.oxalate.backend.api.request.UserResetPasswordRequest;
 import io.oxalate.backend.api.request.UserUpdatePasswordRequest;
-import io.oxalate.backend.api.response.ConfirmationResponse;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.RegistrationResponse;
 import io.oxalate.backend.api.response.UserUpdateStatus;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_OK;
@@ -159,23 +159,23 @@ public class AuthController implements AuthAPI {
     }
 
     @Override
-    public ResponseEntity<ConfirmationResponse> resendConfirmationEmail(TokenRequest tokenRequest, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> resendConfirmationEmail(TokenRequest tokenRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(AUTH_RESEND_EMAIL_START, INFO, request, AUDIT_NAME, null);
-        var confirmationResponse = authService.resendConfirmationEmail(tokenRequest, request, auditUuid);
+        var actionResponse = authService.resendConfirmationEmail(tokenRequest, request, auditUuid);
         appEventPublisher.publishAuditEvent(AUTH_RESEND_EMAIL_OK, INFO, request, AUDIT_NAME, -1L, auditUuid);
 
-        if (confirmationResponse.getUpdateStatus()
-                                .equals(UpdateStatusEnum.OK)) {
+        if (actionResponse.getStatus()
+                          .equals(UpdateStatusEnum.OK)) {
             return ResponseEntity.status(HttpStatus.OK)
-                                 .body(confirmationResponse);
+                                 .body(actionResponse);
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                             .body(confirmationResponse);
+                             .body(actionResponse);
     }
 
     // We always return OK to avoid user enumeration
     @Override
-    public ResponseEntity<ConfirmationResponse> lostPassword(EmailRequest emailRequest, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> lostPassword(EmailRequest emailRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(AUTH_LOST_PASSWORD_START + emailRequest.getEmail(), INFO, request, AUDIT_NAME, null);
         var response = authService.lostPassword(emailRequest, request, auditUuid);
 
@@ -184,11 +184,11 @@ public class AuthController implements AuthAPI {
     }
 
     @Override
-    public ResponseEntity<ConfirmationResponse> resetPassword(UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> resetPassword(UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_START, INFO, request, AUDIT_NAME, null);
         var response = authService.resetPassword(userResetPasswordRequest, request, auditUuid);
 
-        if (response.getUpdateStatus() == UpdateStatusEnum.OK) {
+        if (response.getStatus() == UpdateStatusEnum.OK) {
             return ResponseEntity.status(HttpStatus.OK)
                                  .body(response);
         } else {

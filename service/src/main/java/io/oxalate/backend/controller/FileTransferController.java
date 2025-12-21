@@ -4,7 +4,7 @@ import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
-import io.oxalate.backend.api.response.FileRemovalResponse;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.UploadErrorResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.AvatarFileResponse;
@@ -150,12 +150,12 @@ public class FileTransferController implements FileTransferAPI {
 
     @PreAuthorize("hasRole('USER')")
     @Override
-    public ResponseEntity<FileRemovalResponse> removeAvatarFile(long avatarId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> removeAvatarFile(long avatarId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         log.debug("Removing avatar file: {} by user: {}", avatarId, userId);
         var auditUuid = appEventPublisher.publishAuditEvent(FILE_AVATAR_REMOVE_START, INFO, request, AUDIT_NAME, userId);
 
-        FileRemovalResponse response;
+        ActionResponse response;
 
         try {
             response = avatarFileTransferService.removeAvatarFile(avatarId, userId);
@@ -242,12 +242,12 @@ public class FileTransferController implements FileTransferAPI {
 
     @PreAuthorize("hasAnyRole('USER')")
     @Override
-    public ResponseEntity<FileRemovalResponse> removeCertificateFile(long certificateId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> removeCertificateFile(long certificateId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         log.debug("Removing certificate file: {}", certificateId);
         var auditUuid = appEventPublisher.publishAuditEvent(FILE_CERTIFICATE_REMOVE_START, INFO, request, AUDIT_NAME, userId);
 
-        FileRemovalResponse response;
+        ActionResponse response;
 
         try {
             response = certificateFileTransferService.removeCertificateFile(certificateId, userId);
@@ -314,7 +314,7 @@ public class FileTransferController implements FileTransferAPI {
 
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Override
-    public ResponseEntity<FileRemovalResponse> removeDiveFile(long diveFileId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> removeDiveFile(long diveFileId, HttpServletRequest request) {
         return null;
     }
 
@@ -373,12 +373,12 @@ public class FileTransferController implements FileTransferAPI {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Override
-    public ResponseEntity<FileRemovalResponse> removeDocumentFile(long documentId, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> removeDocumentFile(long documentId, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         log.debug("Removing document file: {} by user: {}", documentId, userId);
         var auditUuid = appEventPublisher.publishAuditEvent(FILE_DOCUMENT_REMOVE_START, INFO, request, AUDIT_NAME, userId);
 
-        FileRemovalResponse response;
+        ActionResponse response;
 
         try {
             response = documentFileTransferService.removeDocumentFile(documentId, userId);
@@ -452,12 +452,12 @@ public class FileTransferController implements FileTransferAPI {
 
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @Override
-    public ResponseEntity<FileRemovalResponse> removePageFile(long pageId, String language, String fileName, HttpServletRequest request) {
+    public ResponseEntity<ActionResponse> removePageFile(long pageId, String language, String fileName, HttpServletRequest request) {
         var userId = AuthTools.getCurrentUserId();
         log.debug("Removing page file: {} language: {} filename: {} by user: {}", pageId, language, fileName, userId);
         var auditUuid = appEventPublisher.publishAuditEvent(FILE_PAGE_FILE_REMOVE_START, INFO, request, AUDIT_NAME, userId);
 
-        FileRemovalResponse response;
+        ActionResponse response;
 
         try {
             response = pageFileTransferService.removePageFile(pageId, language, fileName);

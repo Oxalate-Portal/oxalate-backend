@@ -14,7 +14,7 @@ import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.request.TokenRequest;
 import io.oxalate.backend.api.request.UserResetPasswordRequest;
 import io.oxalate.backend.api.request.UserUpdatePasswordRequest;
-import io.oxalate.backend.api.response.ConfirmationResponse;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.RegistrationResponse;
 import io.oxalate.backend.api.response.UserSessionToken;
@@ -251,16 +251,16 @@ public class AuthService {
                                .build();
     }
 
-    public ConfirmationResponse resendConfirmationEmail(TokenRequest tokenRequest, HttpServletRequest request, UUID auditUuid) {
+    public ActionResponse resendConfirmationEmail(TokenRequest tokenRequest, HttpServletRequest request, UUID auditUuid) {
         var resendToken = registrationService.getValidToken(tokenRequest.getToken(), EMAIL_RESEND);
 
         if (resendToken == null) {
             log.warn("User attempted to resend confirmation email with invalid token: {}", tokenRequest.getToken());
             appEventPublisher.publishAuditEvent(AUTH_RESEND_EMAIL_INVALID_TOKEN, WARN, request, AUDIT_NAME, null, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .message("Invalid token")
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .build();
+            return ActionResponse.builder()
+                                 .message("Invalid token")
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .build();
         }
 
         var user = userService.findUserEntityById(resendToken.getUserId());
@@ -269,10 +269,10 @@ public class AuthService {
             log.error("Could not find user with token: {}", resendToken);
             registrationService.removeTokenByUserId(resendToken.getUserId());
             appEventPublisher.publishAuditEvent(AUTH_RESEND_EMAIL_INVALID_USER, WARN, request, AUDIT_NAME, null, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .message("Invalid token")
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .build();
+            return ActionResponse.builder()
+                                 .message("Invalid token")
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .build();
         }
 
         var registrationToken = registrationService.findByUserIdAndTokenType(resendToken.getUserId(), REGISTRATION);
@@ -281,10 +281,10 @@ public class AuthService {
             log.warn("Could not find registration token with token: {}", tokenRequest.getToken());
             registrationService.removeTokenByUserId(resendToken.getUserId());
             appEventPublisher.publishAuditEvent(AUTH_RESEND_EMAIL_EXPIRED_TOKEN, WARN, request, AUDIT_NAME, null, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .message("Invalid token")
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .build();
+            return ActionResponse.builder()
+                                 .message("Invalid token")
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .build();
         }
 
         if (!user.getStatus()
@@ -292,32 +292,31 @@ public class AuthService {
             log.warn("User attempted to resend confirmation email but the user status is not REGISTERED: {}", user.getStatus());
             registrationService.removeToken(registrationToken.getToken());
             appEventPublisher.publishAuditEvent(AUTH_RESEND_EMAIL_USED_TOKEN, WARN, request, AUDIT_NAME, user.getId(), auditUuid);
-            return ConfirmationResponse.builder()
-                                       .message("Invalid token")
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .build();
+            return ActionResponse.builder()
+                                 .message("Invalid token")
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .build();
         }
 
         registrationService.increaseTokenCounter(resendToken);
         registrationService.increaseTokenCounter(registrationToken);
         emailService.sendConfirmationEmail(user, registrationToken.getToken());
-        return ConfirmationResponse.builder()
-                                   .message("Confirmation email sent successfully")
-                                   .updateStatus(UpdateStatusEnum.OK)
-                                   .build();
+        return ActionResponse.builder()
+                             .message("Confirmation email sent successfully")
+                             .status(UpdateStatusEnum.OK)
+                             .build();
     }
 
-    public ConfirmationResponse lostPassword(EmailRequest emailRequest, HttpServletRequest request, UUID auditUuid) {
+    public ActionResponse lostPassword(EmailRequest emailRequest, HttpServletRequest request, UUID auditUuid) {
 
-        if (emailRequest.getEmail() == null
-                || emailRequest.getEmail()
-                               .trim()
-                               .isEmpty()) {
+        if (emailRequest.getEmail() == null || emailRequest.getEmail()
+                                                           .trim()
+                                                           .isEmpty()) {
             log.warn("User attempted to reset password with empty email");
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.OK)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.OK)
+                                 .message("")
+                                 .build();
         }
 
         var email = emailRequest.getEmail();
@@ -326,10 +325,10 @@ public class AuthService {
         if (optionalUser.isEmpty()) {
             log.warn("User attempted to reset password with invalid email: {}", email);
             // Despite not finding the user, we return OK to avoid user enumeration
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.OK)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.OK)
+                                 .message("")
+                                 .build();
         }
 
         var user = optionalUser.get();
@@ -341,40 +340,40 @@ public class AuthService {
             appEventPublisher.publishAuditEvent(AUTH_LOST_PASSWORD_INACTIVE_STATUS + emailRequest.getEmail(), WARN, request, AUDIT_NAME, user.getId(),
                     auditUuid);
             // Despite not finding the user, we return OK to avoid user enumeration
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.OK)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.OK)
+                                 .message("")
+                                 .build();
         }
 
         var token = registrationService.generateToken(user.getId(), PASSWORD_RESET);
 
         if (emailService.sendForgottenPassword(user, token)) {
             appEventPublisher.publishAuditEvent(AUTH_LOST_PASSWORD_OK + emailRequest.getEmail(), INFO, request, AUDIT_NAME, user.getId(), auditUuid);
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.OK)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.OK)
+                                 .message("")
+                                 .build();
         }
 
         appEventPublisher.publishAuditEvent(AUTH_LOST_PASSWORD_FAIL + emailRequest.getEmail(), ERROR, request, AUDIT_NAME, user.getId(), auditUuid);
         log.warn("Email sending failed with email: {}", email);
 
-        return ConfirmationResponse.builder()
-                                   .updateStatus(UpdateStatusEnum.OK)
-                                   .message("")
-                                   .build();
+        return ActionResponse.builder()
+                             .status(UpdateStatusEnum.OK)
+                             .message("")
+                             .build();
     }
 
-    public ConfirmationResponse resetPassword(UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request, UUID auditUuid) {
+    public ActionResponse resetPassword(UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request, UUID auditUuid) {
         var token = registrationService.findByTokenAndTokenType(userResetPasswordRequest.getToken(), PASSWORD_RESET);
 
         if (token == null) {
             appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_INVALID_TOKEN, WARN, request, AUDIT_NAME, null, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .message("")
+                                 .build();
         }
 
         var userId = token.getUserId();
@@ -383,26 +382,26 @@ public class AuthService {
                  .isBefore(Instant.now())) {
             registrationService.removeToken(token.getToken());
             appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_EXPIRED_TOKEN, WARN, request, AUDIT_NAME, userId, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .message("")
+                                 .build();
         }
 
         if (passwordCheckFails(userResetPasswordRequest.getNewPassword())) {
             appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_FAIL_REQUIREMENTS, ERROR, request, AUDIT_NAME, userId, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .message("")
+                                 .build();
         }
 
         if (!Objects.equals(userResetPasswordRequest.getNewPassword(), userResetPasswordRequest.getConfirmPassword())) {
             appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_MISMATCH, ERROR, request, AUDIT_NAME, userId, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .message("")
+                                 .build();
         }
 
         var user = userService.findUserEntityById(userId);
@@ -410,19 +409,18 @@ public class AuthService {
         if (user == null) {
             log.warn("User ID {} found in token table does not exist in main users table", userId);
             appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_INVALID_USER, ERROR, request, AUDIT_NAME, userId, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .message("")
+                                 .build();
         }
 
         if (user.getStatus() != ACTIVE) {
-            appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_INACTIVE_STATUS + user.getStatus(), ERROR, request, AUDIT_NAME,
-                    userId, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .message("")
-                                       .build();
+            appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_INACTIVE_STATUS + user.getStatus(), ERROR, request, AUDIT_NAME, userId, auditUuid);
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .message("")
+                                 .build();
         }
 
         var newPasswordHash = generatePasswordHash(userResetPasswordRequest.getNewPassword());
@@ -433,17 +431,17 @@ public class AuthService {
         if (newUser == null) {
             log.error("User password update for user ID {} failed for unknown reason", userId);
             appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_UNKNOWN_ERROR, ERROR, request, AUDIT_NAME, userId, auditUuid);
-            return ConfirmationResponse.builder()
-                                       .updateStatus(UpdateStatusEnum.FAIL)
-                                       .message("")
-                                       .build();
+            return ActionResponse.builder()
+                                 .status(UpdateStatusEnum.FAIL)
+                                 .message("")
+                                 .build();
         }
 
         appEventPublisher.publishAuditEvent(AUTH_RESET_PASSWORD_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
-        return ConfirmationResponse.builder()
-                                   .updateStatus(UpdateStatusEnum.OK)
-                                   .message("")
-                                   .build();
+        return ActionResponse.builder()
+                             .status(UpdateStatusEnum.OK)
+                             .message("")
+                             .build();
     }
 
     public String generatePasswordHash(String password) {
@@ -461,20 +459,18 @@ public class AuthService {
             return true;
         }
 
-        return !password.matches(".*[A-Z].*") ||
-                !password.matches(".*[a-z].*") ||
-                !password.matches(".*[0-9].*") ||
-                !password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*");
+        return !password.matches(".*[A-Z].*") || !password.matches(".*[a-z].*") || !password.matches(".*[0-9].*") || !password.matches(
+                ".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*");
     }
 
     public RegistrationResponse registerUser(SignupRequest signupRequest, HttpServletRequest request, UUID auditUuid) {
         if (!userService.isUsernameValid(signupRequest.getUsername())) {
             log.info("User {} attempted to register but the username is invalid.", signupRequest.getUsername());
-            appEventPublisher.publishAuditEvent(AUTH_REGISTRATION_TAKEN + signupRequest.getUsername(), WARN, request, AUDIT_NAME, -1L,
-                    auditUuid);
+            appEventPublisher.publishAuditEvent(AUTH_REGISTRATION_TAKEN + signupRequest.getUsername(), WARN, request, AUDIT_NAME, -1L, auditUuid);
 
             return RegistrationResponse.builder()
                                        .status(UpdateStatusEnum.FAIL)
+                                       .message("Username is invalid or already taken")
                                        .token("")
                                        .build();
         }
@@ -486,6 +482,7 @@ public class AuthService {
             log.info("User {} attempted to register but the registration failed.", signupRequest.getUsername());
             return RegistrationResponse.builder()
                                        .status(UpdateStatusEnum.FAIL)
+                                       .message("Registration failed")
                                        .token("")
                                        .build();
         }
@@ -495,8 +492,7 @@ public class AuthService {
 
         var resendToken = registrationService.generateToken(user.getId(), EMAIL_RESEND);
 
-        appEventPublisher.publishAuditEvent(AUTH_REGISTRATION_OK + signupRequest.getUsername(), INFO, request, AUDIT_NAME, user.getId(),
-                auditUuid);
+        appEventPublisher.publishAuditEvent(AUTH_REGISTRATION_OK + signupRequest.getUsername(), INFO, request, AUDIT_NAME, user.getId(), auditUuid);
 
         return RegistrationResponse.builder()
                                    .status(UpdateStatusEnum.OK)
@@ -518,10 +514,9 @@ public class AuthService {
         registrationService.removeTokenByUserId(registrationToken.getUserId());
         appEventPublisher.publishAuditEvent(AUTH_REGISTRATION_VERIFY_OK, INFO, request, AUDIT_NAME, registrationToken.getUserId(), auditUuid);
 
-
         return UriComponentsBuilder.fromUriString(registrationUrl)
-                                      .query("status={returnStatus}")
-                                      .buildAndExpand(returnStatus)
-                                      .toUri();
+                                   .query("status={returnStatus}")
+                                   .buildAndExpand(returnStatus)
+                                   .toUri();
     }
 }

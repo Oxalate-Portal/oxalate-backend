@@ -5,7 +5,7 @@ import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import static io.oxalate.backend.api.UploadDirectoryConstants.PAGE_FILES;
 import io.oxalate.backend.api.UploadStatusEnum;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
-import io.oxalate.backend.api.response.FileRemovalResponse;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.PageFileResponse;
 import io.oxalate.backend.model.filetransfer.PageFile;
@@ -174,7 +174,7 @@ public class PageFileTransferService {
         }
     }
 
-    public FileRemovalResponse removePageFile(long pageId, String language, String fileName) {
+    public ActionResponse removePageFile(long pageId, String language, String fileName) {
         // First make sure the file exists
         var pageFile = getExistingPageFile(pageId, language, fileName);
         // Then delete the file from the file system
@@ -189,7 +189,7 @@ public class PageFileTransferService {
         removeFile(filePath, "Page file");
         pageFileRepository.delete(pageFile);
 
-        return FileRemovalResponse.builder()
+        return ActionResponse.builder()
                                   .status(OK)
                                   .message("Page file removed")
                                   .build();

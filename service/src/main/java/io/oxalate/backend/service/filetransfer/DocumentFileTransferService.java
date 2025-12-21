@@ -5,7 +5,7 @@ import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import static io.oxalate.backend.api.UploadDirectoryConstants.DOCUMENTS;
 import io.oxalate.backend.api.UploadStatusEnum;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
-import io.oxalate.backend.api.response.FileRemovalResponse;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.DocumentFileResponse;
 import io.oxalate.backend.model.User;
@@ -151,7 +151,7 @@ public class DocumentFileTransferService {
     }
 
     @Transactional
-    public FileRemovalResponse removeDocumentFile(long documentId, long userId) {
+    public ActionResponse removeDocumentFile(long documentId, long userId) {
         // Make sure the user ID exists and has ADMIN role
 
         if (!roleService.userHasRole(userId, RoleEnum.ROLE_ADMIN)) {
@@ -168,7 +168,7 @@ public class DocumentFileTransferService {
         // Remove the document file from the database
         documentFileRepository.delete(documentFile);
 
-        return FileRemovalResponse.builder()
+        return ActionResponse.builder()
                                   .status(OK)
                                   .message("Document file removed")
                                   .build();

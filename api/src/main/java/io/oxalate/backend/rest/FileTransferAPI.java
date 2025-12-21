@@ -7,7 +7,7 @@ import static io.oxalate.backend.api.UploadDirectoryConstants.DIVE_FILES;
 import static io.oxalate.backend.api.UploadDirectoryConstants.DOCUMENTS;
 import static io.oxalate.backend.api.UploadDirectoryConstants.PAGE_FILES;
 import static io.oxalate.backend.api.UrlConstants.API;
-import io.oxalate.backend.api.response.FileRemovalResponse;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.filetransfer.AvatarFileResponse;
 import io.oxalate.backend.api.response.filetransfer.CertificateFileResponse;
 import io.oxalate.backend.api.response.filetransfer.DiveFileResponse;
@@ -79,7 +79,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + AVATARS + "/{avatarId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<FileRemovalResponse> removeAvatarFile(@PathVariable("avatarId") long avatarId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> removeAvatarFile(@PathVariable("avatarId") long avatarId, HttpServletRequest request);
 
     /* ==== Certificate ==== */
     /* Find all */
@@ -130,7 +130,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + CERTIFICATES + "/{certificateId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<FileRemovalResponse> removeCertificateFile(@PathVariable("certificateId") long certificateId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> removeCertificateFile(@PathVariable("certificateId") long certificateId, HttpServletRequest request);
 
     /* ==== Dive files ==== */
     /* Find all */
@@ -182,7 +182,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + DIVE_FILES + "/{diveFileId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<FileRemovalResponse> removeDiveFile(@PathVariable("diveFileId") long diveFileId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> removeDiveFile(@PathVariable("diveFileId") long diveFileId, HttpServletRequest request);
 
     /* ==== Document ==== */
     /* Find all */
@@ -228,7 +228,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + DOCUMENTS + "/{documentId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<FileRemovalResponse> removeDocumentFile(@PathVariable("documentId") long documentId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> removeDocumentFile(@PathVariable("documentId") long documentId, HttpServletRequest request);
 
     /* ==== Page ==== */
     /* Find all */
@@ -284,7 +284,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + PAGE_FILES + "/{pageId}/{language}/{fileName}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<FileRemovalResponse> removePageFile(@PathVariable("pageId") long pageId,
+    ResponseEntity<ActionResponse> removePageFile(@PathVariable("pageId") long pageId,
             @PathVariable("language") String language,
             @PathVariable("fileName") String fileName, HttpServletRequest request);
 }

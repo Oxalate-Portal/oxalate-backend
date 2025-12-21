@@ -22,10 +22,10 @@ import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import io.oxalate.backend.api.request.commenting.CommentFilterRequest;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.request.commenting.ReportRequest;
+import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.commenting.CommentModerationResponse;
 import io.oxalate.backend.api.response.commenting.CommentReportResponse;
 import io.oxalate.backend.api.response.commenting.CommentResponse;
-import io.oxalate.backend.api.response.commenting.ReportResponse;
 import io.oxalate.backend.model.commenting.Comment;
 import io.oxalate.backend.model.commenting.CommentReport;
 import io.oxalate.backend.model.commenting.EventComment;
@@ -271,14 +271,13 @@ public class CommentService {
     }
 
     @Transactional
-    public ReportResponse reportComment(ReportRequest reportRequest, long userId) {
+    public ActionResponse reportComment(ReportRequest reportRequest, long userId) {
         // Check first if the user has already reported the comment
         if (hasUserReportedComment(userId, reportRequest.getCommentId())) {
             log.error("User with ID: {} has already reported comment with ID: {}", userId, reportRequest.getCommentId());
-            return ReportResponse.builder()
+            return ActionResponse.builder()
                                  .status(UpdateStatusEnum.FAIL)
-                                 .errorMessage("User has already reported this comment")
-                                 .errorCode(400L)
+                                 .message("User has already reported this comment")
                                  .build();
         }
 
@@ -288,10 +287,9 @@ public class CommentService {
 
         if (reportedComment.getCommentType() != USER_COMMENT) {
             log.error("Comment with ID: {} is not a user comment", reportRequest.getCommentId());
-            return ReportResponse.builder()
+            return ActionResponse.builder()
                                  .status(UpdateStatusEnum.FAIL)
-                                 .errorMessage("Comment is not a user comment")
-                                 .errorCode(400L)
+                                 .message("Comment is not a user comment")
                                  .build();
         }
 
@@ -303,7 +301,7 @@ public class CommentService {
                                          .createdAt(Instant.now())
                                          .build();
 
-        var reportResponse = ReportResponse.builder()
+        var reportResponse = ActionResponse.builder()
                                            .status(UpdateStatusEnum.OK)
                                            .build();
 
@@ -311,8 +309,7 @@ public class CommentService {
 
         if (newReport.getId() == null) {
             reportResponse.setStatus(UpdateStatusEnum.FAIL);
-            reportResponse.setErrorMessage("Saving report failed");
-            reportResponse.setErrorCode(500L);
+            reportResponse.setMessage("Saving report failed");
         }
 
         // Check how many reports the comment already has
@@ -328,20 +325,19 @@ public class CommentService {
     }
 
     @Transactional
-    public ReportResponse cancelReport(long commentId, long userId) {
+    public ActionResponse cancelReport(long commentId, long userId) {
         if (!hasUserReportedComment(userId, commentId)) {
             log.error("User with ID: {} has not reported comment with ID: {}", userId, commentId);
-            return ReportResponse.builder()
+            return ActionResponse.builder()
                                  .status(UpdateStatusEnum.FAIL)
-                                 .errorMessage("User has not reported this comment")
-                                 .errorCode(400L)
+                                 .message("User has not reported this comment")
                                  .build();
         }
 
         var commentReport = commentReportRepository.findByUserIdAndCommentId(userId, commentId);
         commentReport.setStatus(ReportStatusEnum.CANCELLED);
 
-        return ReportResponse.builder()
+        return ActionResponse.builder()
                              .status(UpdateStatusEnum.OK)
                              .build();
     }
@@ -375,7 +371,7 @@ public class CommentService {
                         throw new EntityNotFoundException("Reporter not found");
                     }
 
-                    var commentReportResponse = CommentReportResponse.builder()
+                    var commentActionResponse = CommentReportResponse.builder()
                                                                      .id(report.getId())
                                                                      .reporterId(reporter.getId())
                                                                      .reporter(reporter.getLastName() + " " + reporter.getFirstName())
@@ -383,7 +379,7 @@ public class CommentService {
                                                                      .status(report.getStatus())
                                                                      .reason(report.getReason())
                                                                      .build();
-                    reportResponses.add(commentReportResponse);
+                    reportResponses.add(commentActionResponse);
                 }
 
                 commentModerationResponse.setReports(reportResponses);
@@ -397,23 +393,23 @@ public class CommentService {
     }
 
     @Transactional
-    public ReportResponse rejectComment(long commentId) {
+    public ActionResponse rejectComment(long commentId) {
         rejectRecursivelyComment(commentId);
         return setStatusOfAllCommentReports(commentId, ReportStatusEnum.APPROVED);
     }
 
     @Transactional
-    public ReportResponse rejectReports(long commentId) {
+    public ActionResponse rejectReports(long commentId) {
         return setStatusOfAllCommentReports(commentId, ReportStatusEnum.REJECTED);
     }
 
     @Transactional
-    public ReportResponse acceptReport(long reportId) {
+    public ActionResponse acceptReport(long reportId) {
         return updateCommentReportStatus(reportId, ReportStatusEnum.APPROVED);
     }
 
     @Transactional
-    public ReportResponse dismissReport(long reportId) {
+    public ActionResponse dismissReport(long reportId) {
         return updateCommentReportStatus(reportId, ReportStatusEnum.REJECTED);
     }
 
@@ -558,7 +554,7 @@ public class CommentService {
     }
     // End specification methods
 
-    private ReportResponse setStatusOfAllCommentReports(long commentId, ReportStatusEnum rejected) {
+    private ActionResponse setStatusOfAllCommentReports(long commentId, ReportStatusEnum rejected) {
         var commentReports = commentReportRepository.findAllByCommentId(commentId);
 
         for (var report : commentReports) {
@@ -566,12 +562,12 @@ public class CommentService {
             commentReportRepository.save(report);
         }
 
-        return ReportResponse.builder()
+        return ActionResponse.builder()
                              .status(UpdateStatusEnum.OK)
                              .build();
     }
 
-    private ReportResponse updateCommentReportStatus(long reportId, ReportStatusEnum reportStatusEnum) {
+    private ActionResponse updateCommentReportStatus(long reportId, ReportStatusEnum reportStatusEnum) {
         var commentReport = commentReportRepository.findById(reportId)
                                                    .orElseThrow(() -> new EntityNotFoundException("Report not found"));
 
@@ -589,7 +585,7 @@ public class CommentService {
         commentReport.setStatus(reportStatusEnum);
         commentReportRepository.save(commentReport);
 
-        return ReportResponse.builder()
+        return ActionResponse.builder()
                              .status(UpdateStatusEnum.OK)
                              .build();
     }

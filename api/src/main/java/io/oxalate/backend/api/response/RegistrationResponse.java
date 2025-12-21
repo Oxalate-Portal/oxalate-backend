@@ -1,20 +1,12 @@
 package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.oxalate.backend.api.UpdateStatusEnum;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-@Builder
+@SuperBuilder
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class RegistrationResponse {
-
-    @JsonProperty("status")
-    private UpdateStatusEnum status;
+public class RegistrationResponse extends ActionResponse {
 
     @JsonProperty("token")
     private String token;
