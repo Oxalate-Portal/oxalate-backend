@@ -174,8 +174,6 @@ public class PaymentService {
         var now = LocalDate.now();
         var userId = paymentRequest.getUserId();
 
-        log.debug("XXXXXXXXXXX Saving one-time payment with request: {}", paymentRequest);
-
         // Check first if one-time payment is enabled
         // Get the type of period from the portal configuration
         var periodTypeString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
@@ -258,20 +256,16 @@ public class PaymentService {
         var periodResult = getOneTimeResult(periodType, now);
         var requestedStartDate = paymentRequest.getStartDate() != null ? paymentRequest.getStartDate() : periodResult.getStartDate();
         var requestedEndDate = paymentRequest.getEndDate() != null ? paymentRequest.getEndDate() : periodResult.getEndDate();
-        log.debug("XXXXXXXXXXX Updated requested one-time start and end dates: {} -> {}", requestedStartDate, requestedEndDate);
         // Else find the latest non-expired one-time payment
 
         // Check that the user does not already have an overlapping payment, only one active periodical payment is allowed at a time
         var oneTimePayments = paymentRepository.findAllByUserIdAndPaymentType(userId, ONE_TIME);
-        log.debug("XXXXXXXXXXX User has one-time payments: {}", oneTimePayments);
         var overlappingOnePayments = oneTimePayments.stream()
                                                     .filter(payment -> payment.getPaymentType()
                                                                               .equals(ONE_TIME)
                                                             && payment.getEndDate()
                                                                       .isAfter(requestedStartDate))
                                                     .toList();
-
-        log.debug("XXXXXXXXXXX User has {} overlapping one-time payments", overlappingOnePayments.size());
 
         if (!overlappingOnePayments.isEmpty()) {
             log.warn("User already has an active one-time payment: {}", overlappingOnePayments.getFirst());
@@ -288,11 +282,7 @@ public class PaymentService {
                              .paymentCount(paymentRequest.getPaymentCount())
                              .build();
 
-        log.debug("XXXXXXXXXXX Saving new one-time payment: {}", payment);
-
         var newPayment = paymentRepository.save(payment);
-
-        log.debug("XXXXXXXXXXX Received new one-time payment back: {}", newPayment);
 
         return newPayment.toPaymentResponse();
     }
@@ -309,7 +299,6 @@ public class PaymentService {
         var now = LocalDate.now();
         var userId = paymentRequest.getUserId();
 
-        log.debug("XXXXXXXXXXX Saving periodical payment with request: {}", paymentRequest);
         // Get the type of period from the portal configuration
         var periodTypeString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_TYPE.key);
         var periodType = PeriodicPaymentTypeEnum.valueOf(periodTypeString);
@@ -323,19 +312,14 @@ public class PaymentService {
         var requestedStartDate = paymentRequest.getStartDate() != null ? paymentRequest.getStartDate() : periodResult.getStartDate();
         var requestedEndDate = paymentRequest.getEndDate() != null ? paymentRequest.getEndDate() : periodResult.getEndDate();
 
-        log.debug("XXXXXXXXXXX Updated requested start and end dates: {} -> {}", requestedStartDate, requestedEndDate);
-
         // Check that the user does not already have an overlapping payment, only one active periodical payment is allowed at a time
         var periodicalPayments = paymentRepository.findAllByUserIdAndPaymentType(userId, PERIODICAL);
-        log.debug("XXXXXXXXXXX User has periodical payments: {}", periodicalPayments);
         var overlappingPeriodPayments = periodicalPayments.stream()
                                                           .filter(payment -> payment.getPaymentType()
                                                                                     .equals(PERIODICAL)
                                                                   && payment.getEndDate()
                                                                             .isAfter(requestedStartDate))
                                                           .toList();
-
-        log.debug("XXXXXXXXXXX User has {} overlapping periodical payments", overlappingPeriodPayments.size());
 
         if (!overlappingPeriodPayments.isEmpty()) {
             log.warn("User already has an active periodical payment: {}", overlappingPeriodPayments.getFirst());
@@ -353,8 +337,6 @@ public class PaymentService {
                                                                  .isAfter(requestedStartDate))
                                                .toList();
 
-        log.debug("XXXXXXXXXXX User has {} active one time payments", overlappingPeriodPayments.size());
-
         if (!oneTimePayments.isEmpty()) {
             for (var oneTimePayment : oneTimePayments) {
                 oneTimePayment.setEndDate(requestedStartDate.minusDays(1));
@@ -370,11 +352,8 @@ public class PaymentService {
                              .endDate(requestedEndDate)
                              .build();
 
-        log.debug("XXXXXXXXXXX Saving new periodical payment: {}", payment);
-
         var newPayment = paymentRepository.save(payment);
 
-        log.debug("XXXXXXXXXXX Received new periodical payment back: {}", newPayment);
         return newPayment.toPaymentResponse();
     }
 
