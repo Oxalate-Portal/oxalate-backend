@@ -12,6 +12,10 @@ UPDATE payments
 SET start_date = created_at::date
 WHERE created_at IS NOT NULL;
 
+UPDATE payments
+SET payment_type = 'PERIODICAL'
+WHERE payment_type = 'PERIOD';
+
 ALTER TABLE payments
     DROP COLUMN expires_at;
 
