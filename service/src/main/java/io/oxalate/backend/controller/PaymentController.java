@@ -7,6 +7,7 @@ import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import io.oxalate.backend.api.request.PaymentRequest;
+import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.PaymentStatusResponse;
 import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_ADD_OK;
 import static io.oxalate.backend.events.AppAuditMessages.PAYMENTS_ADD_START;
@@ -111,7 +112,7 @@ public class PaymentController implements PaymentAPI {
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PaymentStatusResponse> addPaymentForUser(PaymentRequest paymentRequest, HttpServletRequest request) {
+    public ResponseEntity<PaymentResponse> addPaymentForUser(PaymentRequest paymentRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_ADD_START + paymentRequest.getUserId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
@@ -129,7 +130,7 @@ public class PaymentController implements PaymentAPI {
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PaymentStatusResponse> updatePaymentForUser(PaymentRequest paymentRequest, HttpServletRequest request) {
+    public ResponseEntity<PaymentResponse> updatePaymentForUser(PaymentRequest paymentRequest, HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(PAYMENTS_UPDATE_START + paymentRequest.getUserId(), INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {

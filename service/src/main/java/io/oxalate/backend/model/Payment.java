@@ -65,15 +65,15 @@ public class Payment {
                                             .startDate(this.startDate)
                                             .endDate(this.endDate)
                                             .build();
-            case PERIOD -> PaymentResponse.builder()
-                                          .id(this.id)
-                                          .userId(this.userId)
-                                          .paymentCount(null)
-                                          .paymentType(this.paymentType)
-                                          .created(this.created)
-                                          .startDate(this.startDate)
-                                          .endDate(this.endDate)
-                                          .build();
+            case PERIODICAL -> PaymentResponse.builder()
+                                              .id(this.id)
+                                              .userId(this.userId)
+                                              .paymentCount(null)
+                                              .paymentType(this.paymentType)
+                                              .created(this.created)
+                                              .startDate(this.startDate)
+                                              .endDate(this.endDate)
+                                              .build();
             default -> throw new IllegalArgumentException("Unknown payment type");
         };
     }

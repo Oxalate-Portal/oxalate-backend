@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.UserTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
@@ -35,7 +36,7 @@ public class ListUserResponse {
 
     @Schema(description = "List of payments made by the user", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("payments")
-    protected Set<PaymentResponse> payments;
+    protected List<PaymentResponse> payments;
 
     @Schema(description = "Indicates if the user has an active membership", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("membershipActive")

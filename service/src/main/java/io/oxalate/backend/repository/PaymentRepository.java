@@ -1,17 +1,19 @@
 package io.oxalate.backend.repository;
 
+import io.oxalate.backend.api.PaymentTypeEnum;
 import io.oxalate.backend.model.Payment;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PaymentRepository extends CrudRepository<Payment, Long> {
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query(nativeQuery = true,
             value = """
                     SELECT DISTINCT p.*
@@ -81,4 +83,8 @@ public interface PaymentRepository extends CrudRepository<Payment, Long> {
                     ORDER BY p.user_id, p.payment_type, p.created DESC
                     """)
     List<Payment> findAllPaymentsWithActivePaymentsAndPaymentType(@Param("paymentType") String paymentType);
+
+    List<Payment> findAllByUserIdAndPaymentType(long userId, PaymentTypeEnum paymentType);
+
+    List<Payment> findAllByUserIdAndStartDateBeforeAndEndDateAfter(long userId, LocalDate startDateBefore, LocalDate endDateAfter);
 }

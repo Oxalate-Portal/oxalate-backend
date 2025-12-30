@@ -126,7 +126,7 @@ public class User {
     private long diveCount;
 
     @Transient
-    private Set<Payment> payments;
+    private List<Payment> payments;
 
     @Transient
     private List<Membership> membership;
@@ -162,7 +162,7 @@ public class User {
     }
 
     public ListUserResponse toEventUserResponse() {
-        var paymentResponses = new HashSet<PaymentResponse>();
+        var paymentResponses = new ArrayList<PaymentResponse>();
 
         if (this.payments != null) {
             for (Payment payment : this.getPayments()) {

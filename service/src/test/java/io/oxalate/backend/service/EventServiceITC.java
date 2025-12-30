@@ -8,7 +8,11 @@ import static io.oxalate.backend.api.DiveTypeEnum.CAVE;
 import io.oxalate.backend.api.EventStatusEnum;
 import static io.oxalate.backend.api.EventStatusEnum.PUBLISHED;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
+import static io.oxalate.backend.api.PaymentTypeEnum.PERIODICAL;
+import io.oxalate.backend.api.PeriodicPaymentTypeEnum;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.ONE_TIME_PAYMENT_EXPIRATION_TYPE;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_TYPE;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.SINGLE_PAYMENT_ENABLED;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
@@ -84,6 +88,8 @@ class EventServiceITC extends AbstractIntegrationTest {
                                           .plus(10, ChronoUnit.DAYS), CAVE, organizer.getId(), PUBLISHED);
 
         portalConfigurationService.setRuntimeValue(PAYMENT.group, SINGLE_PAYMENT_ENABLED.key, "true");
+        portalConfigurationService.setRuntimeValue(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key, PeriodicPaymentTypeEnum.PERIODICAL.name());
+        portalConfigurationService.setRuntimeValue(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_TYPE.key, PeriodicPaymentTypeEnum.PERIODICAL.name());
         portalConfigurationService.reloadPortalConfigurations();
     }
 
@@ -174,8 +180,10 @@ class EventServiceITC extends AbstractIntegrationTest {
                                                   .paymentCount(4)
                                                   .paymentType(ONE_TIME)
                                                   .build();
-        var oneTimePaymentStatusResponse = paymentService.savePayment(oneTimePaymentRequest);
-        assertNotNull(oneTimePaymentStatusResponse);
+        var oneTimePaymentResponse = paymentService.savePayment(oneTimePaymentRequest);
+        assertNotNull(oneTimePaymentResponse);
+        assertNotNull(oneTimePaymentResponse.getStartDate());
+        assertNotNull(oneTimePaymentResponse.getEndDate());
 
         var periodPaymentRequest = PaymentRequest.builder()
                                                  .userId(diver.getId())
@@ -206,23 +214,17 @@ class EventServiceITC extends AbstractIntegrationTest {
                                                          .userId(diver.getId())
                                                          .paymentCount(4)
                                                          .paymentType(ONE_TIME)
+                                                         .startDate(LocalDate.parse("2020-01-01"))
+                                                         .endDate(LocalDate.parse("2021-01-01"))
                                                          .build();
         assertNotNull(oneTimePaymentStatusResponse);
-        var paymentStatusResponse = paymentService.savePayment(oneTimePaymentStatusResponse);
-        paymentRepository.findById(paymentStatusResponse.getPayments()
-                                                        .iterator()
-                                                        .next()
-                                                        .getId())
-                         .ifPresent(payment -> {
-                             payment.setEndDate(LocalDate.now()
-                                                         .minusDays(1));
-                             paymentRepository.save(payment);
-                         });
+        var paymentResponse = paymentService.savePayment(oneTimePaymentStatusResponse);
+        paymentRepository.findById(paymentResponse.getId());
 
         var eventRequest = generateEventRequestFromEvent();
 
         var eventResponse = eventService.updateEvent(eventRequest);
-
+        log.info("Event response: {}", eventResponse);
         assertNotNull(eventResponse);
         assertNotNull(eventResponse.getParticipants());
         // The diver should not be a participant because he had an expired payment
@@ -232,44 +234,36 @@ class EventServiceITC extends AbstractIntegrationTest {
 
     @Test
     void updateEventWithUserMultiplePaymentExpiredFail() {
+        var thisYear = 2022;
+
         var oneTimePaymentRequest = PaymentRequest.builder()
                                                   .userId(diver.getId())
                                                   .paymentCount(4)
                                                   .paymentType(ONE_TIME)
+                                                  .startDate(LocalDate.parse(thisYear + "-01-01"))
+                                                  .endDate(LocalDate.parse((thisYear + 1) + "-01-01"))
                                                   .build();
-        var oneTimePaymentStatusResponse = paymentService.savePayment(oneTimePaymentRequest);
-        assertNotNull(oneTimePaymentStatusResponse);
-
-        paymentRepository.findById(oneTimePaymentStatusResponse.getPayments()
-                                                               .iterator()
-                                                               .next()
-                                                               .getId())
-                         .ifPresent(payment -> {
-                             payment.setEndDate(LocalDate.now()
-                                                         .minusDays(1));
-                             paymentRepository.save(payment);
-                         });
+        var oneTimePaymentResponse = paymentService.savePayment(oneTimePaymentRequest);
+        log.info("One-time payment response: {}", oneTimePaymentResponse);
+        assertNotNull(oneTimePaymentResponse);
+        assertNotNull(oneTimePaymentResponse.getStartDate());
+        assertNotNull(oneTimePaymentResponse.getEndDate());
 
         var periodPaymentRequest = PaymentRequest.builder()
                                                  .userId(diver.getId())
                                                  .paymentCount(4)
-                                                 .paymentType(ONE_TIME)
+                                                 .paymentType(PERIODICAL)
+                                                 .startDate(LocalDate.parse(thisYear + "-01-01"))
+                                                 .endDate(LocalDate.parse((thisYear + 1) + "-01-01"))
                                                  .build();
-        var periodPaymentStatusResponse = paymentService.savePayment(periodPaymentRequest);
-        assertNotNull(periodPaymentStatusResponse);
-
-        paymentRepository.findById(periodPaymentStatusResponse.getPayments()
-                                                              .iterator()
-                                                              .next()
-                                                              .getId())
-                         .ifPresent(payment -> {
-                             payment.setEndDate(LocalDate.now()
-                                                         .minusDays(1));
-                             paymentRepository.save(payment);
-                         });
+        var periodPaymentResponse = paymentService.savePayment(periodPaymentRequest);
+        log.info("Period payment response: {}", periodPaymentResponse);
+        assertNotNull(periodPaymentResponse);
+        assertNotNull(periodPaymentResponse.getStartDate());
+        assertNotNull(periodPaymentResponse.getEndDate());
 
         var eventRequest = generateEventRequestFromEvent();
-
+        log.info("Generated event request: {}", eventRequest);
         var eventResponse = eventService.updateEvent(eventRequest);
 
         assertNotNull(eventResponse);

@@ -2,7 +2,9 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.AbstractIntegrationTest;
 import io.oxalate.backend.api.PaymentTypeEnum;
+import io.oxalate.backend.api.PeriodicPaymentTypeEnum;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.ONE_TIME_PAYMENT_EXPIRATION_TYPE;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.SINGLE_PAYMENT_ENABLED;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_USER;
@@ -15,7 +17,9 @@ import io.oxalate.backend.repository.PaymentRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import lombok.extern.slf4j.Slf4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -26,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+@Slf4j
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class PaymentServiceITC extends AbstractIntegrationTest {
@@ -49,32 +54,33 @@ class PaymentServiceITC extends AbstractIntegrationTest {
         // Add event which starts in 10 days
 
         portalConfigurationService.setRuntimeValue(PAYMENT.group, SINGLE_PAYMENT_ENABLED.key, "true");
+        portalConfigurationService.setRuntimeValue(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key, PeriodicPaymentTypeEnum.PERIODICAL.name());
         portalConfigurationService.reloadPortalConfigurations();
     }
 
     @Test
     void shouldSaveAndRetrievePayment() {
         // Given
+        var thisYear = LocalDate.now()
+                                .getYear();
         var paymentRequest = PaymentRequest.builder()
                                            .userId(diver.getId())
                                            .paymentCount(4)
                                            .paymentType(PaymentTypeEnum.ONE_TIME)
+                                           .startDate(LocalDate.parse(thisYear + "-01-01"))
+                                           .endDate(LocalDate.parse((thisYear + 1) + "-01-01"))
                                            .build();
 
         // When
         var savedPayment = paymentService.savePayment(paymentRequest);
-
-        // Then
-        assertNotNull(savedPayment);
-        assertNotNull(savedPayment.getPayments());
-        assertFalse(savedPayment.getPayments()
-                                .isEmpty());
-        assertEquals(1, savedPayment.getPayments()
-                                    .size());
-        var paymentResponse = savedPayment.getPayments()
-                                          .iterator()
-                                          .next();
-        var retrievedPayment = paymentRepository.findById(paymentResponse.getId());
+        log.info("Saved payment: {}", savedPayment);
+        // Then, because everything in the previous call happens in one transaction, we need to re-fetch
+        var newPayments = paymentService.getActivePaymentsByUser(diver.getId());
+        assertNotNull(newPayments);
+        assertFalse(newPayments.isEmpty());
+        assertEquals(1, newPayments.size());
+        var payment = newPayments.getFirst();
+        var retrievedPayment = paymentRepository.findById(payment.getId());
         assertTrue(retrievedPayment.isPresent());
     }
 

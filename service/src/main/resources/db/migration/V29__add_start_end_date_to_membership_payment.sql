@@ -26,3 +26,18 @@ ALTER TABLE membership
 
 UPDATE membership
 SET created = start_date;
+
+UPDATE portal_configuration
+SET default_value = 'DISABLED,PERPETUAL,PERIODICAL,DURATIONAL'
+WHERE group_key = 'membership'
+  AND setting_key = 'membership-type';
+
+UPDATE portal_configuration
+SET default_value = 'DISABLED,PERPETUAL,PERIODICAL,DURATIONAL'
+WHERE group_key = 'payment'
+  AND setting_key = 'one-time-expiration-type';
+
+UPDATE portal_configuration
+SET default_value = 'DISABLED,PERPETUAL,PERIODICAL,DURATIONAL'
+WHERE group_key = 'payment'
+  AND setting_key = 'periodical-payment-method-type';

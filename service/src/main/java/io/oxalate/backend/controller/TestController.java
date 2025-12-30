@@ -4,7 +4,7 @@ import io.oxalate.backend.api.DiveTypeEnum;
 import static io.oxalate.backend.api.DiveTypeEnum.SURFACE;
 import io.oxalate.backend.api.EventStatusEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
-import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
+import static io.oxalate.backend.api.PaymentTypeEnum.PERIODICAL;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START_POINT;
 import io.oxalate.backend.api.RoleEnum;
@@ -420,7 +420,7 @@ public class TestController implements TestAPI {
             var endDate = LocalDate.parse(endYear + "-" + String.format("%02d", periodStartMonth) + "-01T00:00:00.00Z");
 
             payment = Payment.builder()
-                             .paymentType(PERIOD)
+                             .paymentType(PERIODICAL)
                              .userId(user.getId())
                              .created(createInstant)
                              .endDate(endDate)
@@ -536,7 +536,7 @@ public class TestController implements TestAPI {
 
     private void deductEventPaymentFromUser(long participantId) {
         // Check first if the user has an active period payment, if it is present, then we 'use' it, otherwise we try to use a one-time payment
-        var optionalPeriodPayment = paymentRepository.findByUserIdAndAndPaymentType(participantId, PERIOD.name());
+        var optionalPeriodPayment = paymentRepository.findByUserIdAndAndPaymentType(participantId, PERIODICAL.name());
 
         if (optionalPeriodPayment.isPresent()) {
             return;
