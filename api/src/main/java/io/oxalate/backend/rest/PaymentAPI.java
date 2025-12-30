@@ -4,6 +4,7 @@ import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.PaymentRequest;
+import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.PaymentStatusResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -63,7 +64,7 @@ public interface PaymentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PaymentStatusResponse> addPaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
+    ResponseEntity<PaymentResponse> addPaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
 
     @Operation(description = "Update payment status for a specific user. This is only effective on one-time payments where you can decrease the count",
             tags = "PaymentAPI")
@@ -74,7 +75,7 @@ public interface PaymentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PaymentStatusResponse> updatePaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
+    ResponseEntity<PaymentResponse> updatePaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
 
     @Operation(description = "Reset all period payments immediately. This will update the period payment expiration time to now()", tags = "PaymentAPI")
     @Parameter(name = "paymentType", description = "Type of payments that needs to be reset", example = "ONE_TIME")

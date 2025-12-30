@@ -120,7 +120,9 @@ public class PageService {
         log.debug("Got list of page groups before filtering with lang {}: {}", language, pageGroups);
 
         for (var pageGroup : pageGroups) {
-            if (!pageGroup.getStatus().equals(PageStatusEnum.PUBLISHED)) {
+            if (!pageGroup.getStatus()
+                          .equals(PageStatusEnum.PUBLISHED)
+                    || pageGroup.getPages() == null) {
                 continue;
             }
 
@@ -128,6 +130,7 @@ public class PageService {
 
             // Check that the user has access to the pages
             var pageListFiltered = new ArrayList<Page>();
+
             for (var page : pageGroup.getPages()) {
                 var permissionList = pageRoleAccessRepository.findByPageIdAndRoleIn(page.getId(), roles);
                 // In addition to access, the page must be public

@@ -4,7 +4,7 @@ import io.oxalate.backend.api.DiveTypeEnum;
 import static io.oxalate.backend.api.DiveTypeEnum.SURFACE;
 import io.oxalate.backend.api.EventStatusEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
-import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
+import static io.oxalate.backend.api.PaymentTypeEnum.PERIODICAL;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START_POINT;
 import io.oxalate.backend.api.RoleEnum;
@@ -298,15 +298,16 @@ public class TestController implements TestAPI {
 
     private void randomPayment(Instant createInstant) {
         // Get user ID which has no active payment
-        var queryString = "SELECT u.id "
-                + "FROM users u "
-                + "WHERE u.id NOT IN "
-                + "    (SELECT DISTINCT p.user_id "
-                + "     FROM payments p"
-                + "     WHERE "
-                + "           (p.expires_at > :currentTime AND p.payment_type = 'PERIOD')"
-                + "        OR (p.payment_type = 'ONE_TIME' AND p.payment_count > 0))";
-
+        var queryString = """
+                SELECT u.id
+                FROM users u
+                WHERE u.id NOT IN (
+                    SELECT DISTINCT p.user_id
+                    FROM payments p
+                    WHERE (p.end_date > :currentTime AND p.payment_type = 'PERIOD')
+                       OR (p.payment_type = 'ONE_TIME' AND p.payment_count > 0)
+                )
+                """;
         var query = entityManager.createNativeQuery(queryString);
         query.setParameter("currentTime", createInstant);
         var results = query.getResultList();
@@ -402,7 +403,7 @@ public class TestController implements TestAPI {
             payment = Payment.builder()
                              .paymentType(ONE_TIME)
                              .userId(user.getId())
-                             .createdAt(createInstant)
+                             .created(createInstant)
                              .paymentCount(RandomUtils.secure()
                                                       .randomInt(1, 6))
                              .build();
@@ -416,13 +417,13 @@ public class TestController implements TestAPI {
                 endYear++;
             }
 
-            var endDate = Instant.parse(endYear + "-" + String.format("%02d", periodStartMonth) + "-01T00:00:00.00Z");
+            var endDate = LocalDate.parse(endYear + "-" + String.format("%02d", periodStartMonth) + "-01T00:00:00.00Z");
 
             payment = Payment.builder()
-                             .paymentType(PERIOD)
+                             .paymentType(PERIODICAL)
                              .userId(user.getId())
-                             .createdAt(createInstant)
-                             .expiresAt(endDate)
+                             .created(createInstant)
+                             .endDate(endDate)
                              .build();
         }
         paymentRepository.save(payment);
@@ -446,7 +447,7 @@ public class TestController implements TestAPI {
                     + "    (SELECT DISTINCT p.user_id "
                     + "     FROM payments p"
                     + "     WHERE "
-                    + "           (p.expires_at > :currentTime AND p.payment_type = 'PERIOD')"
+                    + "           (p.endDate > :currentTime AND p.payment_type = 'PERIOD')"
                     + "        OR (p.payment_type = 'ONE_TIME' AND p.payment_count > 0))";
 
             var query = entityManager.createNativeQuery(queryString);
@@ -522,7 +523,7 @@ public class TestController implements TestAPI {
             var payment = Payment.builder()
                                  .userId(participantId)
                                  .paymentType(ONE_TIME)
-                                 .createdAt(Instant.now())
+                                 .created(Instant.now())
                                  .paymentCount(0)
                                  .build();
             oneTimePayment = Optional.of(paymentRepository.save(payment));
@@ -535,7 +536,7 @@ public class TestController implements TestAPI {
 
     private void deductEventPaymentFromUser(long participantId) {
         // Check first if the user has an active period payment, if it is present, then we 'use' it, otherwise we try to use a one-time payment
-        var optionalPeriodPayment = paymentRepository.findByUserIdAndAndPaymentType(participantId, PERIOD.name());
+        var optionalPeriodPayment = paymentRepository.findByUserIdAndAndPaymentType(participantId, PERIODICAL.name());
 
         if (optionalPeriodPayment.isPresent()) {
             return;

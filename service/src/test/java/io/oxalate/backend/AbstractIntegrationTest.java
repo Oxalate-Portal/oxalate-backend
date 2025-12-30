@@ -8,7 +8,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 public abstract class AbstractIntegrationTest {
 
     static PostgreSQLContainer<?> POSTGRES_CONTAINER = new PostgreSQLContainer<>(
-            "postgres:17-alpine"
+            "postgres:18-alpine"
     );
 
     @BeforeAll

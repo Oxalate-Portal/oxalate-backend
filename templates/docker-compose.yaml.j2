@@ -45,7 +45,7 @@ services:
   db:
     hostname: oxalate-db
     container_name: {{ item.name }}_oxalate_db
-    image: "postgres:16"
+    image: "postgres:18-alpine"
     restart: always
     ports:
       - "{{ item.ext_db_port }}:5432"

@@ -2,7 +2,8 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
-import static io.oxalate.backend.api.PaymentTypeEnum.PERIOD;
+import static io.oxalate.backend.api.PaymentTypeEnum.PERIODICAL;
+import io.oxalate.backend.api.PeriodicPaymentTypeEnum;
 import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
 import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.TIMEZONE;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
@@ -14,7 +15,6 @@ import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START_POINT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_TYPE;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_UNIT;
-import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.SINGLE_PAYMENT_ENABLED;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.api.response.PaymentResponse;
@@ -29,10 +29,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,9 +40,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class PaymentService {
-    private final PaymentRepository paymentRepository;
     private final PortalConfigurationService portalConfigurationService;
     private final EventParticipantsRepository eventParticipantsRepository;
+    private final PaymentRepository paymentRepository;
 
     public List<PaymentStatusResponse> getAllActivePaymentStatus() {
         var paymentStatusResponses = new ArrayList<PaymentStatusResponse>();
@@ -67,7 +65,7 @@ public class PaymentService {
             var paymentStatusResponse = PaymentStatusResponse.builder()
                                                              .userId(payment.getUserId())
                                                              .status(UpdateStatusEnum.OK)
-                                                             .payments(Set.of(payment.toPaymentResponse()))
+                                                             .payments(List.of(payment.toPaymentResponse()))
                                                              .build();
             paymentStatusResponses.add(paymentStatusResponse);
         }
@@ -96,14 +94,15 @@ public class PaymentService {
         return paymentStatusResponse;
     }
 
-    public Set<PaymentResponse> getActivePaymentResponsesByUser(long userId) {
+    public List<PaymentResponse> getActivePaymentResponsesByUser(long userId) {
         var payments = getActivePaymentsByUser(userId);
-        var paymentResponses = new HashSet<PaymentResponse>();
+        var paymentResponses = new ArrayList<PaymentResponse>();
 
         for (Payment payment : payments) {
             var paymentResponse = payment.toPaymentResponse();
 
-            if (payment.getPaymentType().equals(ONE_TIME)) {
+            if (payment.getPaymentType()
+                       .equals(ONE_TIME)) {
                 var futureEventList = eventParticipantsRepository.findOneTimeFutureEventParticipantsByUserId(userId);
                 paymentResponse.setBoundEvents(futureEventList);
             }
@@ -122,8 +121,8 @@ public class PaymentService {
         if (!payments.isEmpty()) {
             for (var payment : payments) {
                 if (payment.getPaymentType()
-                           .equals(PaymentTypeEnum.PERIOD)) {
-                    return Optional.of(PERIOD);
+                           .equals(PaymentTypeEnum.PERIODICAL)) {
+                    return Optional.of(PERIODICAL);
                 }
             }
 
@@ -141,64 +140,110 @@ public class PaymentService {
         return Optional.empty();
     }
 
-    public Set<Payment> getActivePaymentsByUser(long userId) {
-        // var payments = paymentRepository.findAllByUserId(userId);
-        var activePayments = paymentRepository.findAllActiveByUserId(userId);
-
-        if (activePayments.size() > 2) {
-            log.error("User {} has more than 2 active payment entries", userId);
-        }
-
-        return activePayments;
+    public List<Payment> getActivePaymentsByUser(long userId) {
+        return paymentRepository.findAllByUserIdAndStartDateBeforeAndEndDateAfter(
+                userId,
+                LocalDate.now(),
+                LocalDate.now()
+        );
     }
 
     @Transactional
-    public PaymentStatusResponse savePayment(PaymentRequest paymentRequest) {
-        PaymentResponse PaymentResponse = null;
+    public PaymentResponse savePayment(PaymentRequest paymentRequest) {
+        var paymentResponse = PaymentResponse.builder()
+                                             .id(0L)
+                                             .userId(0L)
+                                             .paymentType(null)
+                                             .paymentCount(0)
+                                             .created(null)
+                                             .startDate(null)
+                                             .endDate(null)
+                                             .build();
 
         switch (paymentRequest.getPaymentType()) {
-        case ONE_TIME -> PaymentResponse = saveOneTimePayment(paymentRequest);
-        case PERIOD -> PaymentResponse = savePeriodPayment(paymentRequest.getUserId());
+        case ONE_TIME -> paymentResponse = saveOneTimePayment(paymentRequest);
+        case PERIODICAL -> paymentResponse = savePeriodPayment(paymentRequest);
         default -> log.error("Unknown payment type: {}", paymentRequest.getPaymentType());
         }
 
-        if (PaymentResponse == null) {
-            return PaymentStatusResponse.builder()
-                                        .userId(paymentRequest.getUserId())
-                                        .status(UpdateStatusEnum.FAIL)
-                                        .build();
-        }
-
-        return getPaymentStatusForUser(paymentRequest.getUserId());
+        return paymentResponse;
     }
 
     @Transactional
     public PaymentResponse saveOneTimePayment(PaymentRequest paymentRequest) {
+        var now = LocalDate.now();
+        var userId = paymentRequest.getUserId();
+
         // Check first if one-time payment is enabled
-        var isOneTimeEnabled = portalConfigurationService.getBooleanConfiguration(PAYMENT.group, SINGLE_PAYMENT_ENABLED.key);
-        if (!isOneTimeEnabled) {
-            log.warn("One-time payment ({} {}) is disabled: {}", PAYMENT.group, SINGLE_PAYMENT_ENABLED.key, isOneTimeEnabled);
+        // Get the type of period from the portal configuration
+        var periodTypeString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
+        var periodType = PeriodicPaymentTypeEnum.valueOf(periodTypeString);
+
+        if (periodType.equals(PeriodicPaymentTypeEnum.DISABLED)) {
+            log.warn("One-time payment type is disabled in configuration, we do not proceed on creating the one-time payment");
             return null;
         }
 
-        log.debug("Saving one-time payment: {}", paymentRequest);
+        // If the period type is perpetual, we only ever have one active one-time payment per user, and if more are set to be created then we add the count
+        // to the existing one-time payment
+        if (periodType.equals(PeriodicPaymentTypeEnum.PERPETUAL)) {
+            log.debug("One-time payment type is perpetual, checking period configuration");
+            var existingOneTimePayment = paymentRepository.findAllByUserIdAndPaymentType(userId, ONE_TIME)
+                                                          .stream()
+                                                          .filter(payment -> payment.getEndDate() == null)
+                                                          .toList();
+
+            if (!existingOneTimePayment.isEmpty()) {
+                log.debug("User {} already has an active perpetual one-time payment, updating the payment count", userId);
+                var payment = existingOneTimePayment.getFirst();
+                // First we add the new count to the existing one
+                payment.setPaymentCount(payment.getPaymentCount() + paymentRequest.getPaymentCount());
+
+                // Remove the first and check if there are any left, if then collect their counts too and close them. existingOneTimePayment is an immutable list
+                // so we need to create a new one which we can modify
+                var mutableList = new ArrayList<>(existingOneTimePayment);
+                mutableList.removeFirst();
+
+                for (var oldPayment : mutableList) {
+                    log.debug("Found additional perpetual one-time payment ID {}, adding its count {} to the main payment and closing it",
+                            oldPayment.getId(), oldPayment.getPaymentCount());
+                    payment.setPaymentCount(payment.getPaymentCount() + oldPayment.getPaymentCount());
+                    oldPayment.setEndDate(now);
+                    oldPayment.setPaymentCount(0);
+                    paymentRepository.save(oldPayment);
+                }
+
+                var newPayment = paymentRepository.save(payment);
+                return newPayment.toPaymentResponse();
+            } else {
+                log.debug("User {} does not have an active perpetual one-time payment, creating a new one", userId);
+                var payment = Payment.builder()
+                                     .userId(paymentRequest.getUserId())
+                                     .paymentType(ONE_TIME)
+                                     .created(Instant.now())
+                                     .startDate(now)
+                                     .endDate(null)
+                                     .paymentCount(paymentRequest.getPaymentCount())
+                                     .build();
+            }
+        }
+
         // First check if the given request points to an active one-time payment
         if (paymentRequest.getId() > 0L) {
             log.debug("Updating existing one-time payment ID: {}", paymentRequest.getId());
             var oldPayment = paymentRepository.findById(paymentRequest.getId());
 
-            if (oldPayment.isPresent()
-                    && (oldPayment.get()
-                                  .getExpiresAt() == null || oldPayment.get()
-                                                                       .getExpiresAt()
-                                                                       .isAfter(Instant.now()))) {
+            if (oldPayment.isPresent() && (oldPayment.get()
+                                                     .getEndDate() == null || oldPayment.get()
+                                                                                        .getEndDate()
+                                                                                        .isAfter(LocalDate.now()))) {
                 var payment = oldPayment.get();
                 payment.setPaymentCount(paymentRequest.getPaymentCount());
 
                 // Check if the current portal configuration for payments has the expiration enabled
                 var oneTimeExpirationType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
-                var expiresAt = getExpirationTime(oneTimeExpirationType);
-                payment.setExpiresAt(expiresAt);
+                var endDate = getExpirationDate(oneTimeExpirationType);
+                payment.setEndDate(endDate);
 
                 var newPayment = paymentRepository.save(payment);
 
@@ -208,168 +253,107 @@ public class PaymentService {
             }
         }
 
+        var periodResult = getOneTimeResult(periodType, now);
+        var requestedStartDate = paymentRequest.getStartDate() != null ? paymentRequest.getStartDate() : periodResult.getStartDate();
+        var requestedEndDate = paymentRequest.getEndDate() != null ? paymentRequest.getEndDate() : periodResult.getEndDate();
         // Else find the latest non-expired one-time payment
-        var activeOnetimePaymentList = paymentRepository.findActiveOneTimeByUserId(paymentRequest.getUserId());
 
-        if (activeOnetimePaymentList.isEmpty()) {
-            // If the one-time expiration configuration is enabled, then we need to calculate the expiration date
-            var oneTimeExpirationType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
+        // Check that the user does not already have an overlapping payment, only one active periodical payment is allowed at a time
+        var oneTimePayments = paymentRepository.findAllByUserIdAndPaymentType(userId, ONE_TIME);
+        var overlappingOnePayments = oneTimePayments.stream()
+                                                    .filter(payment -> payment.getPaymentType()
+                                                                              .equals(ONE_TIME)
+                                                            && payment.getEndDate()
+                                                                      .isAfter(requestedStartDate))
+                                                    .toList();
 
-            var expiresAt = getExpirationTime(oneTimeExpirationType);
-
-            var payment = Payment.builder()
-                                 .userId(paymentRequest.getUserId())
-                                 .paymentType(ONE_TIME)
-                                 .createdAt(Instant.now())
-                                 .expiresAt(expiresAt)
-                                 .paymentCount(paymentRequest.getPaymentCount())
-                                 .build();
-
-            var newPayment = paymentRepository.save(payment);
-
-            return newPayment.toPaymentResponse();
-        } else {
-            var payment = activeOnetimePaymentList.getFirst();
-            payment.setPaymentCount(payment.getPaymentCount());
-            var newPayment = paymentRepository.save(payment);
-
-            return newPayment.toPaymentResponse();
-        }
-    }
-
-    protected Instant getExpirationTime(String oneTimeExpirationType) {
-        var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
-        var zoneId = ZoneId.of(timezone);
-        var chronoUnit = ChronoUnit.valueOf(portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_UNIT.key));
-        var unitCounts = portalConfigurationService.getNumericConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_LENGTH.key);
-        var startDate = LocalDate.parse(portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key));
-        var periodStartPoint = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
-
-        switch (oneTimeExpirationType) {
-            case "disabled", "perpetual" -> {
-                return null;
-            }
-            case "periodical" -> {
-                var periodResult = PeriodTool.calculatePeriod(Instant.now(), startDate, chronoUnit, periodStartPoint, unitCounts);
-                return periodResult.getEndDate()
-                                   .atStartOfDay(zoneId)
-                                   .toInstant();
-            }
-            case "durational" -> {
-                // This gets tricky because some chronoUnits can not be just added to the current time, so e.g. if we add one month to 31.01., we should get 28.02.
-                // same as if it was 30.01. or 29.01. We need to cover all months that are not 31 days long
-
-                if (chronoUnit == ChronoUnit.MONTHS) {
-                    // Get the current date day
-                    var currentDate = LocalDate.now(zoneId);
-                    var startDateDay = currentDate.getDayOfMonth();
-                    // Get the current month number
-                    var startDateMonth = currentDate.getMonthValue();
-                    var endYear = currentDate.getYear();
-                    // Calculate the end month number
-                    int endMonth = startDateMonth + (int) unitCounts;
-                    int endDay = startDateDay;
-
-                    while (endMonth > 12) {
-                        endMonth = endMonth - 12;
-                        endYear++;
-                    }
-
-                    // At this point we have sorted out the year and the month of the end date. Next we need to figure out what the day should be.
-                    // We can just raise the month number with the unit counts if the current month day is 28 or less.
-                    // Else we need to do some magic to get the correct day.
-                    if (startDateDay > 28) {
-                        // Get the length of the end month of the end year (keep in mind that it could be a leap year February
-                        var endMonthLength = LocalDate.of(endYear, endMonth, 1)
-                                                      .lengthOfMonth();
-                        // If end month length is less than the current day, we need to set the day to the last day of the month
-                        if (endMonthLength > startDateDay) {
-                            endDay = endMonthLength;
-                        }
-                    }
-                    // Now we can assemble the end date
-                    var endDateString = String.format("%d-%02d-%02d", endYear, endMonth, endDay);
-                    var endDate = LocalDate.parse(endDateString);
-                    // And convert it to an instant
-                    return endDate.atStartOfDay(zoneId)
-                                  .toInstant();
-                } else if (chronoUnit == ChronoUnit.YEARS) {
-                    // This is almost the same as for months, but we only need to consider the leap year February, otherwise we just increase the year
-                    // If the current date is 29.02. we need to set the end date to 28.02. of the next year
-                    var currentDate = LocalDate.now(zoneId);
-
-                    var startDateDay = currentDate.getDayOfMonth();
-                    var startDateMonth = currentDate.getMonthValue();
-                    var endYear = currentDate.getYear() + (int) unitCounts;
-                    var endDate = startDateDay;
-
-                    if (startDateDay == 29 && startDateMonth == 2) {
-                        endDate = 28;
-                    }
-
-                    return LocalDate.of(endYear, startDateMonth, endDate)
-                                   .atStartOfDay(zoneId)
-                                   .toInstant();
-                } else {
-                    return LocalDate.now()
-                                    .plus(unitCounts, chronoUnit)
-                                    .atStartOfDay()
-                                    .atZone(zoneId)
-                                    .toInstant();
-                }
-            }
+        if (!overlappingOnePayments.isEmpty()) {
+            log.warn("User already has an active one-time payment: {}", overlappingOnePayments.getFirst());
+            return overlappingOnePayments.getFirst()
+                                         .toPaymentResponse();
         }
 
-        return null;
+        var payment = Payment.builder()
+                             .userId(paymentRequest.getUserId())
+                             .paymentType(ONE_TIME)
+                             .created(Instant.now())
+                             .startDate(requestedStartDate)
+                             .endDate(requestedEndDate)
+                             .paymentCount(paymentRequest.getPaymentCount())
+                             .build();
+
+        var newPayment = paymentRepository.save(payment);
+
+        return newPayment.toPaymentResponse();
     }
 
     /**
      * Saves a period payment to the database, the payment will be saved for the current period
      *
-     * @param userId User ID
+     * @param paymentRequest Payment request
+     * @return Saved payment response
      */
 
     @Transactional
-    public PaymentResponse savePeriodPayment(long userId) {
-        var now = Instant.now();
+    public PaymentResponse savePeriodPayment(PaymentRequest paymentRequest) {
+        var now = LocalDate.now();
+        var userId = paymentRequest.getUserId();
 
         // Get the type of period from the portal configuration
         var periodTypeString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_TYPE.key);
+        var periodType = PeriodicPaymentTypeEnum.valueOf(periodTypeString);
 
-        if (periodTypeString == null) {
-            log.error("Could not find period type for key: {}", PAYMENT_PERIOD_START_POINT.key);
+        if (periodType.equals(PeriodicPaymentTypeEnum.DISABLED)) {
+            log.warn("Periodical payment type is disabled in configuration, we do not proceed on creating the periodical payment");
             return null;
         }
 
-        var periodResult = new PeriodResult();
+        var periodResult = getPeriodResult(periodType, now);
+        var requestedStartDate = paymentRequest.getStartDate() != null ? paymentRequest.getStartDate() : periodResult.getStartDate();
+        var requestedEndDate = paymentRequest.getEndDate() != null ? paymentRequest.getEndDate() : periodResult.getEndDate();
 
-        var periodUnitString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_UNIT.key);
-        var periodUnit = ChronoUnit.valueOf(periodUnitString);
-        var unitCount = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_LENGTH.key);
+        // Check that the user does not already have an overlapping payment, only one active periodical payment is allowed at a time
+        var periodicalPayments = paymentRepository.findAllByUserIdAndPaymentType(userId, PERIODICAL);
+        var overlappingPeriodPayments = periodicalPayments.stream()
+                                                          .filter(payment -> payment.getPaymentType()
+                                                                                    .equals(PERIODICAL)
+                                                                  && payment.getEndDate()
+                                                                            .isAfter(requestedStartDate))
+                                                          .toList();
 
-        if (periodTypeString.equals("periodical")) {
-            var periodStart = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
-            var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
-            var calculationStartDate = LocalDate.parse(calculationStart);
-            periodResult = PeriodTool.calculatePeriod(now, calculationStartDate, periodUnit, periodStart, unitCount);
-        } else {
-            periodResult.setStartDate(LocalDate.now());
-            periodResult.setEndDate(LocalDate.now()
-                                             .plus(unitCount, periodUnit));
+        if (!overlappingPeriodPayments.isEmpty()) {
+            log.warn("User already has an active periodical payment: {}", overlappingPeriodPayments.getFirst());
+            return overlappingPeriodPayments.getFirst()
+                                            .toPaymentResponse();
         }
 
-        var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
-        var zoneId = ZoneId.of(timezone);
+        // Last thing: Check if the user has any one-time payments that would overlap with the new periodical payment, and if so, set their end date to the
+        // start date of the new periodical payment
+        var oneTimePayments = paymentRepository.findByUserIdAndAndPaymentType(userId, ONE_TIME.name())
+                                               .stream()
+                                               .filter(payment -> payment.getPaymentType()
+                                                                         .equals(ONE_TIME)
+                                                       && payment.getEndDate()
+                                                                 .isAfter(requestedStartDate))
+                                               .toList();
+
+        if (!oneTimePayments.isEmpty()) {
+            for (var oneTimePayment : oneTimePayments) {
+                oneTimePayment.setEndDate(requestedStartDate.minusDays(1));
+                paymentRepository.save(oneTimePayment);
+            }
+        }
+
         var payment = Payment.builder()
                              .userId(userId)
-                             .paymentType(PERIOD)
-                             .createdAt(Instant.now())
-                             .expiresAt(periodResult.getEndDate()
-                                                    .atStartOfDay(zoneId)
-                                                    .toInstant())
+                             .paymentType(PERIODICAL)
+                             .created(Instant.now())
+                             .startDate(requestedStartDate)
+                             .endDate(requestedEndDate)
                              .build();
 
         var newPayment = paymentRepository.save(payment);
+
         return newPayment.toPaymentResponse();
     }
 
@@ -410,10 +394,13 @@ public class PaymentService {
         var oneTimePayment = paymentRepository.findActiveOneTimeByUserId(userId);
 
         if (oneTimePayment.isEmpty()) {
+            var oneTimeExpirationType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
+            var endDate = getExpirationDate(oneTimeExpirationType);
             var payment = Payment.builder()
                                  .userId(userId)
                                  .paymentType(ONE_TIME)
-                                 .createdAt(Instant.now())
+                                 .created(Instant.now())
+                                 .endDate(endDate)
                                  .paymentCount(count)
                                  .build();
             paymentRepository.save(payment);
@@ -437,5 +424,121 @@ public class PaymentService {
         }
 
         return true;
+    }
+
+    protected LocalDate getExpirationDate(String oneTimeExpirationType) {
+        var timezone = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
+        var zoneId = ZoneId.of(timezone);
+        var chronoUnit = ChronoUnit.valueOf(portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_UNIT.key));
+        var unitCounts = portalConfigurationService.getNumericConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_LENGTH.key);
+        var startDate = LocalDate.parse(portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key));
+        var periodStartPoint = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
+        var localDate = LocalDate.now(zoneId);
+
+        // When this switch is modified, it has to be copied also to PaymentServiceUTC for testing purposes
+        // >8 copy from here
+        switch (oneTimeExpirationType) {
+        case "disabled", "perpetual" -> {
+            return null;
+        }
+        case "periodical" -> {
+            var periodResult = PeriodTool.calculatePeriod(LocalDate.now(), startDate, chronoUnit, periodStartPoint, unitCounts);
+            return periodResult.getEndDate();
+        }
+        case "durational" -> {
+            // This gets tricky because some chronoUnits can not be just added to the current time, so e.g. if we add one month to 31.01., we should get 28.02.
+            // same as if it was 30.01. or 29.01. We need to cover all months that are not 31 days long
+
+            if (chronoUnit == ChronoUnit.MONTHS) {
+                // Get the current date day
+                var startDateDay = localDate.getDayOfMonth();
+                // Get the current month number
+                var startDateMonth = localDate.getMonthValue();
+                var endYear = localDate.getYear();
+                // Calculate the end month number
+                int endMonth = startDateMonth + (int) unitCounts;
+                int endDay = startDateDay;
+
+                while (endMonth > 12) {
+                    endMonth = endMonth - 12;
+                    endYear++;
+                }
+
+                // At this point we have sorted out the year and the month of the end date. Next we need to figure out what the day should be.
+                // We can just raise the month number with the unit counts if the current month day is 28 or less.
+                // Else we need to do some magic to get the correct day.
+                if (startDateDay > 28) {
+                    // Get the length of the end month of the end year (keep in mind that it could be a leap year February
+                    var endMonthLength = LocalDate.of(endYear, endMonth, 1)
+                                                  .lengthOfMonth();
+                    log.info("End month length for year {} month {} is {} when start day is {}", endYear, endMonth, endMonthLength, startDateDay);
+                    // If end month length is less than the current day, we need to set the day to the last day of the month
+                    if (endMonthLength < startDateDay) {
+                        endDay = endMonthLength;
+                    }
+                }
+                // Now we can assemble the end date
+                var endDateString = String.format("%d-%02d-%02d", endYear, endMonth, endDay);
+                log.info("Calculated end date string: {}", endDateString);
+                return LocalDate.parse(endDateString);
+            } else if (chronoUnit == ChronoUnit.YEARS) {
+                // This is almost the same as for months, but we only need to consider the leap year February, otherwise we just increase the year
+                // If the current date is 29.02. we need to set the end date to 28.02. of the next year
+                var startDateDay = localDate.getDayOfMonth();
+                var startDateMonth = localDate.getMonthValue();
+                var endYear = localDate.getYear() + (int) unitCounts;
+                var endDate = startDateDay;
+
+                if (startDateDay == 29 && startDateMonth == 2) {
+                    endDate = 28;
+                }
+
+                return LocalDate.of(endYear, startDateMonth, endDate);
+            } else {
+                return localDate.plus(unitCounts, chronoUnit);
+            }
+        }
+        }
+        // 8< to here
+
+        return null;
+    }
+
+    private PeriodResult getPeriodResult(PeriodicPaymentTypeEnum periodicPaymentType, LocalDate localDateNow) {
+        var periodResult = new PeriodResult();
+        var periodUnitString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_UNIT.key);
+        var periodUnit = ChronoUnit.valueOf(periodUnitString);
+        var periodLength = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_LENGTH.key);
+
+        if (periodicPaymentType.equals(PeriodicPaymentTypeEnum.PERIODICAL)) {
+            var periodStartPoint = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
+            var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
+            var calculationStartDate = LocalDate.parse(calculationStart);
+            periodResult = PeriodTool.calculatePeriod(localDateNow, calculationStartDate, periodUnit, periodStartPoint,
+                    periodLength);
+        } else {
+            periodResult.setStartDate(localDateNow);
+            periodResult.setEndDate(localDateNow.plus(periodLength, periodUnit));
+        }
+        return periodResult;
+    }
+
+    private PeriodResult getOneTimeResult(PeriodicPaymentTypeEnum periodicPaymentType, LocalDate localDateNow) {
+        var periodResult = new PeriodResult();
+        var periodUnitString = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_UNIT.key);
+        var periodUnit = ChronoUnit.valueOf(periodUnitString);
+        var periodLength = portalConfigurationService.getNumericConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_LENGTH.key);
+
+        if (periodicPaymentType.equals(PeriodicPaymentTypeEnum.PERIODICAL)) {
+            var periodStartPoint = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
+            var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
+            var calculationStartDate = LocalDate.parse(calculationStart);
+            periodResult = PeriodTool.calculatePeriod(localDateNow, calculationStartDate, periodUnit, periodStartPoint,
+                    periodLength);
+        } else {
+            periodResult.setStartDate(localDateNow);
+            periodResult.setEndDate(localDateNow.plus(periodLength, periodUnit));
+        }
+        return periodResult;
     }
 }

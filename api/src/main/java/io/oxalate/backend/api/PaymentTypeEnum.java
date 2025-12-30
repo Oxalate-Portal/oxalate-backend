@@ -5,7 +5,8 @@ package io.oxalate.backend.api;
  */
 
 public enum PaymentTypeEnum {
-    PERIOD,
+    PERIODICAL,
     ONE_TIME,
+    DISABLED,
     NONE // This is used when the diver is diving for free, or is e.g. the organizer
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.MembershipStatusEnum;
 import io.oxalate.backend.api.MembershipTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,11 +37,15 @@ public class MembershipResponse {
     @JsonProperty("type")
     private MembershipTypeEnum type;
 
-    @Schema(description = "When was the periodic payment done", example = "2023-04-12T11:22:33.542Z", requiredMode = Schema.RequiredMode.REQUIRED)
-    @JsonProperty("createdAt")
-    private LocalDate createdAt;
+    @Schema(description = "When does the periodic membership begin", example = "2023-04-12", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @JsonProperty("startDate")
+    private LocalDate startDate;
 
-    @Schema(description = "When will the periodic payment expire", example = "2023-04-12T11:22:33.542Z", requiredMode = Schema.RequiredMode.REQUIRED)
-    @JsonProperty("expiresAt")
-    private LocalDate expiresAt;
+    @Schema(description = "When does the periodic membership end", example = "2023-04-12", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @JsonProperty("endDate")
+    private LocalDate endDate;
+
+    @Schema(description = "When was the membership created", example = "2023-04-12T12:23:41.000Z", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("created")
+    private Instant created;
 }
