@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -44,11 +45,14 @@ public class Payment {
     @Column(name = "payment_count")
     private int paymentCount;
 
-    @Column(name = "created_at")
-    private Instant createdAt;
+    @Column(name = "created")
+    private Instant created;
 
-    @Column(name = "expires_at")
-    private Instant expiresAt;
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 
     public PaymentResponse toPaymentResponse() {
         return switch (this.paymentType) {
@@ -57,16 +61,18 @@ public class Payment {
                                             .userId(this.userId)
                                             .paymentType(this.paymentType)
                                             .paymentCount(this.paymentCount)
-                                            .createdAt(this.createdAt)
-                                            .expiresAt(this.expiresAt)
+                                            .created(this.created)
+                                            .startDate(this.startDate)
+                                            .endDate(this.endDate)
                                             .build();
             case PERIOD -> PaymentResponse.builder()
                                           .id(this.id)
                                           .userId(this.userId)
                                           .paymentCount(null)
                                           .paymentType(this.paymentType)
-                                          .createdAt(this.createdAt)
-                                          .expiresAt(this.expiresAt)
+                                          .created(this.created)
+                                          .startDate(this.startDate)
+                                          .endDate(this.endDate)
                                           .build();
             default -> throw new IllegalArgumentException("Unknown payment type");
         };
@@ -79,7 +85,7 @@ public class Payment {
                                       .name(null)
                                       .paymentType(this.paymentType)
                                       .paymentCount(this.paymentType == PaymentTypeEnum.ONE_TIME ? this.paymentCount : null)
-                                      .createdAt(this.createdAt)
+                                      .created(this.created)
                                       .build();
     }
 }

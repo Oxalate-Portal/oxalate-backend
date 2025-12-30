@@ -2,23 +2,17 @@ package io.oxalate.backend.tools;
 
 import io.oxalate.backend.model.PeriodResult;
 import java.time.DayOfWeek;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
 
 public class PeriodTool {
-    public static PeriodResult calculatePeriod(Instant now, LocalDate startDate, ChronoUnit calendarUnit, long periodStart, long unitCount) {
+    public static PeriodResult calculatePeriod(LocalDate currentDate, LocalDate startDate, ChronoUnit calendarUnit, long periodStart, long unitCount) {
         // Ensure valid input for the period start
         if (periodStart <= 0 || periodStart > getMaxUnitValue(calendarUnit)) {
             throw new IllegalArgumentException("Invalid period start value for the given calendar unit.");
         }
-
-        // Convert `now` to LocalDate for easier manipulation
-        LocalDate currentDate = now.atZone(ZoneId.systemDefault())
-                                   .toLocalDate();
 
         // Align the first period's start date
         // Iterate forward in unitCount increments to find the correct period

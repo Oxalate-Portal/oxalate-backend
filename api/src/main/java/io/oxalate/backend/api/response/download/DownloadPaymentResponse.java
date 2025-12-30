@@ -29,6 +29,6 @@ public class DownloadPaymentResponse {
     @JsonProperty("paymentType")
     private PaymentTypeEnum paymentType;
 
-    @JsonProperty("createdAt")
-    private Instant createdAt;
+    @JsonProperty("created")
+    private Instant created;
 }

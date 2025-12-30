@@ -105,7 +105,7 @@ public class StatsService {
     public List<MultiYearValueResponse> getYearlyPayments() {
         var queryString = """
                 SELECT
-                  EXTRACT(YEAR FROM p.created_at) AS year,
+                  EXTRACT(YEAR FROM p.created) AS year,
                   p.payment_type,
                   COUNT(p.id) AS payment_count
                 FROM payments p

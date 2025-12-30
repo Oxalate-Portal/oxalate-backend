@@ -15,13 +15,12 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentResponse extends AbstractPayment {
-    @Schema(description = "When was the periodic payment done", example = "2023-04-12T11:22:33.542Z", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    @JsonProperty("createdAt")
-    private Instant createdAt;
-    @Schema(description = "When will the periodic payment expire", example = "2023-04-12T11:22:33.542Z", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    @JsonProperty("expiresAt")
-    private Instant expiresAt;
+
     @Schema(description = "If the type is ONE_TIME, then this is the list of future event IDs they've been used in", example = "[3, 12]", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("boundEvents")
     private List<Long> boundEvents;
+
+    @Schema(description = "When was the periodic payment done", example = "2023-04-12T11:22:33.542Z", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @JsonProperty("created")
+    private Instant created;
 }

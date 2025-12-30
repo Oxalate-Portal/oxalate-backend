@@ -29,6 +29,7 @@ import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.repository.commenting.CommentRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -213,8 +214,8 @@ class EventServiceITC extends AbstractIntegrationTest {
                                                         .next()
                                                         .getId())
                          .ifPresent(payment -> {
-                             payment.setExpiresAt(Instant.now()
-                                                         .minus(1, ChronoUnit.DAYS));
+                             payment.setEndDate(LocalDate.now()
+                                                         .minusDays(1));
                              paymentRepository.save(payment);
                          });
 
@@ -244,8 +245,8 @@ class EventServiceITC extends AbstractIntegrationTest {
                                                                .next()
                                                                .getId())
                          .ifPresent(payment -> {
-                             payment.setExpiresAt(Instant.now()
-                                                         .minus(1, ChronoUnit.DAYS));
+                             payment.setEndDate(LocalDate.now()
+                                                         .minusDays(1));
                              paymentRepository.save(payment);
                          });
 
@@ -262,8 +263,8 @@ class EventServiceITC extends AbstractIntegrationTest {
                                                               .next()
                                                               .getId())
                          .ifPresent(payment -> {
-                             payment.setExpiresAt(Instant.now()
-                                                         .minus(1, ChronoUnit.DAYS));
+                             payment.setEndDate(LocalDate.now()
+                                                         .minusDays(1));
                              paymentRepository.save(payment);
                          });
 

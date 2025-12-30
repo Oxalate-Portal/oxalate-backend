@@ -88,6 +88,9 @@ public class MembershipService {
     @Transactional
     public MembershipResponse createMembership(MembershipRequest membershipRequest) {
         var membershipType = getMembershipTypeSetting();
+        var periodResult = getPeriodResult(membershipType, LocalDate.now());
+        var requestedStartDate = membershipRequest.getStartDate() != null ? membershipRequest.getStartDate() : periodResult.getStartDate();
+        var requestedEndDate = membershipRequest.getEndDate() != null ? membershipRequest.getEndDate() : periodResult.getEndDate();
 
         if (membershipType.equals(MembershipTypeEnum.DISABLED)) {
             log.warn(MEMBERSHIP_DISABLED_WARNING);
@@ -95,12 +98,13 @@ public class MembershipService {
                                      .build();
         }
 
-        // Check that the user does not already have an active membership, only one membership is allowed at a time
+        // Check that the user does not already have an overlapping membership, only one active membership is allowed at a time
         var activeMemberships = membershipRepository.findByUserId(membershipRequest.getUserId())
                                                     .stream()
                                                     .filter(membership -> membership.getStatus()
-                                                                                    .equals(MembershipStatusEnum.ACTIVE) && membership.getEndDate()
-                                                                                                                                      .isAfter(LocalDate.now()))
+                                                                                    .equals(MembershipStatusEnum.ACTIVE)
+                                                            && membership.getEndDate()
+                                                                         .isAfter(requestedStartDate))
                                                     .toList();
 
         if (!activeMemberships.isEmpty()) {
@@ -109,31 +113,14 @@ public class MembershipService {
                                     .toResponse();
         }
 
-        var periodResult = new PeriodResult();
-        var now = Instant.now();
-        var membershipPeriodUnitString = portalConfigurationService.getEnumConfiguration(PortalConfigEnum.MEMBERSHIP.group, MEMBERSHIP_PERIOD_UNIT.key);
-        var membershipPeriodUnit = ChronoUnit.valueOf(membershipPeriodUnitString);
-        var membershipPeriodLength = portalConfigurationService.getNumericConfiguration(PortalConfigEnum.MEMBERSHIP.group, MEMBERSHIP_PERIOD_START_POINT.key);
-
-        if (membershipType.equals(PERIODICAL)) {
-            var membershipPeriodStartPoint = portalConfigurationService.getNumericConfiguration(PortalConfigEnum.MEMBERSHIP.group,
-                    MEMBERSHIP_PERIOD_START_POINT.key);
-            var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
-            var calculationStartDate = LocalDate.parse(calculationStart);
-            periodResult = PeriodTool.calculatePeriod(now, calculationStartDate, membershipPeriodUnit, membershipPeriodStartPoint, membershipPeriodLength);
-        } else {
-            periodResult.setStartDate(LocalDate.now());
-            periodResult.setEndDate(LocalDate.now()
-                                             .plus(membershipPeriodLength, membershipPeriodUnit));
-        }
-
-        Membership membership = Membership.builder()
-                                          .userId(membershipRequest.getUserId())
-                                          .type(membershipType)
-                                          .status(MembershipStatusEnum.ACTIVE)
-                                          .startDate(LocalDate.now())
-                                          .endDate(periodResult.getEndDate())
-                                          .build();
+        var membership = Membership.builder()
+                                   .userId(membershipRequest.getUserId())
+                                   .type(membershipType)
+                                   .status(MembershipStatusEnum.ACTIVE)
+                                   .startDate(requestedStartDate)
+                                   .endDate(requestedEndDate)
+                                   .created(Instant.now())
+                                   .build();
         var newMembership = membershipRepository.save(membership);
         // The saved object does not have the user populated, so we fetch it
         var user = userService.findUserEntityById(newMembership.getUserId());
@@ -192,5 +179,25 @@ public class MembershipService {
     private MembershipTypeEnum getMembershipTypeSetting() {
         var membershipTypeString = portalConfigurationService.getEnumConfiguration(PortalConfigEnum.MEMBERSHIP.group, MEMBERSHIP_TYPE.key);
         return MembershipTypeEnum.fromString(membershipTypeString);
+    }
+
+    private PeriodResult getPeriodResult(MembershipTypeEnum membershipType, LocalDate localDateNow) {
+        var periodResult = new PeriodResult();
+        var membershipPeriodUnitString = portalConfigurationService.getEnumConfiguration(PortalConfigEnum.MEMBERSHIP.group, MEMBERSHIP_PERIOD_UNIT.key);
+        var membershipPeriodUnit = ChronoUnit.valueOf(membershipPeriodUnitString);
+        var membershipPeriodLength = portalConfigurationService.getNumericConfiguration(PortalConfigEnum.MEMBERSHIP.group, MEMBERSHIP_PERIOD_START_POINT.key);
+
+        if (membershipType.equals(PERIODICAL)) {
+            var membershipPeriodStartPoint = portalConfigurationService.getNumericConfiguration(PortalConfigEnum.MEMBERSHIP.group,
+                    MEMBERSHIP_PERIOD_START_POINT.key);
+            var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
+            var calculationStartDate = LocalDate.parse(calculationStart);
+            periodResult = PeriodTool.calculatePeriod(localDateNow, calculationStartDate, membershipPeriodUnit, membershipPeriodStartPoint,
+                    membershipPeriodLength);
+        } else {
+            periodResult.setStartDate(localDateNow);
+            periodResult.setEndDate(localDateNow.plus(membershipPeriodLength, membershipPeriodUnit));
+        }
+        return periodResult;
     }
 }

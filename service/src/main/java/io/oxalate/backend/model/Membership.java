@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,6 +50,9 @@ public class Membership {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Column(name = "created")
+    private Instant created;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MembershipStatusEnum status;
@@ -64,8 +68,9 @@ public class Membership {
                 .username(this.user.getLastName() + " " + this.user.getFirstName())
                 .type(this.type)
                 .status(this.status)
-                .createdAt(this.startDate)
-                .expiresAt(this.endDate)
+                                 .startDate(this.startDate)
+                                 .endDate(this.endDate)
+                                 .created(this.created)
                 .build();
     }
 }
