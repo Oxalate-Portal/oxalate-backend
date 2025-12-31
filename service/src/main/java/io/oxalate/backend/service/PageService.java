@@ -121,8 +121,7 @@ public class PageService {
 
         for (var pageGroup : pageGroups) {
             if (!pageGroup.getStatus()
-                          .equals(PageStatusEnum.PUBLISHED)
-                    || pageGroup.getPages() == null) {
+                          .equals(PageStatusEnum.PUBLISHED)) {
                 continue;
             }
 
