@@ -34,7 +34,7 @@ public class PeriodToolUTC {
         var currentYear = LocalDate.now(ZoneId.systemDefault())
                                    .getYear();
         var nowInstant = LocalDate.now()
-                                  .plus(5 * 365, ChronoUnit.DAYS);
+                                  .plusDays(5 * 366);
         var localDate = LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault());
         var calendarUnit = ChronoUnit.YEARS;
         var periodStart = 1L;
