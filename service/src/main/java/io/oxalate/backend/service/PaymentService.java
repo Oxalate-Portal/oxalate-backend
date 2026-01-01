@@ -141,11 +141,7 @@ public class PaymentService {
     }
 
     public List<Payment> getActivePaymentsByUser(long userId) {
-        return paymentRepository.findAllByUserIdAndStartDateBeforeAndEndDateAfter(
-                userId,
-                LocalDate.now(),
-                LocalDate.now()
-        );
+        return paymentRepository.findAllCurrentPaymentsByUserId(userId);
     }
 
     @Transactional

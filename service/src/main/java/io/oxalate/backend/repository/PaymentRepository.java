@@ -2,7 +2,6 @@ package io.oxalate.backend.repository;
 
 import io.oxalate.backend.api.PaymentTypeEnum;
 import io.oxalate.backend.model.Payment;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -78,7 +77,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             value = """
                     SELECT DISTINCT ON (p.user_id, p.payment_type) *
                     FROM payments p
-                    WHERE (p.end_date > NOW() OR p.end_date IS NULL)
+                    WHERE (p.end_date >= NOW() OR p.end_date IS NULL)
                       AND p.payment_type = :paymentType
                     ORDER BY p.user_id, p.payment_type, p.created DESC
                     """)
@@ -86,5 +85,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findAllByUserIdAndPaymentType(long userId, PaymentTypeEnum paymentType);
 
-    List<Payment> findAllByUserIdAndStartDateBeforeAndEndDateAfter(long userId, LocalDate startDateBefore, LocalDate endDateAfter);
+    @Query(nativeQuery = true, value = """
+            SELECT *
+            FROM payments
+            WHERE user_id = :userId
+              AND start_date <= NOW()
+              AND (end_date >= NOW()
+                   OR end_date IS NULL)
+            """)
+    List<Payment> findAllCurrentPaymentsByUserId(long userId);
 }
