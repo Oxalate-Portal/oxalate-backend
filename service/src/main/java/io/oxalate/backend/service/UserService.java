@@ -150,9 +150,9 @@ public class UserService {
         var organizedEvents = eventRepository.findByOrganizer(user.getId());
         user.setOrganizedEvents(organizedEvents);
 
-        var memberships = membershipRepository.findByUserId(user.getId());
+        var memberships = membershipRepository.findAllCurrentAndFutureActiveByUserId(user.getId());
         user.setMembership(memberships);
-        user.setPayments(paymentService.getActivePaymentsByUser(user.getId()));
+        user.setPayments(paymentService.findAllByUserId(user.getId()));
         user.setDiveCount(eventRepository.countDivesByUserId(user.getId()));
     }
 

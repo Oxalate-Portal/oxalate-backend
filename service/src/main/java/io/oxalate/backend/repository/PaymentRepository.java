@@ -2,7 +2,6 @@ package io.oxalate.backend.repository;
 
 import io.oxalate.backend.api.PaymentTypeEnum;
 import io.oxalate.backend.model.Payment;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -29,7 +28,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                     """)
     Optional<Payment> findByUserIdAndAndPaymentType(@Param("userId") long userId, @Param("paymentType") String paymentType);
 
-    List<Payment> findAllByUserId(long userId);
+    List<Payment> findAllByUserIdOrderByStartDateDesc(long userId);
 
     @Query(nativeQuery = true, value = """
             SELECT * FROM payments
@@ -76,15 +75,23 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query(nativeQuery = true,
             value = """
-                    SELECT DISTINCT ON (p.user_id, p.payment_type) *
+                    SELECT *
                     FROM payments p
-                    WHERE (p.end_date > NOW() OR p.end_date IS NULL)
+                    WHERE (p.end_date >= NOW() OR p.end_date IS NULL)
                       AND p.payment_type = :paymentType
                     ORDER BY p.user_id, p.payment_type, p.created DESC
                     """)
-    List<Payment> findAllPaymentsWithActivePaymentsAndPaymentType(@Param("paymentType") String paymentType);
+    List<Payment> findAllCurrentAndFuturePaymentByPaymentType(@Param("paymentType") String paymentType);
 
     List<Payment> findAllByUserIdAndPaymentType(long userId, PaymentTypeEnum paymentType);
 
-    List<Payment> findAllByUserIdAndStartDateBeforeAndEndDateAfter(long userId, LocalDate startDateBefore, LocalDate endDateAfter);
+    @Query(nativeQuery = true, value = """
+            SELECT *
+            FROM payments
+            WHERE user_id = :userId
+              AND start_date <= NOW()
+              AND (end_date >= NOW()
+                   OR end_date IS NULL)
+            """)
+    List<Payment> findAllCurrentPaymentsByUserId(long userId);
 }
