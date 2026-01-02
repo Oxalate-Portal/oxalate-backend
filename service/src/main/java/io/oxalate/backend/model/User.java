@@ -205,7 +205,7 @@ public class User {
     }
 
     public UserResponse toUserResponse() {
-        var paymentResponses = new HashSet<PaymentResponse>();
+        var paymentResponses = new ArrayList<PaymentResponse>();
 
         if (this.payments != null) {
             for (Payment payment : this.getPayments()) {
@@ -232,7 +232,7 @@ public class User {
     }
 
     public AdminUserResponse toAdminUserResponse() {
-        var paymentResponses = new HashSet<PaymentResponse>();
+        var paymentResponses = new ArrayList<PaymentResponse>();
 
         if (this.payments != null) {
             for (Payment payment : this.getPayments()) {

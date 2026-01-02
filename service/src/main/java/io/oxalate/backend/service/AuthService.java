@@ -58,7 +58,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -152,7 +152,7 @@ public class AuthService {
                                         .map(GrantedAuthority::getAuthority)
                                         .toList();
 
-        var paymentResponses = new HashSet<PaymentResponse>();
+        var paymentResponses = new ArrayList<PaymentResponse>();
 
         for (var payment : user.getPayments()) {
             paymentResponses.add(payment.toPaymentResponse());

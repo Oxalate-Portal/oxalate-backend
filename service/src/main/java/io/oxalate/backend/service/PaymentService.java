@@ -59,7 +59,7 @@ public class PaymentService {
     public List<PaymentStatusResponse> getAllActivePaymentByType(PaymentTypeEnum paymentType) {
         var paymentStatusResponses = new ArrayList<PaymentStatusResponse>();
 
-        var paymentList = paymentRepository.findAllPaymentsWithActivePaymentsAndPaymentType(paymentType.name());
+        var paymentList = paymentRepository.findAllCurrentAndFuturePaymentByPaymentType(paymentType.name());
 
         for (var payment : paymentList) {
             var paymentStatusResponse = PaymentStatusResponse.builder()
@@ -142,6 +142,10 @@ public class PaymentService {
 
     public List<Payment> getActivePaymentsByUser(long userId) {
         return paymentRepository.findAllCurrentPaymentsByUserId(userId);
+    }
+
+    public List<Payment> findAllByUserId(long userId) {
+        return paymentRepository.findAllByUserIdOrderByStartDateDesc(userId);
     }
 
     @Transactional

@@ -28,7 +28,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                     """)
     Optional<Payment> findByUserIdAndAndPaymentType(@Param("userId") long userId, @Param("paymentType") String paymentType);
 
-    List<Payment> findAllByUserId(long userId);
+    List<Payment> findAllByUserIdOrderByStartDateDesc(long userId);
 
     @Query(nativeQuery = true, value = """
             SELECT * FROM payments
@@ -75,13 +75,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query(nativeQuery = true,
             value = """
-                    SELECT DISTINCT ON (p.user_id, p.payment_type) *
+                    SELECT *
                     FROM payments p
                     WHERE (p.end_date >= NOW() OR p.end_date IS NULL)
                       AND p.payment_type = :paymentType
                     ORDER BY p.user_id, p.payment_type, p.created DESC
                     """)
-    List<Payment> findAllPaymentsWithActivePaymentsAndPaymentType(@Param("paymentType") String paymentType);
+    List<Payment> findAllCurrentAndFuturePaymentByPaymentType(@Param("paymentType") String paymentType);
 
     List<Payment> findAllByUserIdAndPaymentType(long userId, PaymentTypeEnum paymentType);
 

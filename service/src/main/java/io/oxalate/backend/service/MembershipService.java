@@ -44,7 +44,7 @@ public class MembershipService {
             return new ArrayList<>();
         }
 
-        var memberships = membershipRepository.findAllByStatus(MembershipStatusEnum.ACTIVE);
+        var memberships = membershipRepository.findAllCurrentAndFutureByStatus(MembershipStatusEnum.ACTIVE);
         return memberships.stream()
                           .map(Membership::toResponse)
                           .collect(Collectors.toList());

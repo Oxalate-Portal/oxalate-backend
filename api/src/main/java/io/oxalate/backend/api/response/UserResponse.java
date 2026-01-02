@@ -22,7 +22,7 @@ public class UserResponse extends AbstractUser {
 
     @Schema(description = "List of payments made by the user", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("payments")
-    private Set<PaymentResponse> payments;
+    private List<PaymentResponse> payments;
 
     @Schema(description = "List of memberships of the user", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("memberships")
