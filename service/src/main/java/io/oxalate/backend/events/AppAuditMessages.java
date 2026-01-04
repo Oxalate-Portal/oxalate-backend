@@ -270,6 +270,10 @@ public class AppAuditMessages {
     public static final String STATS_GET_YEARLY_PAYMENTS_UNAUTHORIZED = "User not authorized to get list of yearly payments stats";
     public static final String STATS_GET_YEARLY_PAYMENTS_OK = "Return yearly payments stats";
 
+    public static final String STATS_GET_YEARLY_AGGREGATE_START = "Fetching yearly aggregates";
+    public static final String STATS_GET_YEARLY_AGGREGATE_UNAUTHORIZED = "User not authorized to get list of yearly aggregates stats";
+    public static final String STATS_GET_YEARLY_AGGREGATE_OK = "Return yearly aggregates stats";
+
     public static final String STATS_GET_YEARLY_EVENT_REPORTS_START = "Fetching yearly event reports";
     public static final String STATS_GET_YEARLY_EVENT_REPORTS_UNAUTHORIZED = "User not authorized to get list of yearly event reports";
     public static final String STATS_GET_YEARLY_EVENT_REPORTS_OK = "Return yearly event reports";

@@ -1,6 +1,7 @@
 package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.PortalConfigEnum;
+import io.oxalate.backend.api.response.stats.AggregateResponse;
 import io.oxalate.backend.api.response.stats.DiverListItemResponse;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
 import io.oxalate.backend.api.response.stats.EventReportResponse;
@@ -28,13 +29,13 @@ public class StatsService {
 
         var queryString = """
                 SELECT
-                  EXTRACT(YEAR FROM u.registered) AS year,
+                  EXTRACT(YEAR FROM u.registered) AS user_year,
                   COUNT(u.id) AS registration_count
                 FROM users u
-                GROUP BY year
-                ORDER BY year
+                GROUP BY user_year
+                ORDER BY user_year
                 """;
-        return getMultiYearValues(queryString, "registrations");
+        return getMultiYearValues(queryString, "registrations", true);
     }
 
     public List<MultiYearValueResponse> getYearlyEvents() {
@@ -44,11 +45,12 @@ public class StatsService {
                   COUNT(e.id) AS event_count
                 FROM events e
                 WHERE e.start_time < NOW()
+                  AND e.status = 'HELD'
                 GROUP BY year
                 ORDER BY year
                 """;
 
-        return getMultiYearValues(queryString, "events");
+        return getMultiYearValues(queryString, "events", true);
     }
 
     public List<MultiYearValueResponse> getYearlyOrganizers() {
@@ -60,6 +62,7 @@ public class StatsService {
                 FROM events e,
                      users u
                 WHERE u.id = e.organizer_id
+                  AND e.status = 'HELD'
                   AND e.start_time < NOW()
                 GROUP BY year, e.organizer_id, organizer_name
                 ORDER BY year, event_count DESC
@@ -239,6 +242,75 @@ public class StatsService {
         return yearlyList;
     }
 
+    public AggregateResponse getAggregateData() {
+        var diversPerYear = getDiversPerYear();
+        var diverTypePerYear = getDiverTypesPerYear();
+        var eventsPerYear = getEventsPerYear();
+        var eventTypesPerYear = getEventTypesPerYear();
+        return AggregateResponse.builder()
+                                .diversPerYear(diversPerYear)
+                                .diverTypesPerYear(diverTypePerYear)
+                                .eventsPerYear(eventsPerYear)
+                                .eventTypesPerYear(eventTypesPerYear)
+                                .build();
+    }
+
+    public List<MultiYearValueResponse> getEventsPerYear() {
+        var queryString = """
+                SELECT
+                  EXTRACT(YEAR FROM e.start_time) AS year,
+                  COUNT(e.id) AS event_count
+                FROM events e
+                WHERE e.status = 'HELD'
+                GROUP BY year
+                ORDER BY year;
+                """;
+        return getMultiYearValues(queryString, "events", false);
+    }
+
+    public List<MultiYearValueResponse> getEventTypesPerYear() {
+        var queryString = """
+                SELECT
+                EXTRACT(YEAR FROM e.start_time) AS event_year,
+                COUNT(e.id) AS event_count,
+                e.TYPE AS event_type
+                FROM events e
+                WHERE e.status = 'HELD'
+                GROUP BY event_year, event_type
+                ORDER BY event_year;
+                """;
+        return getMultiYearValues(queryString, "2", false);
+    }
+
+    public List<MultiYearValueResponse> getDiversPerYear() {
+        var queryString = """
+                SELECT
+                  EXTRACT(YEAR FROM e.start_time) AS event_year,
+                  COUNT(e.id) AS registration_count
+                FROM events e, event_participants ep
+                WHERE e.id = ep.event_id
+                  AND e.status = 'HELD'
+                GROUP BY event_year
+                ORDER BY event_year
+                """;
+        return getMultiYearValues(queryString, "divers", false);
+    }
+
+    public List<MultiYearValueResponse> getDiverTypesPerYear() {
+        var queryString = """
+                SELECT
+                  EXTRACT(YEAR FROM e.start_time) AS event_year,
+                  COUNT(e.id) AS registration_count,
+                  ep.event_user_type
+                FROM events e, event_participants ep
+                WHERE e.id = ep.event_id
+                  AND e.status = 'HELD'
+                GROUP BY event_year, ep.event_user_type
+                ORDER BY event_year
+                """;
+        return getMultiYearValues(queryString, "2", false);
+    }
+
     private long getOldestEventYear() {
         var queryString = "SELECT MIN(EXTRACT('Year' FROM e.start_time))"
                 + "FROM events e";
@@ -278,6 +350,7 @@ public class StatsService {
                      users u,
                      event_participants ep
                 WHERE e.organizer_id = u.id
+                  AND e.status = 'HELD'
                   AND ep.event_id = e.id
                   AND e.start_time < NOW()
                   AND e.start_time > DATE '%s-0%s-01'
@@ -317,7 +390,19 @@ public class StatsService {
         return eventReportResponses;
     }
 
-    private List<MultiYearValueResponse> getMultiYearValues(String queryString, String keyName) {
+    /**
+     * Generic method to get multi-year values from a query, if the keyName is numeric, it is treated as the index of the column to use as type. Note that this
+     * index must be greater than 1, as 0 is year and 1 is value.
+     *
+     * @param queryString       SQL query string
+     * @param keyName           the name of the key or the index of the column to use as type
+     * @param includeCumulative whether to include cumulative values
+     * @return list of MultiYearValueResponse
+     */
+    private List<MultiYearValueResponse> getMultiYearValues(String queryString, String keyName, boolean includeCumulative) {
+        var isKeyNumeric = keyName.matches("\\d+");
+        var keyIndex = isKeyNumeric ? Integer.parseInt(keyName) : -1;
+
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> results = query.getResultList();
 
@@ -329,6 +414,11 @@ public class StatsService {
             for (Object[] o : results) {
                 var year = (BigDecimal) o[0];
                 var count = (Long) o[1];
+
+                if (isKeyNumeric) {
+                    keyName = (String) o[keyIndex];
+                }
+
                 cumulative += count;
 
                 var response = MultiYearValueResponse.builder()
@@ -337,12 +427,15 @@ public class StatsService {
                                              .type(keyName)
                                              .build();
                 multiYearValues.add(response);
-                var responseCum = MultiYearValueResponse.builder()
-                                                .year(year.longValue())
-                                                .value(cumulative)
-                                                .type("cumulative")
-                                                .build();
-                multiYearValues.add(responseCum);
+
+                if (includeCumulative) {
+                    var responseCum = MultiYearValueResponse.builder()
+                                                            .year(year.longValue())
+                                                            .value(cumulative)
+                                                            .type("cumulative")
+                                                            .build();
+                    multiYearValues.add(responseCum);
+                }
             }
         }
 

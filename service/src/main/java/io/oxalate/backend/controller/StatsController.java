@@ -5,9 +5,13 @@ import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import static io.oxalate.backend.api.RoleEnum.ROLE_USER;
+import io.oxalate.backend.api.response.stats.AggregateResponse;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
 import io.oxalate.backend.api.response.stats.MultiYearValueResponse;
 import io.oxalate.backend.api.response.stats.YearlyDiversListResponse;
+import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_AGGREGATE_OK;
+import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_AGGREGATE_START;
+import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_AGGREGATE_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_DIVER_LIST_OK;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_DIVER_LIST_START;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_DIVER_LIST_UNAUTHORIZED;
@@ -49,7 +53,7 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValueResponse>> getYearlyRegistrations(HttpServletRequest request) {
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyRegistrationTimeSeries(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_REGISTRATION_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
@@ -66,7 +70,7 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValueResponse>> getYearlyEvents(HttpServletRequest request) {
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyEventTimeSeries(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_EVENTS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
@@ -83,7 +87,7 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValueResponse>> getYearlyOrganizers(HttpServletRequest request) {
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyOrganizerTimeSeries(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_ORGANIZERS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
@@ -100,7 +104,7 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValueResponse>> getYearlyPayments(HttpServletRequest request) {
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyPaymentTimeSeries(HttpServletRequest request) {
         var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_PAYMENTS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
 
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
@@ -113,6 +117,23 @@ public class StatsController implements StatsAPI {
         appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_PAYMENTS_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         var multiYearValues = statsService.getYearlyPayments();
         return ResponseEntity.ok().body(multiYearValues);
+    }
+
+    @Override
+    public ResponseEntity<AggregateResponse> getAggregateStats(HttpServletRequest request) {
+        var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_AGGREGATE_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
+            appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_AGGREGATE_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            log.error("User ID {} tried to access yearly aggregate stats without proper permission", AuthTools.getCurrentUserId());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                 .body(null);
+        }
+
+        appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_AGGREGATE_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+        var aggregateResponse = statsService.getAggregateData();
+        return ResponseEntity.ok()
+                             .body(aggregateResponse);
     }
 
     @Override
