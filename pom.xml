@@ -18,7 +18,6 @@
     <properties>
         <java.version>25</java.version>
         <spring.boot.version>4.0.1</spring.boot.version> <!-- Keep this in sync with the parent version -->
-        <flyway.version>11.20.0</flyway.version>
         <jjwt.version>0.13.0</jjwt.version>
         <swagger.version>2.2.41</swagger.version>
         <testcontainers.version>2.0.3</testcontainers.version>

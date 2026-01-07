@@ -3,11 +3,11 @@ package io.oxalate.backend;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 public abstract class AbstractIntegrationTest {
 
-    static PostgreSQLContainer<?> POSTGRES_CONTAINER = new PostgreSQLContainer<>(
+    static PostgreSQLContainer POSTGRES_CONTAINER = new PostgreSQLContainer(
             "postgres:18-alpine"
     );
 
