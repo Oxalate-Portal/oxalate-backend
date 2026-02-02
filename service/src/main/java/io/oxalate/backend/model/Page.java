@@ -44,19 +44,19 @@ public class Page {
     private Long id;
 
     @Min(1)
-    @Column(name = "page_group_id")
+    @Column(name = "page_group_id", nullable = false)
     private long pageGroupId;
 
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private PageStatusEnum status;
 
     @Min(1)
-    @Column(name = "creator")
+    @Column(name = "creator", nullable = false)
     private long creator;
 
     @NotNull
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     @Column(name = "modifier")

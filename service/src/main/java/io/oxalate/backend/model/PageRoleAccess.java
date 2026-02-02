@@ -33,17 +33,17 @@ public class PageRoleAccess {
     @Column(name = "id")
     private long id;
 
-    @Column(name = "page_id")
+    @Column(name = "page_id", nullable = false)
     private long pageId;
 
-    @Column(name = "role")
+    @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
     private RoleEnum role;
 
-    @Column(name = "read_permission")
+    @Column(name = "read_permission", nullable = false)
     private boolean readPermission;
 
-    @Column(name = "write_permission")
+    @Column(name = "write_permission", nullable = false)
     private boolean writePermission;
 
     public static PageRoleAccess of(PageRoleRequest rolePermissionRequest, long pageId) {

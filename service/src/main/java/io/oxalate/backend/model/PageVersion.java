@@ -31,23 +31,23 @@ public class PageVersion {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "page_id")
+    @Column(name = "page_id", nullable = false)
     private Long pageId;
 
     @Size(min = 2, max = 2, message = "Language code is given with 2 characters as per ISO-639-1")
-    @Column(name = "language")
+    @Column(name = "language", nullable = false)
     private String language;
 
     @Size(min = 2, max = 256, message = "Title must be between 2 and 256 characters long")
-    @Column(name = "title")
+    @Column(name = "title", nullable = false)
     private String title;
 
     @Size(max = 512, message = "Ingress must be between 2 and 512 characters long")
-    @Column(name = "ingress")
+    @Column(name = "ingress", nullable = false)
     private String ingress;
 
     @Size(min = 2, message = "Body must be at least 2 characters long")
-    @Column(name = "body")
+    @Column(name = "body", nullable = false)
     private String body;
 
     public static PageVersion of(PageVersionRequest pageVersionRequest) {

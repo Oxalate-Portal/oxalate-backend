@@ -36,23 +36,23 @@ public class ApplicationAuditEvent {
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "level")
+    @Column(name = "level", nullable = false)
     @Enumerated(EnumType.STRING)
     private AuditLevelEnum level;
 
-    @Column(name = "trace_id")
+    @Column(name = "trace_id", nullable = false)
     private String traceId;
 
     @Column(name = "ip_address")
     private String ipAddress;
 
-    @Column(name = "source")
+    @Column(name = "source", nullable = false)
     private String source;
 
-    @Column(name = "message")
+    @Column(name = "message", nullable = false)
     private String message;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     public AuditEntryResponse toAuditEntryResponse() {

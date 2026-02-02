@@ -502,6 +502,27 @@ public class AppAuditMessages {
     public static final String TAGS_GET_BY_GROUP_TYPE_UNAUTHORIZED = "User not authorized to get tags by group type";
     public static final String TAGS_GET_BY_GROUP_TYPE_OK = "Return list of tags by group type: ";
 
+    // NotificationController
+    public static final String NOTIFICATIONS_GET_UNREAD_START = "Getting unread notifications";
+    public static final String NOTIFICATIONS_GET_UNREAD_OK = "Return list of unread notifications";
+
+    public static final String NOTIFICATIONS_GET_ALL_START = "Getting all notifications";
+    public static final String NOTIFICATIONS_GET_ALL_OK = "Return list of all notifications";
+
+    public static final String NOTIFICATIONS_MARK_READ_START = "Marking notifications as read";
+    public static final String NOTIFICATIONS_MARK_READ_OK = "Notifications marked as read";
+    public static final String NOTIFICATIONS_MARK_READ_FAIL = "Failed to mark notifications as read";
+
+    public static final String NOTIFICATIONS_CREATE_START = "Creating notification";
+    public static final String NOTIFICATIONS_CREATE_UNAUTHORIZED = "User not authorized to create notification";
+    public static final String NOTIFICATIONS_CREATE_OK = "Notification created";
+    public static final String NOTIFICATIONS_CREATE_FAIL = "Failed to create notification";
+
+    public static final String NOTIFICATIONS_CREATE_BULK_START = "Creating bulk notifications";
+    public static final String NOTIFICATIONS_CREATE_BULK_UNAUTHORIZED = "User not authorized to create bulk notifications";
+    public static final String NOTIFICATIONS_CREATE_BULK_OK = "Bulk notifications created";
+    public static final String NOTIFICATIONS_CREATE_BULK_FAIL = "Failed to create bulk notifications";
+
     private AppAuditMessages() {
     }
 }

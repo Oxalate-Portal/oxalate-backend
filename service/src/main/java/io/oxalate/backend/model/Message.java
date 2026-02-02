@@ -28,19 +28,19 @@ public class Message {
     @Column(name = "id")
     private long id;
 
-    @Column(name = "description")
+    @Column(name = "description", nullable = false)
     private String description;
 
-    @Column(name = "title")
+    @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "message")
+    @Column(name = "message", nullable = false)
     private String message;
 
-    @Column(name = "creator")
+    @Column(name = "creator", nullable = false)
     private long creator;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     public MessageResponse toMessageResponse() {

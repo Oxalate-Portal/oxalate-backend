@@ -37,4 +37,7 @@ public interface UserRepository extends ListCrudRepository<User, Long>, CrudRepo
     List<User> findAllByFirstNameContainsIgnoreCaseOrLastNameContainsIgnoreCase(String firstName, String lastName);
 
     List<User> findByFirstNameContainsIgnoreCaseAndLastNameContainsIgnoreCase(String firstName, String lastName);
+
+    @Query(nativeQuery = true, value = "SELECT * FROM users u WHERE u.status NOT IN ('ANONYMIZED', 'LOCKED')")
+    List<User> findAllActiveUsers();
 }

@@ -29,13 +29,13 @@ public class Certificate {
     @Column(name = "id")
     private long id;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private long userId;
 
-    @Column(name = "organization")
+    @Column(name = "organization", nullable = false)
     private String organization;
 
-    @Column(name = "certificate_name")
+    @Column(name = "certificate_name", nullable = false)
     private String certificateName;
 
     @Column(name = "certificate_id")
