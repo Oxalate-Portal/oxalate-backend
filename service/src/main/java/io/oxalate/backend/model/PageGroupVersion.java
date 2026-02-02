@@ -33,15 +33,15 @@ public class PageGroupVersion {
     private Long id;
 
     @Min(value = 1, message = "Path id must be at least 1")
-    @Column(name = "page_group_id")
+    @Column(name = "page_group_id", nullable = false)
     private Long pageGroupId;
 
     @Size(min = 2, max = 256, message = "Title must be between 2 and 256 characters long")
-    @Column(name = "title")
+    @Column(name = "title", nullable = false)
     private String title;
 
     @Size(min = 2, max = 2, message = "Language code is given with 2 characters as per ISO-639-1")
-    @Column(name = "language")
+    @Column(name = "language", nullable = false)
     private String language;
 
     public static PageGroupVersion of(PageGroupVersionRequest pageGroupVersionRequest) {

@@ -42,9 +42,10 @@ public class Event {
     private long id;
 
     @Convert(converter = DiveTypeEnumConverter.class)
+    @Column(name = "type", nullable = false)
     private DiveTypeEnum type;
 
-    @Column(name = "title")
+    @Column(name = "title", nullable = false)
     @Size(min = 4, message = "Event title must be longer than 4 characters long")
     private String title;
 
@@ -52,22 +53,22 @@ public class Event {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "start_time")
+    @Column(name = "start_time", nullable = false)
     private Instant startTime;
 
-    @Column(name = "event_duration")
+    @Column(name = "event_duration", nullable = false)
     private int eventDuration;
 
-    @Column(name = "max_duration")
+    @Column(name = "max_duration", nullable = false)
     private int maxDuration;
 
-    @Column(name = "max_depth")
+    @Column(name = "max_depth", nullable = false)
     private int maxDepth;
 
-    @Column(name = "max_participants")
+    @Column(name = "max_participants", nullable = false)
     private int maxParticipants;
 
-    @Column(name = "organizer_id")
+    @Column(name = "organizer_id", nullable = false)
     private long organizerId;
 
     @Enumerated(EnumType.STRING)

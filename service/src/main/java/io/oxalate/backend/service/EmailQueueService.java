@@ -30,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EmailQueueService {
 
+    private static final long SYSTEM_USER_ID = 1L;
+
     final private EmailQueueRepository emailQueueRepository;
     final private EmailService emailService;
     final private EmailNotificationSubscriptionRepository emailNotificationSubscriptionRepository;
@@ -39,6 +41,7 @@ public class EmailQueueService {
     final private PageRoleAccessRepository pageRoleAccessRepository;
     final private RoleRepository roleRepository;
     final private PortalConfigurationService portalConfigurationService;
+    final private MessageService messageService;
 
     @Transactional
     public void addNotification(EmailNotificationTypeEnum emailType, EmailNotificationDetailEnum detail, long typeId) {
@@ -80,6 +83,28 @@ public class EmailQueueService {
                                              .nextSendTimestamp(Instant.now())
                                              .build();
         emailQueueRepository.save(emailQueueEntry);
+
+        // Create a notification for the user informing them that they have a new email
+        createEmailNotificationForUser(userId, emailType, detail);
+    }
+
+    /**
+     * Creates an in-app notification for the user when an email is queued.
+     *
+     * @param userId    The ID of the user to receive the notification
+     * @param emailType The type of email being sent
+     * @param detail    The detail/reason for the email
+     */
+    private void createEmailNotificationForUser(Long userId, EmailNotificationTypeEnum emailType, EmailNotificationDetailEnum detail) {
+        String title = "New email notification";
+        String description = "Email notification";
+        String messageContent = switch (emailType) {
+            case EVENT -> "You have a new email notification about an event: " + detail.name();
+            case PAGE -> "You have a new email notification about a page update: " + detail.name();
+        };
+
+        messageService.createSimpleNotification(userId, SYSTEM_USER_ID, title, description, messageContent);
+        log.debug("Created in-app notification for user ID {} about {} email", userId, emailType);
     }
 
     @Transactional

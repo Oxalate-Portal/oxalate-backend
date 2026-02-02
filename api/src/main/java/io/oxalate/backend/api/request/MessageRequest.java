@@ -19,5 +19,4 @@ public class MessageRequest extends AbstractMessage {
     @Schema(description = "Alternative toggle to send everyone the message", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("sendAll")
     private Boolean sendAll;
-
 }

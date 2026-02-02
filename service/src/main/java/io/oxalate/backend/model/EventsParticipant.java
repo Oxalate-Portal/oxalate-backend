@@ -26,29 +26,29 @@ import lombok.NoArgsConstructor;
 @IdClass(EventsParticipantId.class)
 public class EventsParticipant {
     @Id
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private long userId;
 
     @Id
-    @Column(name = "event_id")
+    @Column(name = "event_id", nullable = false)
     private long eventId;
 
-    @Column(name = "dive_count")
+    @Column(name = "dive_count", nullable = false)
     private int diveCount;
 
-    @Column(name = "participant_type")
+    @Column(name = "participant_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private ParticipantTypeEnum participantType;
 
-    @Column(name = "payment_type")
+    @Column(name = "payment_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private PaymentTypeEnum paymentType;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "event_user_type")
+    @Column(name = "event_user_type", nullable = false)
     private UserTypeEnum eventUserType;
 
     public EventDiveResponse toEventDiveResponse(String name) {

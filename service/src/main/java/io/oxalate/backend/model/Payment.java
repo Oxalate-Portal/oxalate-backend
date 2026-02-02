@@ -34,21 +34,21 @@ public class Payment {
     @Column(name = "id")
     private long id;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private long userId;
 
-    @Column(name = "payment_type")
+    @Column(name = "payment_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private PaymentTypeEnum paymentType;
 
     // Depending of the type we either use the counter, or the dates for expiration
-    @Column(name = "payment_count")
+    @Column(name = "payment_count", nullable = false)
     private int paymentCount;
 
-    @Column(name = "created")
+    @Column(name = "created", nullable = false)
     private Instant created;
 
-    @Column(name = "start_date")
+    @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
     @Column(name = "end_date")

@@ -60,57 +60,57 @@ public class User {
     @NotBlank
     @Size(max = 80)
     @Email
-    @Column(name = "username")
+    @Column(name = "username", nullable = false)
     private String username;
 
     @NotBlank
     @Size(max = 120)
-    @Column(name = "password")
+    @Column(name = "password", nullable = false)
     private String password;
 
     @NotBlank
     @Size(max = 120)
-    @Column(name = "first_name")
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
     @NotBlank
     @Size(max = 120)
-    @Column(name = "last_name")
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private UserStatusEnum status;
 
     @NotNull
-    @Column(name = "phone_number")
+    @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
     @NotNull
-    @Column(name = "privacy")
+    @Column(name = "privacy", nullable = false)
     private boolean privacy;
 
     @Column(name = "next_of_kin")
     private String nextOfKin;
 
     @NotNull
-    @Column(name = "registered")
+    @Column(name = "registered", nullable = false)
     private Instant registered;
 
     @NotNull
-    @Column(name = "approved_terms")
+    @Column(name = "approved_terms", nullable = false)
     private boolean approvedTerms;
 
     @Size(min = 2, max = 2, message = "Language code is given with 2 characters as per ISO-639-1")
-    @Column(name = "language")
+    @Column(name = "language", nullable = false)
     private String language;
 
     @Column(name = "last_seen")
     private Instant lastSeen;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "primary_user_type")
+    @Column(name = "primary_user_type", nullable = false)
     private UserTypeEnum primaryUserType;
 
     @Transient

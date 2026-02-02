@@ -28,22 +28,22 @@ public class Token {
     @Column(name = "id")
     private long id;
 
-    @Column(name = "token")
+    @Column(name = "token", nullable = false)
     private String token;
 
-    @Column(name = "token_type")
+    @Column(name = "token_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private TokenType tokenType;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private long userId;
 
-    @Column(name = "retry_count")
+    @Column(name = "retry_count", nullable = false)
     private int retryCount;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "expires_at")
+    @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 }
