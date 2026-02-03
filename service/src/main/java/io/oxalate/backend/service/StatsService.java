@@ -53,6 +53,7 @@ public class StatsService {
         return getMultiYearValues(queryString, "events", true);
     }
 
+    @SuppressWarnings("unchecked")
     public List<MultiYearValueResponse> getYearlyOrganizers() {
         var queryString = """
                 SELECT
@@ -105,6 +106,7 @@ public class StatsService {
         return multiYearValues;
     }
 
+    @SuppressWarnings("unchecked")
     public List<MultiYearValueResponse> getYearlyPayments() {
         var queryString = """
                 SELECT
@@ -139,6 +141,7 @@ public class StatsService {
         return multiYearValues;
     }
 
+    @SuppressWarnings("unchecked")
     public List<EventPeriodReportResponse> getEventReports() {
         var eventPeriodReportResponses = new ArrayList<EventPeriodReportResponse>();
 
@@ -181,6 +184,7 @@ public class StatsService {
         return eventPeriodReportResponses;
     }
 
+    @SuppressWarnings("unchecked")
     public List<YearlyDiversListResponse> getYearlyDiversList() {
         var yearlyList = new ArrayList<YearlyDiversListResponse>();
         var firstYear = getOldestEventYear();
@@ -339,6 +343,7 @@ public class StatsService {
         eventPeriodReportResponses.add(eventPeriodReport);
     }
 
+    @SuppressWarnings("unchecked")
     private List<EventReportResponse> getAllEventsForPeriod(long fetchYear, int yearHalf) {
         var queryString = String.format("""
                 SELECT e.id,
@@ -399,6 +404,7 @@ public class StatsService {
      * @param includeCumulative whether to include cumulative values
      * @return list of MultiYearValueResponse
      */
+    @SuppressWarnings("unchecked")
     private List<MultiYearValueResponse> getMultiYearValues(String queryString, String keyName, boolean includeCumulative) {
         var isKeyNumeric = keyName.matches("\\d+");
         var keyIndex = isKeyNumeric ? Integer.parseInt(keyName) : -1;

@@ -75,6 +75,7 @@ public class Event {
     @Column(name = "status", nullable = false)
     private EventStatusEnum status;
 
+    @Builder.Default
     @ManyToMany
     @JoinTable(
         name = "event_tags",

@@ -46,9 +46,11 @@ public class TagGroup {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "tagGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TagGroupTranslation> translations = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "tagGroup")
     private Set<Tag> tags = new HashSet <>();
 
