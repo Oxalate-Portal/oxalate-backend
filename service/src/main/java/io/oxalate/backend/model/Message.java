@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,7 +44,11 @@ public class Message {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public MessageResponse toMessageResponse() {
+    @Builder.Default
+    @Transient
+    private boolean read = false;
+
+    public MessageResponse toResponse() {
         return MessageResponse.builder()
                 .id(id)
                 .description(description)

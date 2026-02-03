@@ -35,10 +35,11 @@ public class MessageService {
                 .message(messageRequest.getMessage())
                 .creator(messageRequest.getCreator())
                 .createdAt(Instant.now())
+                             .read(false)
                 .build();
 
         message = messageRepository.save(message);
-        return message.toMessageResponse();
+        return message.toResponse();
     }
 
     /**
@@ -107,7 +108,7 @@ public class MessageService {
         var messageResponses = new ArrayList<MessageResponse>();
 
         for (Message message : unreadMessages) {
-            messageResponses.add(message.toMessageResponse());
+            messageResponses.add(message.toResponse());
         }
 
         return messageResponses;
@@ -126,7 +127,7 @@ public class MessageService {
         var messageResponses = new ArrayList<MessageResponse>();
 
         for (Message message : allMessages) {
-            messageResponses.add(message.toMessageResponse());
+            messageResponses.add(message.toResponse());
         }
 
         return messageResponses;
