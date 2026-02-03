@@ -52,9 +52,11 @@ public class Tag {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "tag", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TagTranslation> translations = new HashSet<>();
 
+    @Builder.Default
     @ManyToMany
     @JoinTable(
         name = "user_tags",
@@ -63,6 +65,7 @@ public class Tag {
     )
     private Set<User> users = new HashSet<>();
 
+    @Builder.Default
     @ManyToMany
     @JoinTable(
         name = "event_tags",

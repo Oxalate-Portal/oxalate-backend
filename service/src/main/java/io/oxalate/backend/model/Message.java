@@ -43,7 +43,11 @@ public class Message {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public MessageResponse toMessageResponse() {
+    // This field is populated by native queries joining with message_receivers table
+    // It is not a column in the messages table
+    private transient boolean read;
+
+    public MessageResponse toResponse() {
         return MessageResponse.builder()
                 .id(id)
                 .description(description)
@@ -51,6 +55,7 @@ public class Message {
                 .message(message)
                 .creator(creator)
                 .createdAt(createdAt)
+                              .read(read)
                 .build();
     }
 }

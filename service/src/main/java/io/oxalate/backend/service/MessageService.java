@@ -4,6 +4,7 @@ import io.oxalate.backend.api.request.MessageRequest;
 import io.oxalate.backend.api.response.MessageResponse;
 import io.oxalate.backend.model.Message;
 import io.oxalate.backend.repository.MessageRepository;
+import io.oxalate.backend.repository.MessageWithReadStatus;
 import io.oxalate.backend.repository.UserRepository;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,10 +36,11 @@ public class MessageService {
                 .message(messageRequest.getMessage())
                 .creator(messageRequest.getCreator())
                 .createdAt(Instant.now())
+                             .read(false)
                 .build();
 
         message = messageRepository.save(message);
-        return message.toMessageResponse();
+        return message.toResponse();
     }
 
     /**
@@ -106,8 +108,16 @@ public class MessageService {
 
         var messageResponses = new ArrayList<MessageResponse>();
 
-        for (Message message : unreadMessages) {
-            messageResponses.add(message.toMessageResponse());
+        for (MessageWithReadStatus msg : unreadMessages) {
+            messageResponses.add(MessageResponse.builder()
+                                                .id(msg.getId())
+                                                .description(msg.getDescription())
+                                                .title(msg.getTitle())
+                                                .message(msg.getMessage())
+                                                .creator(msg.getCreator())
+                                                .createdAt(msg.getCreatedAt())
+                                                .read(msg.getRead())
+                                                .build());
         }
 
         return messageResponses;
@@ -125,10 +135,19 @@ public class MessageService {
 
         var messageResponses = new ArrayList<MessageResponse>();
 
-        for (Message message : allMessages) {
-            messageResponses.add(message.toMessageResponse());
+        for (MessageWithReadStatus msg : allMessages) {
+            messageResponses.add(MessageResponse.builder()
+                                                .id(msg.getId())
+                                                .description(msg.getDescription())
+                                                .title(msg.getTitle())
+                                                .message(msg.getMessage())
+                                                .creator(msg.getCreator())
+                                                .createdAt(msg.getCreatedAt())
+                                                .read(msg.getRead())
+                                                .build());
         }
 
+        log.debug("The following messages were retrieved for user ID {}: {}", userId, messageResponses);
         return messageResponses;
     }
 

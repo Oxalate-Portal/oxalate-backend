@@ -58,6 +58,7 @@ public class EmailQueueEntry {
     @Column(name = "next_send_timestamp", nullable = false)
     private Instant nextSendTimestamp;
 
+    @Builder.Default
     @Column(name = "counter", nullable = false)
     private int counter = 0;
 

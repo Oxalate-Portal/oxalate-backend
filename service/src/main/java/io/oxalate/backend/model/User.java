@@ -131,6 +131,7 @@ public class User {
     @Transient
     private List<Membership> membership;
 
+    @Builder.Default
     @ManyToMany
     @JoinTable(
             name = "user_tags",
