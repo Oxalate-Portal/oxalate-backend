@@ -287,9 +287,9 @@ public class AppAuditMessages {
     public static final String PAGES_GET_NAVIGATION_ELEMENTS_UNAUTHORIZED = "User not authorized to get list of page groups";
     public static final String PAGES_GET_NAVIGATION_ELEMENTS_OK = "Return page groups";
 
-    public static final String PAGES_GET_PAGES_BY_PATH_START = "Fetching list of all pages by path";
-    public static final String PAGES_GET_PAGES_BY_PATH_UNAUTHORIZED = "User not authorized to get list of pages by path";
-    public static final String PAGES_GET_PAGES_BY_PATH_OK = "Return pages by path";
+    public static final String PAGES_GET_BLOGS_START = "Fetching list of all blog pages";
+    public static final String PAGES_GET_BLOGS_UNAUTHORIZED = "User not authorized to get list of blogs";
+    public static final String PAGES_GET_BLOGS_OK = "Return blogs";
 
     public static final String PAGES_GET_PAGE_START = "Fetching specific page by id: ";
     public static final String PAGES_GET_PAGE_NOT_FOUND = "Requested non-existing page";

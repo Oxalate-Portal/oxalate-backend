@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "PageAPI", description = "Page REST endpoints")
@@ -29,17 +30,14 @@ public interface PageAPI {
     @GetMapping(path = BASE_PATH + "/navigation-elements", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PageGroupResponse>> getNavigationElements(@RequestParam(name = "language") String language, HttpServletRequest request);
 
-    @Operation(description = "Get all pages for a given path and language", tags = "PageAPI")
-    @Parameter(name = "path", description = "Path of the pages that should be fetched", example = "/info", required = true)
+    @Operation(description = "Get all pages from the blogs page group for a given language. The sorting is newest to oldest", tags = "PageAPI")
     @Parameter(name = "language", description = "Language", example = "fi")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @GetMapping(path = BASE_PATH + "/by-path", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PageGroupResponse>> getPagesByPath(@RequestParam(name = "path") String path,
-            @RequestParam(name = "language") String language,
-            HttpServletRequest request);
+    @PostMapping(path = BASE_PATH + "/blogs", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<PageGroupResponse>> getBlogArticles(@RequestParam(name = "language") String language, HttpServletRequest request);
 
     @Operation(description = "Get page by the given page ID", tags = "PageAPI")
     @Parameter(name = "pageId", description = "Page ID to be retrieved", example = "1", required = true)
