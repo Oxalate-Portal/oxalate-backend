@@ -1,0 +1,44 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: override-by-testcontainer
+    username: override-by-testcontainer
+    password: override-by-testcontainer
+    hikari:
+      schema: public
+  jpa:
+    properties:
+      hibernate:
+        default_schema: public
+    show-sql: false
+  flyway:
+    schemas:
+      - public
+  mail:
+    host: localhost
+    port: 2525
+
+logging:
+  level:
+    root: info
+    io:
+      oxalate:
+        backend: debug
+
+oxalate:
+  app:
+    env: test
+    backend-url: http://localhost:8080
+    frontend-url: http://localhost:3000
+    # Base64 encoded 512-bit key for HS512 algorithm (64 bytes = 512 bits)
+    jwt-secret: YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
+    jwt-expiration: 86400
+    jwt-secure: false
+    jwt-same-site: None
+  captcha:
+    enabled: false
+    site-key: test-site-key
+    secret-key: test-secret-key
+    threshold: 0.1

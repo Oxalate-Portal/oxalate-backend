@@ -2,8 +2,10 @@ package io.oxalate.backend.controller;
 
 import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import static io.oxalate.backend.api.AuditLevelEnum.WARN;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_BLOGS_OK;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_BLOGS_START;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_NAVIGATION_ELEMENTS_OK;
@@ -49,13 +51,18 @@ public class PageController implements PageAPI {
     }
 
     @Override
-    public ResponseEntity<List<PageGroupResponse>> getBlogArticles(String language, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(PAGES_GET_BLOGS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+    public ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(PagedRequest pagedRequest, HttpServletRequest request) {
+        var userId = AuthTools.getCurrentUserId();
+        var userRoles = AuthTools.getUserRoles();
+        var auditUuid = appEventPublisher.publishAuditEvent(PAGES_GET_BLOGS_START, INFO, request, AUDIT_NAME, userId);
 
-        log.debug("Fetch blogs with language {}", language);
+        log.debug("Fetch blogs with request {}", pagedRequest);
 
-        appEventPublisher.publishAuditEvent(PAGES_GET_BLOGS_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return null;
+        var pagedResponse = pageService.getBlogArticles(pagedRequest, userRoles);
+
+        appEventPublisher.publishAuditEvent(PAGES_GET_BLOGS_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(pagedResponse);
     }
 
     @Override

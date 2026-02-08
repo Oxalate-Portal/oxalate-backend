@@ -2,18 +2,20 @@ package io.oxalate.backend.repository;
 
 import io.oxalate.backend.model.PageGroup;
 import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PageGroupRepository extends CrudRepository<PageGroup, Long> {
+public interface PageGroupRepository extends JpaRepository<PageGroup, Long> {
     List<PageGroup> findAllById(long pageGroupId);
 
     @Modifying
-    @Query(nativeQuery = true, value = "UPDATE page_groups SET status = :pageStatusEnum WHERE id = :pageGroupId")
+    @Query(nativeQuery = true, value = """
+            UPDATE page_groups SET status = :pageStatusEnum WHERE id = :pageGroupId
+            """)
     void updateStatus(@Param("pageGroupId") long pageGroupId, @Param("pageStatusEnum") String pageStatusEnum);
 
     List<PageGroup> findAllByIdIsNotIn(List<Long> pageGroupIdList);
