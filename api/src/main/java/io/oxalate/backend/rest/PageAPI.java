@@ -1,8 +1,10 @@
 package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.UrlConstants.PAGES_URL;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,6 +16,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "PageAPI", description = "Page REST endpoints")
@@ -29,17 +33,14 @@ public interface PageAPI {
     @GetMapping(path = BASE_PATH + "/navigation-elements", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PageGroupResponse>> getNavigationElements(@RequestParam(name = "language") String language, HttpServletRequest request);
 
-    @Operation(description = "Get all pages for a given path and language", tags = "PageAPI")
-    @Parameter(name = "path", description = "Path of the pages that should be fetched", example = "/info", required = true)
-    @Parameter(name = "language", description = "Language", example = "fi")
+    @Operation(description = "Get all pages from the blogs page group for a given language with pagination, sorting and search support", tags = "PageAPI")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @GetMapping(path = BASE_PATH + "/by-path", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PageGroupResponse>> getPagesByPath(@RequestParam(name = "path") String path,
-            @RequestParam(name = "language") String language,
-            HttpServletRequest request);
+    @PostMapping(path = BASE_PATH + "/blogs", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(@RequestBody PagedRequest pagedRequest, HttpServletRequest request);
 
     @Operation(description = "Get page by the given page ID", tags = "PageAPI")
     @Parameter(name = "pageId", description = "Page ID to be retrieved", example = "1", required = true)

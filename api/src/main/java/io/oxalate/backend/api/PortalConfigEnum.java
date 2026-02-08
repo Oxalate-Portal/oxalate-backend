@@ -70,7 +70,8 @@ public enum PortalConfigEnum {
         TIMEZONE("timezone"),
         ENABLED_LANGUAGES("enabled-language"),
         ORG_NAME("org-name"),
-        TOP_DIVER_LIST_SIZE("top-divers-list-size");
+        TOP_DIVER_LIST_SIZE("top-divers-list-size"),
+        BLOG_ENABLED("blog-enabled");
 
         public final String key;
 

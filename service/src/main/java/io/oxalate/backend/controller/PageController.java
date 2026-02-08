@@ -2,12 +2,14 @@ package io.oxalate.backend.controller;
 
 import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import static io.oxalate.backend.api.AuditLevelEnum.WARN;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
+import io.oxalate.backend.api.response.PagedResponse;
+import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_BLOGS_OK;
+import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_BLOGS_START;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_NAVIGATION_ELEMENTS_OK;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_NAVIGATION_ELEMENTS_START;
-import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_PAGES_BY_PATH_OK;
-import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_PAGES_BY_PATH_START;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_PAGE_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_PAGE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.PAGES_GET_PAGE_START;
@@ -48,15 +50,19 @@ public class PageController implements PageAPI {
                              .body(paths);
     }
 
-    // TODO Confirm that this can be removed
     @Override
-    public ResponseEntity<List<PageGroupResponse>> getPagesByPath(String path, String language, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(PAGES_GET_PAGES_BY_PATH_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+    public ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(PagedRequest pagedRequest, HttpServletRequest request) {
+        var userId = AuthTools.getCurrentUserId();
+        var userRoles = AuthTools.getUserRoles();
+        var auditUuid = appEventPublisher.publishAuditEvent(PAGES_GET_BLOGS_START, INFO, request, AUDIT_NAME, userId);
 
-        log.debug("Called with path {}, language {}", path, language);
+        log.debug("Fetch blogs with request {}", pagedRequest);
 
-        appEventPublisher.publishAuditEvent(PAGES_GET_PAGES_BY_PATH_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return null;
+        var pagedResponse = pageService.getBlogArticles(pagedRequest, userRoles);
+
+        appEventPublisher.publishAuditEvent(PAGES_GET_BLOGS_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(pagedResponse);
     }
 
     @Override

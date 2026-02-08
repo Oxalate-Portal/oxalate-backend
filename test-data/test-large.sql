@@ -6027,3 +6027,47 @@ SELECT pg_catalog.setval('tags_id_seq', 1, false);
 SELECT pg_catalog.setval('tokens_id_seq', 1, false);
 SELECT pg_catalog.setval('users_id_seq', 457, true);
 
+UPDATE portal_configuration
+SET runtime_value = 'true'
+WHERE group_key = 'commenting'
+  AND setting_key = 'commenting-allow-editing';
+UPDATE portal_configuration
+SET runtime_value = 'true'
+WHERE group_key = 'commenting'
+  AND setting_key = 'commenting-enabled';
+UPDATE portal_configuration
+SET runtime_value = 'event,page,forum,blog'
+WHERE group_key = 'commenting'
+  AND setting_key = 'commenting-enabled-features';
+UPDATE portal_configuration
+SET runtime_value = 'true'
+WHERE group_key = 'general'
+  AND setting_key = 'blog-enabled';
+UPDATE portal_configuration
+SET runtime_value = 'true'
+WHERE group_key = 'membership'
+  AND setting_key = 'event-require-membership';
+UPDATE portal_configuration
+SET runtime_value = 'PERIODICAL'
+WHERE group_key = 'membership'
+  AND setting_key = 'membership-type';
+UPDATE portal_configuration
+SET runtime_value = 'true'
+WHERE group_key = 'payment'
+  AND setting_key = 'event-require-payment';
+UPDATE portal_configuration
+SET runtime_value = 'PERIODICAL'
+WHERE group_key = 'payment'
+  AND setting_key = 'one-time-expiration-type';
+UPDATE portal_configuration
+SET runtime_value = 'true'
+WHERE group_key = 'payment'
+  AND setting_key = 'payment-enabled';
+UPDATE portal_configuration
+SET runtime_value = 'PERIODICAL'
+WHERE group_key = 'payment'
+  AND setting_key = 'periodical-payment-method-type';
+UPDATE portal_configuration
+SET runtime_value = 'true'
+WHERE group_key = 'payment'
+  AND setting_key = 'single-payment-enabled';

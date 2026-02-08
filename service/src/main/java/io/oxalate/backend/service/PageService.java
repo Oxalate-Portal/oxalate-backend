@@ -8,11 +8,14 @@ import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTI
 import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
 import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.ENABLED_LANGUAGES;
 import io.oxalate.backend.api.RoleEnum;
+import io.oxalate.backend.api.SortDirectionEnum;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageRequest;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
 import io.oxalate.backend.api.response.PageRoleAccessResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.model.Page;
 import io.oxalate.backend.model.PageGroup;
 import io.oxalate.backend.model.PageGroupVersion;
@@ -48,7 +51,9 @@ public class PageService {
     private final EmailQueueService emailQueueService;
     private final PortalConfigurationService portalConfigurationService;
 
-    private final long RESERVED_PAGE_GROUP_ID = 1;
+    private final long RESERVED_PAGE_GROUP_ID = 1L;
+    private final long BLOG_PAGE_GROUP_ID = 3L;
+    private final List<Long> BLOCKED_PAGE_GROUPS = List.of(RESERVED_PAGE_GROUP_ID, BLOG_PAGE_GROUP_ID);
 
     public PageResponse getPage(long pageId, Set<RoleEnum> roles, String language) {
         var supportedLanguages = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
@@ -105,6 +110,91 @@ public class PageService {
         return pageResponse;
     }
 
+    /**
+     * Get blog articles with pagination, sorting and search support.
+     * Blog articles are pages belonging to page group ID 3.
+     *
+     * @param pagedRequest Pagination request containing page, size, sortBy, direction, search, caseSensitive and language
+     * @param roles        Set of roles the user has
+     * @return PagedResponse containing the list of PageResponse objects
+     */
+    public PagedResponse<PageResponse> getBlogArticles(PagedRequest pagedRequest, Set<RoleEnum> roles) {
+        var supportedLanguages = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
+        var language = pagedRequest.getLanguage();
+
+        if (language == null || !supportedLanguages.contains(language)) {
+            log.error("Requested language {} is not supported when fetching blog articles", language);
+            return PagedResponse.of(new ArrayList<>(), pagedRequest.getPage(), pagedRequest.getSize(), 0);
+        }
+
+        // Convert roles to a list of strings for the native query
+        var roleStrings = roles.stream()
+                               .map(RoleEnum::name)
+                               .toList();
+
+        var search = pagedRequest.getSearch();
+        var caseSensitive = Boolean.TRUE.equals(pagedRequest.getCaseSensitive());
+        var sortBy = pagedRequest.getSortBy() != null ? pagedRequest.getSortBy() : "createdAt";
+        var direction = pagedRequest.getDirection() != null ? pagedRequest.getDirection() : SortDirectionEnum.DESC;
+        var page = pagedRequest.getPage();
+        var size = pagedRequest.getSize();
+        var offset = page * size;
+
+        // Get the total count
+        long totalElements;
+        if (caseSensitive) {
+            totalElements = pageRepository.countBlogArticlesCaseSensitive(BLOG_PAGE_GROUP_ID, language, roleStrings, search);
+        } else {
+            totalElements = pageRepository.countBlogArticlesCaseInsensitive(BLOG_PAGE_GROUP_ID, language, roleStrings, search);
+        }
+
+        // Get the pages
+        List<Page> pages;
+        if (caseSensitive) {
+            if ("title".equalsIgnoreCase(sortBy)) {
+                if (direction == SortDirectionEnum.ASC) {
+                    pages = pageRepository.findBlogArticlesCaseSensitiveOrderByTitleAsc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
+                } else {
+                    pages = pageRepository.findBlogArticlesCaseSensitiveOrderByTitleDesc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
+                }
+            } else {
+                // Default sort by createdAt
+                if (direction == SortDirectionEnum.ASC) {
+                    pages = pageRepository.findBlogArticlesCaseSensitiveOrderByCreatedAtAsc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
+                } else {
+                    pages = pageRepository.findBlogArticlesCaseSensitiveOrderByCreatedAtDesc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
+                }
+            }
+        } else {
+            if ("title".equalsIgnoreCase(sortBy)) {
+                if (direction == SortDirectionEnum.ASC) {
+                    pages = pageRepository.findBlogArticlesCaseInsensitiveOrderByTitleAsc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
+                } else {
+                    pages = pageRepository.findBlogArticlesCaseInsensitiveOrderByTitleDesc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
+                }
+            } else {
+                // Default sort by createdAt
+                if (direction == SortDirectionEnum.ASC) {
+                    pages = pageRepository.findBlogArticlesCaseInsensitiveOrderByCreatedAtAsc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
+                } else {
+                    pages = pageRepository.findBlogArticlesCaseInsensitiveOrderByCreatedAtDesc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
+                }
+            }
+        }
+
+        // Convert pages to PageResponse objects and populate PageVersions for the requested language
+        var pageResponses = new ArrayList<PageResponse>();
+        for (var pageEntity : pages) {
+            populatePage(pageEntity, language);
+            pageResponses.add(pageEntity.toResponse());
+        }
+
+        log.debug("Found {} blog articles for language {} with search '{}' (case sensitive: {})",
+                pageResponses.size(), language, search, caseSensitive);
+
+        return PagedResponse.of(pageResponses, page, size, totalElements);
+    }
+
     public List<PageGroupResponse> getPageGroups(String language, Set<RoleEnum> roles) {
         var pageGroupResponses = new ArrayList<PageGroupResponse>();
 
@@ -115,8 +205,7 @@ public class PageService {
             return pageGroupResponses;
         }
 
-        var pageGroups = pageGroupRepository.findAllExceptId(RESERVED_PAGE_GROUP_ID);
-
+        var pageGroups = pageGroupRepository.findAllByIdIsNotIn(BLOCKED_PAGE_GROUPS);
         log.debug("Got list of page groups before filtering with lang {}: {}", language, pageGroups);
 
         for (var pageGroup : pageGroups) {
