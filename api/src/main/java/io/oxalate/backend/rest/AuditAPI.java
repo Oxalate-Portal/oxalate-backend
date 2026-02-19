@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -40,8 +39,7 @@ public interface AuditAPI {
             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
             @RequestParam(name = "sorting", defaultValue = "createdAt,desc") String sorting,
             @RequestParam(name = "filter", defaultValue = "") String filter,
-            @RequestParam(name = "filterColumn", defaultValue = "") String filterColumn,
-            HttpServletRequest request);
+            @RequestParam(name = "filterColumn", defaultValue = "") String filterColumn);
 
     @Operation(description = "Get all audit entries of a user", tags = "AuditAPI")
     @Parameter(name = "userId", description = "User ID who's certificates should be retrieved", example = "123", required = true)
@@ -59,7 +57,6 @@ public interface AuditAPI {
             @PathVariable("userId") long userId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
-            @RequestParam(name = "sorting", defaultValue = "createdAt,desc") String sorting,
-            HttpServletRequest request
+            @RequestParam(name = "sorting", defaultValue = "createdAt,desc") String sorting
     );
 }

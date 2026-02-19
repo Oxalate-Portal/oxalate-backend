@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +31,7 @@ public interface BlockedDateAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<BlockedDateResponse>> getAllBlockedDates(HttpServletRequest request);
+    ResponseEntity<List<BlockedDateResponse>> getAllBlockedDates();
 
     @Operation(description = "Get all blocked dates", tags = "BlockedDateAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "BlockedDateRequest", required = true)
@@ -43,7 +42,7 @@ public interface BlockedDateAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<BlockedDateResponse> addBlockedDate(@RequestBody BlockedDateRequest blockedDateRequest, HttpServletRequest request);
+    ResponseEntity<BlockedDateResponse> addBlockedDate(@RequestBody BlockedDateRequest blockedDateRequest);
 
     @Operation(description = "Remove a blocked date", tags = "BlockedDateAPI")
     @Parameter(name = "blockedDateId", description = "Blocked date ID that should be removed", example = "123", required = true)
@@ -55,5 +54,5 @@ public interface BlockedDateAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(value = BASE_PATH + "/{blockedDateId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Void> removeBlockedDate(@PathVariable("blockedDateId") long blockedDateId, HttpServletRequest request);
+    ResponseEntity<Void> removeBlockedDate(@PathVariable("blockedDateId") long blockedDateId);
 }

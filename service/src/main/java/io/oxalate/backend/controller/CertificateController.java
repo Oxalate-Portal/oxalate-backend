@@ -1,12 +1,11 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevelEnum.ERROR;
-import static io.oxalate.backend.api.AuditLevelEnum.INFO;
-import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import io.oxalate.backend.api.request.CertificateRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
+import io.oxalate.backend.audit.AuditSource;
+import io.oxalate.backend.audit.Audited;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_ADD_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_ADD_OK;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_ADD_START;
@@ -29,11 +28,12 @@ import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_UPDATE_NOT
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_UPDATE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_UPDATE_START;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_UPDATE_UNAUTHORIZED;
-import io.oxalate.backend.events.AppEventPublisher;
+import io.oxalate.backend.exception.OxalateNotFoundException;
+import io.oxalate.backend.exception.OxalateUnauthorizedException;
+import io.oxalate.backend.exception.OxalateValidationException;
 import io.oxalate.backend.rest.CertificateAPI;
 import io.oxalate.backend.service.CertificateService;
 import io.oxalate.backend.tools.AuthTools;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,152 +45,116 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
+@AuditSource("CertificateController")
 public class CertificateController implements CertificateAPI {
 
     private final CertificateService certificateService;
-    private static final String AUDIT_NAME = "CertificateController";
-    private final AppEventPublisher appEventPublisher;
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<CertificateResponse>> getAllCertificates(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
-        if (AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
-            appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            return ResponseEntity.status(HttpStatus.OK).body(certificateService.findAll());
+    @Audited(startMessage = CERTIFICATES_GET_ALL_START, okMessage = CERTIFICATES_GET_ALL_OK)
+    public ResponseEntity<List<CertificateResponse>> getAllCertificates() {
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
+            log.warn("User {} is not allowed to see all certificates", AuthTools.getCurrentUserId());
+            throw new OxalateUnauthorizedException(CERTIFICATES_GET_ALL_UNAUTHORIZED, HttpStatus.BAD_REQUEST);
         }
 
-        log.warn("User {} is not allowed to see all certificates", AuthTools.getCurrentUserId());
-        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_UNAUTHORIZED, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(certificateService.findAll());
     }
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<CertificateResponse>> getUserCertificates(long userId, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_USER_START + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
-        // Check if user is allowed to see this user's certificates. ADMIN and ORGANIZER can see any, USER can see only their own
-        if (AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) || AuthTools.isUserIdCurrentUser(userId)) {
-            appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_USER_OK + userId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            return ResponseEntity.status(HttpStatus.OK).body(certificateService.findByUserId(userId));
+    @Audited(startMessage = CERTIFICATES_GET_ALL_USER_START, okMessage = CERTIFICATES_GET_ALL_USER_OK)
+    public ResponseEntity<List<CertificateResponse>> getUserCertificates(long userId) {
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) && !AuthTools.isUserIdCurrentUser(userId)) {
+            log.warn("User {} is not allowed to see user {}'s certificates", AuthTools.getCurrentUserId(), userId);
+            throw new OxalateUnauthorizedException(CERTIFICATES_GET_ALL_USER_UNAUTHORIZED + userId, HttpStatus.BAD_REQUEST);
         }
 
-        log.warn("User {} is not allowed to see user {}'s certificates", AuthTools.getCurrentUserId(), userId);
-        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_ALL_USER_UNAUTHORIZED + userId, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(certificateService.findByUserId(userId));
     }
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<CertificateResponse> getCertificate(long certificateId, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_GET_START + certificateId, INFO, request,
-                AUDIT_NAME, AuthTools.getCurrentUserId());
-
+    @Audited(startMessage = CERTIFICATES_GET_START, okMessage = CERTIFICATES_GET_OK)
+    public ResponseEntity<CertificateResponse> getCertificate(long certificateId) {
         var certificateResponse = certificateService.findById(certificateId);
-        // Check if user is allowed to see this user's certificates. ADMIN and ORGANIZER can see any, USER can see only their own
-        if (AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) || AuthTools.isUserIdCurrentUser(certificateResponse.getUserId())) {
 
-            if (certificateResponse != null) {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_GET_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-                return ResponseEntity.status(HttpStatus.OK)
-                                     .body(certificateResponse);
-            } else {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_GET_NOT_FOUND + certificateId, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
-                        auditUuid);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                     .body(null);
-            }
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) && !AuthTools.isUserIdCurrentUser(certificateResponse.getUserId())) {
+            log.warn("User {} is not allowed to see user {}'s certificate ID {}", AuthTools.getCurrentUserId(), certificateResponse.getUserId(), certificateId);
+            throw new OxalateUnauthorizedException(CERTIFICATES_GET_UNAUTHORIZED + certificateResponse.getUserId(), HttpStatus.BAD_REQUEST);
         }
 
-        appEventPublisher.publishAuditEvent(CERTIFICATES_GET_UNAUTHORIZED + certificateResponse.getUserId(), ERROR, request, AUDIT_NAME,
-                AuthTools.getCurrentUserId(), auditUuid);
-        log.warn("User {} is not allowed to see user {}'s certificate ID {}", AuthTools.getCurrentUserId(), certificateResponse.getUserId(), certificateId);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                             .body(null);
+        if (certificateResponse == null) {
+            throw new OxalateNotFoundException(CERTIFICATES_GET_NOT_FOUND + certificateId, HttpStatus.BAD_REQUEST);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(certificateResponse);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<CertificateResponse> addCertificate(CertificateRequest certificateRequest, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-        // Any user can add certificates only to their own profile. We disregard the userId given in the request and use instead the one from the session
+    @Audited(startMessage = CERTIFICATES_ADD_START, okMessage = CERTIFICATES_ADD_OK)
+    public ResponseEntity<CertificateResponse> addCertificate(CertificateRequest certificateRequest) {
         var userId = AuthTools.getCurrentUserId();
-
         var certificateDto = certificateService.addCertificate(userId, certificateRequest);
 
-        if (certificateDto != null) {
-            appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-            return ResponseEntity.status(HttpStatus.OK)
-                                 .body(certificateDto);
+        if (certificateDto == null) {
+            throw new OxalateValidationException(CERTIFICATES_ADD_FAIL, HttpStatus.BAD_REQUEST);
         }
 
-        appEventPublisher.publishAuditEvent(CERTIFICATES_ADD_FAIL, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                             .body(null);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(certificateDto);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<CertificateResponse> updateCertificate(CertificateRequest certificateRequest, HttpServletRequest request) {
+    @Audited(startMessage = CERTIFICATES_UPDATE_START, okMessage = CERTIFICATES_UPDATE_OK)
+    public ResponseEntity<CertificateResponse> updateCertificate(CertificateRequest certificateRequest) {
         var userId = AuthTools.getCurrentUserId();
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_START + certificateRequest.getId(), INFO, request, AUDIT_NAME, userId);
         var certificate = certificateService.findById(certificateRequest.getId());
 
         if (certificate == null) {
-            appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_NOT_FOUND + certificateRequest.getId(), WARN, request, AUDIT_NAME, userId, auditUuid);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            throw new OxalateNotFoundException(CERTIFICATES_UPDATE_NOT_FOUND + certificateRequest.getId());
         }
 
         log.info("User {} is updating certificate with request: {}", userId, certificateRequest);
-        // Any user can update certificates only to their own profile
-        if (userId == certificate.getUserId()) {
-            var certificateResponse = certificateService.updateCertificate(certificateRequest.getUserId(), certificateRequest);
 
-            if (certificateResponse != null) {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_OK + certificateRequest.getId(), INFO, request, AUDIT_NAME, userId, auditUuid);
-                return ResponseEntity.status(HttpStatus.OK)
-                                     .body(certificateResponse);
-            } else {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_FAIL + certificateRequest.getId(), INFO, request, AUDIT_NAME, userId, auditUuid);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                     .body(null);
-            }
+        if (userId != certificate.getUserId()) {
+            log.warn("User {} is not allowed to update certificates belonging to user {}", userId, certificateRequest.getUserId());
+            throw new OxalateUnauthorizedException(CERTIFICATES_UPDATE_UNAUTHORIZED + certificateRequest.getId(), HttpStatus.BAD_REQUEST);
         }
 
-        appEventPublisher.publishAuditEvent(CERTIFICATES_UPDATE_UNAUTHORIZED + certificateRequest.getId(), INFO, request, AUDIT_NAME, userId, auditUuid);
-        log.warn("User {} is not allowed to update certificates belonging to user {}", userId, certificateRequest.getUserId());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                             .body(null);
+        var certificateResponse = certificateService.updateCertificate(certificateRequest.getUserId(), certificateRequest);
+
+        if (certificateResponse == null) {
+            throw new OxalateValidationException(CERTIFICATES_UPDATE_FAIL + certificateRequest.getId(), HttpStatus.BAD_REQUEST);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(certificateResponse);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<Void> deleteCertificate(long certificateId, HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(CERTIFICATES_DELETE_START + certificateId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+    @Audited(startMessage = CERTIFICATES_DELETE_START, okMessage = CERTIFICATES_DELETE_OK)
+    public ResponseEntity<Void> deleteCertificate(long certificateId) {
         var userId = AuthTools.getCurrentUserId();
-
         var certificate = certificateService.findById(certificateId);
-        // Any user can delete only their own certificates
-        if (certificate.getUserId() == userId) {
-            if (certificateService.deleteCertificate(certificateId)) {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_DELETE_OK + certificateId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
-                return ResponseEntity.status(HttpStatus.OK)
-                                     .body(null);
-            } else {
-                appEventPublisher.publishAuditEvent(CERTIFICATES_DELETE_FAIL + certificateId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
-                        auditUuid);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                     .body(null);
-            }
+
+        if (certificate.getUserId() != userId) {
+            log.warn("User {} is not allowed to delete user {}'s certificates", AuthTools.getCurrentUserId(), userId);
+            throw new OxalateUnauthorizedException(CERTIFICATES_DELETE_UNAUTHORIZED + certificateId, HttpStatus.BAD_REQUEST);
         }
 
-        appEventPublisher.publishAuditEvent(CERTIFICATES_DELETE_UNAUTHORIZED + certificateId, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
-                auditUuid);
-        log.warn("User {} is not allowed to delete user {}'s certificates", AuthTools.getCurrentUserId(), userId);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        if (!certificateService.deleteCertificate(certificateId)) {
+            throw new OxalateValidationException(CERTIFICATES_DELETE_FAIL + certificateId, HttpStatus.BAD_REQUEST);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
                              .body(null);
     }
 }

@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +33,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<AdminUserResponse>> getUsers(HttpServletRequest request);
+    ResponseEntity<List<AdminUserResponse>> getUsers();
 
     @Operation(description = "Get a list of all users with given role", tags = "UserAPI")
     @Parameter(name = "role", description = "Role by which the users should be filtered", example = "ROLE_USER", required = true)
@@ -44,7 +43,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/role/{role}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<ListUserResponse>> getUserIdNameListWithRole(@PathVariable("role") RoleEnum roleEnum, HttpServletRequest request);
+    ResponseEntity<List<ListUserResponse>> getUserIdNameListWithRole(@PathVariable("role") RoleEnum roleEnum);
 
     @Operation(description = "Show specific user details", tags = "UserAPI")
     @Parameter(name = "userId", description = "User ID to be retrieved", example = "123", required = true)
@@ -54,7 +53,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<AdminUserResponse> getUserDetails(@PathVariable("userId") long userId, HttpServletRequest request);
+    ResponseEntity<AdminUserResponse> getUserDetails(@PathVariable("userId") long userId);
 
     @Operation(description = "Update user information, except password", tags = "UserAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Updated user information", required = true)
@@ -64,7 +63,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<AdminUserResponse> updateUser(@RequestBody AdminUserRequest updateRequest, HttpServletRequest request);
+    ResponseEntity<AdminUserResponse> updateUser(@RequestBody AdminUserRequest updateRequest);
 
     @Operation(description = "Update the status of the given user", tags = "UserAPI")
     @Parameter(name = "userId", description = "User ID whose status should be updated", example = "123", required = true)
@@ -76,7 +75,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/{userId}/status")
-    ResponseEntity<Void> updateUserStatus(@PathVariable("userId") long userId, @RequestBody UserStatusRequest userStatusRequest, HttpServletRequest request);
+    ResponseEntity<Void> updateUserStatus(@PathVariable("userId") long userId, @RequestBody UserStatusRequest userStatusRequest);
 
     @Operation(description = "Receive answer to whether the user accepts or rejects the terms", tags = "UserAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "TermRequest", required = true)
@@ -86,7 +85,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/accept-terms")
-    ResponseEntity<Void> recordTermAnswer(@RequestBody TermRequest termRequest, HttpServletRequest request);
+    ResponseEntity<Void> recordTermAnswer(@RequestBody TermRequest termRequest);
 
     @Operation(description = "Reset term and conditions answer for all users, forcing them to re-approve", tags = "UserAPI")
     @ApiResponses(value = {
@@ -95,7 +94,7 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/reset-terms", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Void> resetTermAnswer(HttpServletRequest request);
+    ResponseEntity<Void> resetTermAnswer();
 
     @Operation(description = "Reset health check answer for all users, forcing them to re-approve", tags = "UserAPI")
     @ApiResponses(value = {
@@ -104,5 +103,5 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/reset-health-check", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Void> resetHealthCheckAnswer(HttpServletRequest request);
+    ResponseEntity<Void> resetHealthCheckAnswer();
 }

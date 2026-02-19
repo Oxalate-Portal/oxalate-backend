@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +30,7 @@ public interface NotificationAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/unread", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MessageResponse>> getUnreadNotifications(HttpServletRequest request);
+    ResponseEntity<List<MessageResponse>> getUnreadNotifications();
 
     @Operation(description = "Mark notifications as read for the logged in user", tags = "NotificationAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "MarkReadRequest containing list of message IDs to mark as read", required = true)
@@ -42,7 +41,7 @@ public interface NotificationAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH + "/mark-read", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> markNotificationsAsRead(@RequestBody MarkReadRequest markReadRequest, HttpServletRequest request);
+    ResponseEntity<ActionResponse> markNotificationsAsRead(@RequestBody MarkReadRequest markReadRequest);
 
     @Operation(description = "Create a new notification for a user", tags = "NotificationAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "MessageRequest containing the notification details", required = true)
@@ -54,7 +53,7 @@ public interface NotificationAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH + "/create", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<MessageResponse> createNotification(@RequestBody MessageRequest messageRequest, HttpServletRequest request);
+    ResponseEntity<MessageResponse> createNotification(@RequestBody MessageRequest messageRequest);
 
     @Operation(description = "Create new notifications for a list of users or all active users", tags = "NotificationAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "MessageRequest containing the notification details and recipient list or sendAll flag", required = true)
@@ -66,7 +65,7 @@ public interface NotificationAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH + "/create-bulk", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> createBulkNotifications(@RequestBody MessageRequest messageRequest, HttpServletRequest request);
+    ResponseEntity<ActionResponse> createBulkNotifications(@RequestBody MessageRequest messageRequest);
 
     @Operation(description = "Get all notifications for the logged in user (both read and unread)", tags = "NotificationAPI")
     @ApiResponses(value = {
@@ -76,5 +75,5 @@ public interface NotificationAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/all", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MessageResponse>> getAllNotifications(HttpServletRequest request);
+    ResponseEntity<List<MessageResponse>> getAllNotifications();
 }

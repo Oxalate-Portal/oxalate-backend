@@ -1,16 +1,28 @@
 package io.oxalate.backend.exception;
 
 import io.oxalate.backend.api.AuditLevelEnum;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+/**
+ * Exception for authentication-related audit events. Extends {@link OxalateAuditException}
+ * and adds the {@code auditSource} and {@code userId} fields used by {@code AuthService}.
+ */
 @Getter
-@AllArgsConstructor
-public class OxalateAuthenticationException extends RuntimeException {
-    private final AuditLevelEnum auditLevel;
-    private final String auditMessage;
+public class OxalateAuthenticationException extends OxalateAuditException {
     private final String auditSource;
     private final long userId;
-    private final HttpStatus httpErrorStatus;
+
+    public OxalateAuthenticationException(AuditLevelEnum auditLevel, String auditMessage, String auditSource, long userId, HttpStatus httpErrorStatus) {
+        super(auditLevel, auditMessage, httpErrorStatus);
+        this.auditSource = auditSource;
+        this.userId = userId;
+    }
+
+    /**
+     * Backward-compatible alias for {@link #getHttpStatus()}.
+     */
+    public HttpStatus getHttpErrorStatus() {
+        return getHttpStatus();
+    }
 }
