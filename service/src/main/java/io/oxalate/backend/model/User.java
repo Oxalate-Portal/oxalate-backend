@@ -161,7 +161,7 @@ public class User {
         this.status = UserStatusEnum.REGISTERED;
         this.registered = Instant.now();
         this.approvedTerms = signupRequest.isApprovedTerms();
-        this.healthCheckId = signupRequest.isConfirmedHealthcheck() ? 0L : null;
+        this.healthCheckId = signupRequest.getHealthCheckId();
         this.language = signupRequest.getLanguage();
         this.diveCount = 0L;
         this.lastSeen = Instant.now();
