@@ -527,6 +527,67 @@ public class AppAuditMessages {
     public static final String NOTIFICATIONS_CREATE_BULK_OK = "Bulk notifications created";
     public static final String NOTIFICATIONS_CREATE_BULK_FAIL = "Failed to create bulk notifications";
 
+    // MembershipController
+    public static final String MEMBERSHIP_GET_ALL_ACTIVE_START = "Getting all active memberships";
+    public static final String MEMBERSHIP_GET_ALL_ACTIVE_OK = "Return list of active memberships";
+
+    public static final String MEMBERSHIP_GET_START = "Getting membership with ID: ";
+    public static final String MEMBERSHIP_GET_OK = "Return membership";
+
+    public static final String MEMBERSHIP_GET_FOR_USER_START = "Getting memberships for user ID: ";
+    public static final String MEMBERSHIP_GET_FOR_USER_OK = "Return memberships for user";
+
+    public static final String MEMBERSHIP_CREATE_START = "Creating new membership";
+    public static final String MEMBERSHIP_CREATE_OK = "Membership created";
+
+    public static final String MEMBERSHIP_UPDATE_START = "Updating membership";
+    public static final String MEMBERSHIP_UPDATE_OK = "Membership updated";
+
+    // CommentController
+    public static final String COMMENTS_GET_THREAD_START = "Getting comment thread";
+    public static final String COMMENTS_GET_THREAD_OK = "Return comment thread";
+
+    public static final String COMMENTS_GET_THREAD_DEPTH_START = "Getting comment thread to depth";
+    public static final String COMMENTS_GET_THREAD_DEPTH_OK = "Return comment thread to depth";
+
+    public static final String COMMENTS_GET_START = "Getting comment";
+    public static final String COMMENTS_GET_OK = "Return comment";
+
+    public static final String COMMENTS_CREATE_START = "Creating comment";
+    public static final String COMMENTS_CREATE_OK = "Comment created";
+    public static final String COMMENTS_CREATE_FAIL = "Failed to create comment";
+
+    public static final String COMMENTS_UPDATE_START = "Updating comment";
+    public static final String COMMENTS_UPDATE_OK = "Comment updated";
+    public static final String COMMENTS_UPDATE_FAIL = "Failed to update comment";
+
+    public static final String COMMENTS_GET_BY_USER_START = "Getting comments by user ID: ";
+    public static final String COMMENTS_GET_BY_USER_OK = "Return comments by user";
+
+    public static final String COMMENTS_REPORT_START = "Reporting comment";
+    public static final String COMMENTS_REPORT_OK = "Comment reported";
+
+    public static final String COMMENTS_CANCEL_REPORT_START = "Cancelling report for comment";
+    public static final String COMMENTS_CANCEL_REPORT_OK = "Report cancelled";
+
+    public static final String COMMENTS_GET_PENDING_REPORTS_START = "Getting pending reports";
+    public static final String COMMENTS_GET_PENDING_REPORTS_OK = "Return pending reports";
+
+    public static final String COMMENTS_REJECT_COMMENT_START = "Rejecting comment";
+    public static final String COMMENTS_REJECT_COMMENT_OK = "Comment rejected";
+
+    public static final String COMMENTS_REJECT_REPORTS_START = "Rejecting reports for comment";
+    public static final String COMMENTS_REJECT_REPORTS_OK = "Reports rejected";
+
+    public static final String COMMENTS_ACCEPT_REPORT_START = "Accepting report";
+    public static final String COMMENTS_ACCEPT_REPORT_OK = "Report accepted";
+
+    public static final String COMMENTS_DISMISS_REPORT_START = "Dismissing report";
+    public static final String COMMENTS_DISMISS_REPORT_OK = "Report dismissed";
+
+    public static final String COMMENTS_FILTER_START = "Filtering comments";
+    public static final String COMMENTS_FILTER_OK = "Return filtered comments";
+
     private AppAuditMessages() {
     }
 }

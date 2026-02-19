@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +33,7 @@ public interface PaymentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/active", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatus(HttpServletRequest request);
+    ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatus();
 
     @Operation(description = "Get all active payment status of given payment type", tags = "PaymentAPI")
     @Parameter(name = "paymentType", description = "Payment type for which current payment status should be fetched", example = "ONE_TIME")
@@ -44,7 +43,7 @@ public interface PaymentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/active/{paymentType}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatusOfType(@PathVariable(name = "paymentType") PaymentTypeEnum paymentType, HttpServletRequest request);
+    ResponseEntity<List<PaymentStatusResponse>> getAllActivePaymentStatusOfType(@PathVariable(name = "paymentType") PaymentTypeEnum paymentType);
 
     @Operation(description = "Get the payment status for a specific user", tags = "PaymentAPI")
     @Parameter(name = "userId", description = "User ID for which current payment status should be fetched", example = "123")
@@ -54,7 +53,7 @@ public interface PaymentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PaymentStatusResponse> getPaymentStatusForUser(@PathVariable(name = "userId") long userId, HttpServletRequest request);
+    ResponseEntity<PaymentStatusResponse> getPaymentStatusForUser(@PathVariable(name = "userId") long userId);
 
     @Operation(description = "Add a payment entry to a specific user", tags = "PaymentAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New payment", required = true)
@@ -64,7 +63,7 @@ public interface PaymentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PaymentResponse> addPaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
+    ResponseEntity<PaymentResponse> addPaymentForUser(@RequestBody PaymentRequest paymentRequest);
 
     @Operation(description = "Update payment status for a specific user. This is only effective on one-time payments where you can decrease the count",
             tags = "PaymentAPI")
@@ -75,7 +74,7 @@ public interface PaymentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PaymentResponse> updatePaymentForUser(@RequestBody PaymentRequest paymentRequest, HttpServletRequest request);
+    ResponseEntity<PaymentResponse> updatePaymentForUser(@RequestBody PaymentRequest paymentRequest);
 
     @Operation(description = "Reset all period payments immediately. This will update the period payment expiration time to now()", tags = "PaymentAPI")
     @Parameter(name = "paymentType", description = "Type of payments that needs to be reset", example = "ONE_TIME")
@@ -85,5 +84,5 @@ public interface PaymentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/reset")
-    ResponseEntity<Void> resetAllPayments(@RequestParam(value = "paymentType") PaymentTypeEnum paymentType, HttpServletRequest request);
+    ResponseEntity<Void> resetAllPayments(@RequestParam(value = "paymentType") PaymentTypeEnum paymentType);
 }

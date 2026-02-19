@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-registrations", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MultiYearValueResponse>> getYearlyRegistrationTimeSeries(HttpServletRequest request);
+    ResponseEntity<List<MultiYearValueResponse>> getYearlyRegistrationTimeSeries();
 
     @Operation(description = "Produces a multivalue (events, cumulative) yearly table for number of events as well as cumulative number", tags = "StatsAPI")
     @ApiResponses(value = {
@@ -38,7 +37,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-events", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MultiYearValueResponse>> getYearlyEventTimeSeries(HttpServletRequest request);
+    ResponseEntity<List<MultiYearValueResponse>> getYearlyEventTimeSeries();
 
     @Operation(description = "Produces a multivalue (events, cumulative) yearly table for number of events as well as cumulative number", tags = "StatsAPI")
     @ApiResponses(value = {
@@ -47,7 +46,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-organizers", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MultiYearValueResponse>> getYearlyOrganizerTimeSeries(HttpServletRequest request);
+    ResponseEntity<List<MultiYearValueResponse>> getYearlyOrganizerTimeSeries();
 
     @Operation(description = "Produces a multivalue (period, one time) yearly table for number of payments by their types", tags = "StatsAPI")
     @ApiResponses(value = {
@@ -56,7 +55,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-payments", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MultiYearValueResponse>> getYearlyPaymentTimeSeries(HttpServletRequest request);
+    ResponseEntity<List<MultiYearValueResponse>> getYearlyPaymentTimeSeries();
 
     // Aggregate endpoints
     @Operation(description = "Aggregated data of events and dives", tags = "StatsAPI")
@@ -66,7 +65,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-aggregates", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<AggregateResponse> getAggregateStats(HttpServletRequest request);
+    ResponseEntity<AggregateResponse> getAggregateStats();
 
     // Report endpoints
     @Operation(description = "Produces the 6 months report of events for every year since the data begins", tags = "StatsAPI")
@@ -76,7 +75,7 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/event-report", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventPeriodReportResponse>> getEventReports(HttpServletRequest request);
+    ResponseEntity<List<EventPeriodReportResponse>> getEventReports();
 
     // Top lists
     @Operation(description = "List of top 20 divers, per year", tags = "StatsAPI")
@@ -86,5 +85,5 @@ public interface StatsAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/yearly-diver-list", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<YearlyDiversListResponse>> yearlyDiverList(HttpServletRequest request);
+    ResponseEntity<List<YearlyDiversListResponse>> yearlyDiverList();
 }

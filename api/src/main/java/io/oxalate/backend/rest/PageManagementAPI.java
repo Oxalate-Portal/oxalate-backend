@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,7 +35,7 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/page-groups", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PageGroupResponse>> getPageGroups(HttpServletRequest request);
+    ResponseEntity<List<PageGroupResponse>> getPageGroups();
 
     @Operation(description = "Get the details of a given path", tags = "PageManagementAPI")
     @Parameter(name = "pageGroupId", description = "Page group ID of the page that should be fetched", example = "1")
@@ -47,7 +46,7 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/page-groups/{pageGroupId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PageGroupResponse> getPageGroup(@PathVariable(name = "pageGroupId") long pageGroupId, HttpServletRequest request);
+    ResponseEntity<PageGroupResponse> getPageGroup(@PathVariable(name = "pageGroupId") long pageGroupId);
 
     @Operation(description = "Add a new path, the request contains several path requests, one for each language", tags = "PageManagementAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New path request", required = true)
@@ -58,7 +57,7 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/page-groups", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PageGroupResponse> createPageGroup(@RequestBody PageGroupRequest pathRequests, HttpServletRequest request);
+    ResponseEntity<PageGroupResponse> createPageGroup(@RequestBody PageGroupRequest pathRequests);
 
     @Operation(description = "Update a path, the request contains several path requests, one for each language", tags = "PageManagementAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New page request", required = true)
@@ -70,7 +69,7 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH + "/page-groups", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PageGroupResponse> updatePageGroup(@RequestBody PageGroupRequest pathRequests, HttpServletRequest request);
+    ResponseEntity<PageGroupResponse> updatePageGroup(@RequestBody PageGroupRequest pathRequests);
 
     @Operation(description = "Close a path, this will close all language versions of the path as well as the pages", tags = "PageManagementAPI")
     @Parameter(name = "pageGroupId", description = "Page group ID to be closed", example = "/info")
@@ -82,7 +81,7 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/page-groups/{pageGroupId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<HttpStatus> closePageGroup(@PathVariable(name = "pageGroupId") long pageGroupId, HttpServletRequest request);
+    ResponseEntity<HttpStatus> closePageGroup(@PathVariable(name = "pageGroupId") long pageGroupId);
 
     // Pages
     @Operation(description = "Get list of all pages for a specific path ID", tags = "PageManagementAPI")
@@ -93,7 +92,7 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/pages", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PageResponse>> getPagesByPageGroupId(@RequestParam(name = "pageGroupId") long pageGroupId, HttpServletRequest request);
+    ResponseEntity<List<PageResponse>> getPagesByPageGroupId(@RequestParam(name = "pageGroupId") long pageGroupId);
 
     @Operation(description = "Get page by the given page ID", tags = "PageAPI")
     @Parameter(name = "pageId", description = "Page ID to be retrieved", example = "/info")
@@ -104,7 +103,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping(path = BASE_PATH + "/pages/{pageId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PageResponse> getPageById(@PathVariable(name = "pageId") long pageId, HttpServletRequest request);
+    ResponseEntity<PageResponse> getPageById(@PathVariable(name = "pageId") long pageId);
 
     @Operation(description = "Add a new page, the request contains several page requests, one for each language", tags = "PageManagementAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New page request", required = true)
@@ -116,7 +115,7 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/pages", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PageResponse> createPage(@RequestBody PageRequest pageRequests, HttpServletRequest request);
+    ResponseEntity<PageResponse> createPage(@RequestBody PageRequest pageRequests);
 
     @Operation(description = "Update an existing page, the request contains several page requests, one for each language", tags = "PageManagementAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New page request", required = true)
@@ -128,7 +127,7 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH + "/pages", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PageResponse> updatePage(@RequestBody PageRequest pageRequests, HttpServletRequest request);
+    ResponseEntity<PageResponse> updatePage(@RequestBody PageRequest pageRequests);
 
     @Operation(description = "Close a page, this will close all language versions of the page", tags = "PageManagementAPI")
     @Parameter(name = "pageId", description = "Page ID to be closed", example = "/info")
@@ -140,5 +139,5 @@ public interface PageManagementAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/pages/{pageId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<HttpStatus> closePage(@PathVariable(name = "pageId") long pageId, HttpServletRequest request);
+    ResponseEntity<HttpStatus> closePage(@PathVariable(name = "pageId") long pageId);
 }
