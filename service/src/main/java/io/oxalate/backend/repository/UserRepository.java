@@ -32,7 +32,11 @@ public interface UserRepository extends ListCrudRepository<User, Long>, CrudRepo
 
     @Query(nativeQuery = true, value = "UPDATE users SET  approved_terms = false WHERE users.status <> 'ANONYMIZED'")
     @Modifying
-    void resetTermAnswer();
+    void resetTermAnswers();
+
+    @Query(nativeQuery = true, value = "UPDATE users SET  healthcheck_id = NULL WHERE users.status <> 'ANONYMIZED'")
+    @Modifying
+    void resetHealthChecks();
 
     List<User> findAllByFirstNameContainsIgnoreCaseOrLastNameContainsIgnoreCase(String firstName, String lastName);
 

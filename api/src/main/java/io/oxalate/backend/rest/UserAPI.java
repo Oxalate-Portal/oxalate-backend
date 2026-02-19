@@ -97,4 +97,12 @@ public interface UserAPI {
     @GetMapping(value = BASE_PATH + "/reset-terms", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> resetTermAnswer(HttpServletRequest request);
 
+    @Operation(description = "Reset health check answer for all users, forcing them to re-approve", tags = "UserAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Health check answer reset successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @GetMapping(value = BASE_PATH + "/reset-health-check", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> resetHealthCheckAnswer(HttpServletRequest request);
 }

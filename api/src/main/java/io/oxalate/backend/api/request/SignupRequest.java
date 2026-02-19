@@ -54,6 +54,10 @@ public class SignupRequest {
     @JsonProperty("approvedTerms")
     private boolean approvedTerms;
 
+    @Schema(description = "Boolean whether the user has confirmed their health check", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("confirmedHealthcheck")
+    private boolean confirmedHealthcheck;
+
     @Size(min = 2, max = 2, message = "Language code is given with 2 characters as per ISO-639-1")
     @Schema(description = "Preferred language", example = "en", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("language")

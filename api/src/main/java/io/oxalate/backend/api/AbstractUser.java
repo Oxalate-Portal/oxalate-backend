@@ -54,7 +54,7 @@ public abstract class AbstractUser {
     @JsonProperty("status")
     private UserStatusEnum status;
 
-    @Schema(description = "Boolean whether the user wants to keep their username and phone number private", example = "yes", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Boolean whether the user wants to keep their username and phone number private", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("privacy")
     private boolean privacy;
 
@@ -63,9 +63,17 @@ public abstract class AbstractUser {
     @JsonProperty("nextOfKin")
     private String nextOfKin;
 
-    @Schema(description = "Boolean whether the user has accepted the terms and conditions", example = "yes", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Boolean whether the user has accepted the terms and conditions", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("approvedTerms")
     private boolean approvedTerms;
+
+    @Schema(description = """
+            Document ID if the user has uploaded the healthcheck document. If the value is 0, then the user has confirmed the health statement.
+            If the value is null, then the user has not agreed to the health statement.
+            """,
+            example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("healthCheckId")
+    private Long healthCheckId;
 
     @Schema(description = "Primary user type", example = "FREE_DIVER", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("primaryUserType")

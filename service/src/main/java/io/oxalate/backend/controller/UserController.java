@@ -22,6 +22,9 @@ import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_WITH_ROLE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_WITH_ROLE_START;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_WITH_ROLE_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_HEALTHCHECK_OK;
+import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_HEALTHCHECK_START;
+import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_HEALTHCHECK_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_TERM_OK;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_TERM_START;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_TERM_UNAUTHORIZED;
@@ -309,6 +312,23 @@ public class UserController implements UserAPI {
 
         userService.resetTermAnswer();
         appEventPublisher.publishAuditEvent(USERS_RESET_TERM_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(null);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> resetHealthCheckAnswer(HttpServletRequest request) {
+        var auditUuid = appEventPublisher.publishAuditEvent(USERS_RESET_HEALTHCHECK_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
+
+        if (!AuthTools.currentUserHasRole(ROLE_ADMIN)) {
+            appEventPublisher.publishAuditEvent(USERS_RESET_HEALTHCHECK_UNAUTHORIZED, ERROR, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                 .body(null);
+        }
+
+        userService.resetHealthCheck();
+        appEventPublisher.publishAuditEvent(USERS_RESET_HEALTHCHECK_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.status(HttpStatus.OK)
                              .body(null);
     }
