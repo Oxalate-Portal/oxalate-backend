@@ -306,7 +306,23 @@ public class UserService {
     }
 
     @Transactional
+    public void setHealthCheckAnswer(long userId, boolean healthCheckAnswer) {
+        var user = userRepository.findById(userId);
+
+        if (user.isPresent()) {
+            user.get()
+                .setHealthCheckId(healthCheckAnswer ? 0L : null);
+            userRepository.save(user.get());
+        }
+    }
+
+    @Transactional
     public void resetTermAnswer() {
-        userRepository.resetTermAnswer();
+        userRepository.resetTermAnswers();
+    }
+
+    @Transactional
+    public void resetHealthCheck() {
+        userRepository.resetHealthChecks();
     }
 }

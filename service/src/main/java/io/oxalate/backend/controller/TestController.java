@@ -237,6 +237,7 @@ public class TestController implements TestAPI {
                                           .minus(RandomUtils.secure()
                                                             .randomLong(0, DAYS_BACK), ChronoUnit.DAYS))
                        .approvedTerms(true)
+                       .healthCheckId(0L)
                        .build();
 
         return userService.save(user);

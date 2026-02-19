@@ -12,6 +12,7 @@ import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.TagResponse;
 import io.oxalate.backend.api.response.UserResponse;
 import static io.oxalate.backend.tools.TagTools.collectTagResponses;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -102,6 +103,10 @@ public class User {
     @Column(name = "approved_terms", nullable = false)
     private boolean approvedTerms;
 
+    @Nullable
+    @Column(name = "healthcheck_id")
+    private Long healthCheckId;
+
     @Size(min = 2, max = 2, message = "Language code is given with 2 characters as per ISO-639-1")
     @Column(name = "language", nullable = false)
     private String language;
@@ -156,6 +161,7 @@ public class User {
         this.status = UserStatusEnum.REGISTERED;
         this.registered = Instant.now();
         this.approvedTerms = signupRequest.isApprovedTerms();
+        this.healthCheckId = signupRequest.getHealthCheckId();
         this.language = signupRequest.getLanguage();
         this.diveCount = 0L;
         this.lastSeen = Instant.now();
@@ -226,6 +232,7 @@ public class User {
                            .diveCount(this.diveCount)
                            .payments(paymentResponses)
                            .approvedTerms(this.approvedTerms)
+                           .healthCheckId(this.healthCheckId)
                            .language(this.language)
                            .primaryUserType(this.primaryUserType)
                            .tags(tagResponses)
@@ -267,6 +274,7 @@ public class User {
                                 .nextOfKin(this.getNextOfKin())
                                 .registered(this.registered)
                                 .approvedTerms(this.approvedTerms)
+                                .healthCheckId(this.healthCheckId)
                                 .diveCount(this.diveCount)
                                 .payments(paymentResponses)
                                 .memberships(membershipResponses)
