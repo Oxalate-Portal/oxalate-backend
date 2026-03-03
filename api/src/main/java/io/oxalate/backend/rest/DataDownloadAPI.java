@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +26,7 @@ public interface DataDownloadAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/certificates", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<DownloadCertificateResponse>> downloadCertificates(HttpServletRequest request);
+    ResponseEntity<List<DownloadCertificateResponse>> downloadCertificates();
 
     @Operation(description = "Download dive data", tags = "DataDownloadAPI")
     @ApiResponses(value = {
@@ -36,7 +35,7 @@ public interface DataDownloadAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/dives", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<DownloadDiveResponse>> downloadDives(HttpServletRequest request);
+    ResponseEntity<List<DownloadDiveResponse>> downloadDives();
 
     @Operation(description = "Download payments data", tags = "DataDownloadAPI")
     @ApiResponses(value = {
@@ -45,5 +44,5 @@ public interface DataDownloadAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/payments", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<DownloadPaymentResponse>> downloadPayments(HttpServletRequest request);
+    ResponseEntity<List<DownloadPaymentResponse>> downloadPayments();
 }

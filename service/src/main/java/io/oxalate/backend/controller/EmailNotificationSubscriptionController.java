@@ -1,17 +1,16 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import io.oxalate.backend.api.request.EmailNotificationSubscriptionRequest;
 import io.oxalate.backend.api.response.EmailNotificationSubscriptionResponse;
+import io.oxalate.backend.audit.AuditSource;
+import io.oxalate.backend.audit.Audited;
 import static io.oxalate.backend.events.AppAuditMessages.EMAIL_SUBSCRIPTION_GET_ALL_OK;
 import static io.oxalate.backend.events.AppAuditMessages.EMAIL_SUBSCRIPTION_GET_ALL_START;
 import static io.oxalate.backend.events.AppAuditMessages.EMAIL_SUBSCRIPTION_SAVE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.EMAIL_SUBSCRIPTION_SAVE_START;
-import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.rest.EmailNotificationSubscriptionAPI;
 import io.oxalate.backend.service.EmailNotificationSubscriptionService;
 import io.oxalate.backend.tools.AuthTools;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,28 +23,25 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
+@AuditSource("EmailNotificationSubscriptionController")
 public class EmailNotificationSubscriptionController implements EmailNotificationSubscriptionAPI {
-    private static final String AUDIT_NAME = "EmailNotificationSubscriptionController";
 
     private final EmailNotificationSubscriptionService emailNotificationSubscriptionService;
-    private final AppEventPublisher appEventPublisher;
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<EmailNotificationSubscriptionResponse>> getAllEmailNotificationSubscriptions(HttpServletRequest request) {
+    @Audited(startMessage = EMAIL_SUBSCRIPTION_GET_ALL_START, okMessage = EMAIL_SUBSCRIPTION_GET_ALL_OK)
+    public ResponseEntity<List<EmailNotificationSubscriptionResponse>> getAllEmailNotificationSubscriptions() {
         var userId = AuthTools.getCurrentUserId();
-        var auditUuid = appEventPublisher.publishAuditEvent(EMAIL_SUBSCRIPTION_GET_ALL_START, INFO, request, AUDIT_NAME, userId);
-
         var subscriptions = emailNotificationSubscriptionService.getAllForUser(userId);
-        appEventPublisher.publishAuditEvent(EMAIL_SUBSCRIPTION_GET_ALL_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
         return ResponseEntity.status(HttpStatus.OK).body(subscriptions);
     }
 
     @Override
-    public ResponseEntity<List<EmailNotificationSubscriptionResponse>> subscribeToEmailNotifications(HttpServletRequest request,
+    @Audited(startMessage = EMAIL_SUBSCRIPTION_SAVE_START, okMessage = EMAIL_SUBSCRIPTION_SAVE_OK)
+    public ResponseEntity<List<EmailNotificationSubscriptionResponse>> subscribeToEmailNotifications(
             EmailNotificationSubscriptionRequest subscriptions) {
         var userId = AuthTools.getCurrentUserId();
-        var auditUuid = appEventPublisher.publishAuditEvent(EMAIL_SUBSCRIPTION_SAVE_START, INFO, request, AUDIT_NAME, userId);
         var subscriptionResponses = new ArrayList<EmailNotificationSubscriptionResponse>();
         emailNotificationSubscriptionService.removeAllSubscriptionsForUser(userId);
 
@@ -54,7 +50,6 @@ public class EmailNotificationSubscriptionController implements EmailNotificatio
             subscriptionResponses.add(subscriptionResponse);
         }
 
-        appEventPublisher.publishAuditEvent(EMAIL_SUBSCRIPTION_SAVE_OK, INFO, request, AUDIT_NAME, userId, auditUuid);
         return ResponseEntity.status(HttpStatus.OK).body(subscriptionResponses);
     }
 }

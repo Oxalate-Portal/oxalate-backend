@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +30,7 @@ public interface MembershipAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MembershipResponse>> getAllActiveMemberships(HttpServletRequest request);
+    ResponseEntity<List<MembershipResponse>> getAllActiveMemberships();
 
     @Operation(description = "Get the memberships by the id", tags = "MembershipAPI")
     @Parameter(name = "id", description = "Membership ID for which the membership should be fetched", example = "123")
@@ -41,7 +40,7 @@ public interface MembershipAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<MembershipResponse> getMembership(@PathVariable(name = "id") long membershipId, HttpServletRequest request);
+    ResponseEntity<MembershipResponse> getMembership(@PathVariable(name = "id") long membershipId);
 
     @Operation(description = "Get a list of all memberships for a specific user", tags = "MembershipAPI")
     @Parameter(name = "userId", description = "User ID for which all memberships should be fetched", example = "123")
@@ -51,7 +50,7 @@ public interface MembershipAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MembershipResponse>> getMembershipsForUser(@PathVariable(name = "userId") long userId, HttpServletRequest request);
+    ResponseEntity<List<MembershipResponse>> getMembershipsForUser(@PathVariable(name = "userId") long userId);
 
     @Operation(description = "Create a new membership", tags = "MembershipAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New membership request", required = true)
@@ -62,7 +61,7 @@ public interface MembershipAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<MembershipResponse> createMembership(@RequestBody MembershipRequest membershipRequest, HttpServletRequest request);
+    ResponseEntity<MembershipResponse> createMembership(@RequestBody MembershipRequest membershipRequest);
 
     @Operation(description = "Update a given membership", tags = "MembershipAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Updated membership request", required = true)
@@ -73,5 +72,5 @@ public interface MembershipAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<MembershipResponse> updateMembership(@RequestBody MembershipRequest membershipRequest, HttpServletRequest request);
+    ResponseEntity<MembershipResponse> updateMembership(@RequestBody MembershipRequest membershipRequest);
 }

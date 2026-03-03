@@ -23,6 +23,7 @@ import io.oxalate.backend.model.Payment;
 import io.oxalate.backend.model.PeriodResult;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.PaymentRepository;
+import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.tools.PeriodTool;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -43,6 +44,7 @@ public class PaymentService {
     private final PortalConfigurationService portalConfigurationService;
     private final EventParticipantsRepository eventParticipantsRepository;
     private final PaymentRepository paymentRepository;
+    private final UserRepository userRepository;
 
     public List<PaymentStatusResponse> getAllActivePaymentStatus() {
         var paymentStatusResponses = new ArrayList<PaymentStatusResponse>();
@@ -540,5 +542,24 @@ public class PaymentService {
             periodResult.setEndDate(localDateNow.plus(periodLength, periodUnit));
         }
         return periodResult;
+    }
+
+    /**
+     * Enriches the given list of PaymentStatusResponse objects with the user's full name.
+     *
+     * @param responseList List of payment status responses to enrich
+     */
+    public void appendNameToPaymentStatusResponse(List<PaymentStatusResponse> responseList) {
+        for (PaymentStatusResponse response : responseList) {
+            var optionalUser = userRepository.findById(response.getUserId());
+
+            if (optionalUser.isEmpty()) {
+                log.error("User ID {} from payments could not be found", response.getUserId());
+                continue;
+            }
+
+            var user = optionalUser.get();
+            response.setName(user.getLastName() + " " + user.getFirstName());
+        }
     }
 }

@@ -19,6 +19,7 @@ import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.RegistrationResponse;
 import io.oxalate.backend.api.response.UserSessionToken;
 import io.oxalate.backend.api.response.UserUpdateStatus;
+import io.oxalate.backend.audit.AuditContext;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_NO_ROLES;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOST_PASSWORD_FAIL;
@@ -62,7 +63,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -252,7 +252,8 @@ public class AuthService {
                                .build();
     }
 
-    public ActionResponse resendConfirmationEmail(TokenRequest tokenRequest, HttpServletRequest request, UUID auditUuid) {
+    public ActionResponse resendConfirmationEmail(TokenRequest tokenRequest, HttpServletRequest request) {
+        var auditUuid = AuditContext.getTraceId();
         var resendToken = registrationService.getValidToken(tokenRequest.getToken(), EMAIL_RESEND);
 
         if (resendToken == null) {
@@ -308,7 +309,8 @@ public class AuthService {
                              .build();
     }
 
-    public ActionResponse lostPassword(EmailRequest emailRequest, HttpServletRequest request, UUID auditUuid) {
+    public ActionResponse lostPassword(EmailRequest emailRequest, HttpServletRequest request) {
+        var auditUuid = AuditContext.getTraceId();
 
         if (emailRequest.getEmail() == null || emailRequest.getEmail()
                                                            .trim()
@@ -366,7 +368,8 @@ public class AuthService {
                              .build();
     }
 
-    public ActionResponse resetPassword(UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request, UUID auditUuid) {
+    public ActionResponse resetPassword(UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request) {
+        var auditUuid = AuditContext.getTraceId();
         var token = registrationService.findByTokenAndTokenType(userResetPasswordRequest.getToken(), PASSWORD_RESET);
 
         if (token == null) {
@@ -464,7 +467,8 @@ public class AuthService {
                 ".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*");
     }
 
-    public RegistrationResponse registerUser(SignupRequest signupRequest, HttpServletRequest request, UUID auditUuid) {
+    public RegistrationResponse registerUser(SignupRequest signupRequest, HttpServletRequest request) {
+        var auditUuid = AuditContext.getTraceId();
         if (!userService.isUsernameValid(signupRequest.getUsername())) {
             log.info("User {} attempted to register but the username is invalid.", signupRequest.getUsername());
             appEventPublisher.publishAuditEvent(AUTH_REGISTRATION_TAKEN + signupRequest.getUsername(), WARN, request, AUDIT_NAME, -1L, auditUuid);
@@ -501,7 +505,8 @@ public class AuthService {
                                    .build();
     }
 
-    public URI verifyRegistration(String token, HttpServletRequest request, UUID auditUuid) {
+    public URI verifyRegistration(String token, HttpServletRequest request) {
+        var auditUuid = AuditContext.getTraceId();
         var registrationToken = registrationService.getValidToken(token, REGISTRATION);
         var returnStatus = "OK";
 

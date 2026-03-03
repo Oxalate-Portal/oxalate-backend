@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +35,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/{parentId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CommentResponse> getCommentThread(@PathVariable("parentId") long parentId, HttpServletRequest request);
+    ResponseEntity<CommentResponse> getCommentThread(@PathVariable("parentId") long parentId);
 
     @Operation(description = "Get all comments belonging to the given parent comment to the given depth", tags = "CommentAPI")
     @Parameter(name = "parentId", description = "Parent ID of the comment from which all children should be retrieved", example = "123", required = true)
@@ -47,8 +46,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/{parentId}/{depth}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CommentResponse> getCommentThreadToDepth(@PathVariable("parentId") long parentId, @PathVariable("depth") long depth,
-            HttpServletRequest request);
+    ResponseEntity<CommentResponse> getCommentThreadToDepth(@PathVariable("parentId") long parentId, @PathVariable("depth") long depth);
 
     @Operation(description = "Get specific comment", tags = "CommentAPI")
     @Parameter(name = "commentId", description = "Comment ID that should be retrieved", example = "123", required = true)
@@ -58,7 +56,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/comment/{commentId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CommentResponse> getComment(@PathVariable("commentId") long commentId, HttpServletRequest request);
+    ResponseEntity<CommentResponse> getComment(@PathVariable("commentId") long commentId);
 
     @Operation(description = "Add a comment", tags = "CommentAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "CommentRequest", required = true)
@@ -68,7 +66,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest, HttpServletRequest request);
+    ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest);
 
     @Operation(description = "Update a comment", tags = "CommentAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "CommentRequest", required = true)
@@ -78,7 +76,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CommentResponse> updateComment(@RequestBody CommentRequest commentRequest, HttpServletRequest request);
+    ResponseEntity<CommentResponse> updateComment(@RequestBody CommentRequest commentRequest);
 
     @Operation(description = "Get all comments by user ID", tags = "CommentAPI")
     @Parameter(name = "userId", description = "User ID of the comment that should be retrieved", example = "123", required = true)
@@ -88,7 +86,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<CommentResponse>> getCommentsByUserId(@PathVariable("userId") long userId, HttpServletRequest request);
+    ResponseEntity<List<CommentResponse>> getCommentsByUserId(@PathVariable("userId") long userId);
 
     @Operation(description = "Report inappropriate comment", tags = "CommentAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "ReportRequest", required = true)
@@ -98,7 +96,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH + "/report", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> report(@RequestBody ReportRequest reportRequest, HttpServletRequest request);
+    ResponseEntity<ActionResponse> report(@RequestBody ReportRequest reportRequest);
 
     @Operation(description = "Cancel comment report", tags = "CommentAPI")
     @Parameter(name = "commentId", description = "Comment ID of the report that should be retrieved", example = "123", required = true)
@@ -108,7 +106,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH + "/cancel-report/{commentId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> cancelReport(@PathVariable("commentId") long commentId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> cancelReport(@PathVariable("commentId") long commentId);
 
     @Operation(description = "Get all reported comments with pending status", tags = "CommentAPI")
     @ApiResponses(value = {
@@ -117,7 +115,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/pending-reports", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<CommentModerationResponse>> getPendingReports(HttpServletRequest request);
+    ResponseEntity<List<CommentModerationResponse>> getPendingReports();
 
     @Operation(description = "Set the status of the comment to CANCELLED, if the comment has reports, set their status to APPROVED", tags = "CommentAPI")
     @Parameter(name = "commentId", description = "Comment ID that should be rejected", example = "123", required = true)
@@ -127,7 +125,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/reject-comment/{commentId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> rejectComment(@PathVariable("commentId") long commentId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> rejectComment(@PathVariable("commentId") long commentId);
 
     @Operation(description = "Reject all reports of a comment, setting their status to REJECTED", tags = "CommentAPI")
     @Parameter(name = "commentId", description = "Comment ID of which the reports should be rejected", example = "123", required = true)
@@ -137,7 +135,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/reject-reports/{commentId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> rejectReports(@PathVariable("commentId") long commentId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> rejectReports(@PathVariable("commentId") long commentId);
 
     @Operation(description = "Accept a report, setting the status to APPROVED, ", tags = "CommentAPI")
     @Parameter(name = "reportId", description = "Report ID which should be accepted", example = "123", required = true)
@@ -147,7 +145,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/accept-report/{reportId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> acceptReport(@PathVariable("reportId") long reportId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> acceptReport(@PathVariable("reportId") long reportId);
 
     @Operation(description = "Dismiss a report", tags = "CommentAPI")
     @Parameter(name = "reportId", description = "Report ID which should be dismissed", example = "123", required = true)
@@ -157,7 +155,7 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/dismiss-report/{reportId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> dismissReport(@PathVariable("reportId") long reportId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> dismissReport(@PathVariable("reportId") long reportId);
 
     @Operation(description = "Retrieve a list of comments based on the given filter criterias", tags = "CommentAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "CommentFilterRequest", required = true)
@@ -167,5 +165,5 @@ public interface CommentAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH + "/filter", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<CommentResponse>> filterComments(@RequestBody CommentFilterRequest commentFilterRequest, HttpServletRequest request);
+    ResponseEntity<List<CommentResponse>> filterComments(@RequestBody CommentFilterRequest commentFilterRequest);
 }

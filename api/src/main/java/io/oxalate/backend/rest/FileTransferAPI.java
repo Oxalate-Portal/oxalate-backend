@@ -44,7 +44,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + AVATARS, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<AvatarFileResponse>> findAllAvatarFiles(HttpServletRequest request);
+    ResponseEntity<List<AvatarFileResponse>> findAllAvatarFiles();
 
     /* Upload */
     @Operation(description = "Upload an avatar linked to a user, returns the external URL to access the file", tags = "FileTransferAPI")
@@ -55,7 +55,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH + "/" + AVATARS, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<?> uploadAvatarFile(@RequestPart("uploadFile") MultipartFile uploadFile, HttpServletRequest request);
+    ResponseEntity<?> uploadAvatarFile(@RequestPart("uploadFile") MultipartFile uploadFile);
 
     /* Download */
     @Operation(description = "Download an avatar file", tags = "FileTransferAPI")
@@ -67,7 +67,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + AVATARS + "/{avatarId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    ResponseEntity<byte[]> downloadAvatarFile(@PathVariable("avatarId") long avatarId, HttpServletRequest request);
+    ResponseEntity<byte[]> downloadAvatarFile(@PathVariable("avatarId") long avatarId);
 
     /* Remove */
     @Operation(description = "Remove a avatar file", tags = "FileTransferAPI")
@@ -79,7 +79,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + AVATARS + "/{avatarId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> removeAvatarFile(@PathVariable("avatarId") long avatarId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> removeAvatarFile(@PathVariable("avatarId") long avatarId);
 
     /* ==== Certificate ==== */
     /* Find all */
@@ -90,7 +90,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + CERTIFICATES, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<CertificateFileResponse>> findAllCertificateFiles(HttpServletRequest request);
+    ResponseEntity<List<CertificateFileResponse>> findAllCertificateFiles();
 
     /* Upload */
     @Operation(description = "Upload a certificate file belonging to a specific user, returns the external URL to access the file", tags = "FileTransferAPI")
@@ -105,8 +105,7 @@ public interface FileTransferAPI {
             + "/{certificateId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<?> uploadCertificateFile(
             @RequestPart("uploadFile") MultipartFile uploadFile,
-            @PathVariable("certificateId") long certificateId,
-            HttpServletRequest request);
+            @PathVariable("certificateId") long certificateId);
 
     /* Download */
     @Operation(description = "Download a certificate photocopy", tags = "FileTransferAPI")
@@ -118,7 +117,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + CERTIFICATES + "/{certificateId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    ResponseEntity<byte[]> downloadCertificateFile(@PathVariable("certificateId") long certificateId, HttpServletRequest request);
+    ResponseEntity<byte[]> downloadCertificateFile(@PathVariable("certificateId") long certificateId);
 
     /* Remove */
     @Operation(description = "Remove a certificate photocopy", tags = "FileTransferAPI")
@@ -130,7 +129,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + CERTIFICATES + "/{certificateId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> removeCertificateFile(@PathVariable("certificateId") long certificateId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> removeCertificateFile(@PathVariable("certificateId") long certificateId);
 
     /* ==== Dive files ==== */
     /* Find all */
@@ -141,7 +140,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DIVE_FILES, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<DiveFileResponse>> findAllDiveFiles(HttpServletRequest request);
+    ResponseEntity<List<DiveFileResponse>> findAllDiveFiles();
 
     /* Upload */
     @Operation(description = "Upload a dive plan linked to a dive group, returns the external URL to access the file. Currently only stubs", tags = "FileTransferAPI")
@@ -157,8 +156,7 @@ public interface FileTransferAPI {
     ResponseEntity<?> uploadDiveFile(
             @RequestPart("uploadFile") MultipartFile uploadFile,
             @RequestParam("eventId") long eventId,
-            @RequestParam("diveGroupId") long diveGroupId,
-            HttpServletRequest request);
+            @RequestParam("diveGroupId") long diveGroupId);
 
     /* Download */
     @Operation(description = "Download a dive-related file", tags = "FileTransferAPI")
@@ -170,7 +168,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DIVE_FILES + "/{diveFileId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    ResponseEntity<byte[]> downloadDiveFile(@PathVariable("diveFileId") long diveFileId, HttpServletRequest request);
+    ResponseEntity<byte[]> downloadDiveFile(@PathVariable("diveFileId") long diveFileId);
 
     /* Remove */
     @Operation(description = "Remove a dive file", tags = "FileTransferAPI")
@@ -182,7 +180,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + DIVE_FILES + "/{diveFileId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> removeDiveFile(@PathVariable("diveFileId") long diveFileId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> removeDiveFile(@PathVariable("diveFileId") long diveFileId);
 
     /* ==== Document ==== */
     /* Find all */
@@ -193,7 +191,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DOCUMENTS, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<DocumentFileResponse>> findAllDocumentFiles(HttpServletRequest request);
+    ResponseEntity<List<DocumentFileResponse>> findAllDocumentFiles();
 
     /* Upload */
     @Operation(description = "Upload a document not linked to user or page, returns the external URL to access the file", tags = "FileTransferAPI")
@@ -216,7 +214,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DOCUMENTS + "/{documentId}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    ResponseEntity<byte[]> downloadDocumentFile(@PathVariable("documentId") long documentId, HttpServletRequest request);
+    ResponseEntity<byte[]> downloadDocumentFile(@PathVariable("documentId") long documentId);
 
     /* Remove */
     @Operation(description = "Remove a document file", tags = "FileTransferAPI")
@@ -228,7 +226,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/" + DOCUMENTS + "/{documentId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ActionResponse> removeDocumentFile(@PathVariable("documentId") long documentId, HttpServletRequest request);
+    ResponseEntity<ActionResponse> removeDocumentFile(@PathVariable("documentId") long documentId);
 
     /* ==== Page ==== */
     /* Find all */
@@ -239,7 +237,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + PAGE_FILES, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PageFileResponse>> findAllPageFiles(HttpServletRequest request);
+    ResponseEntity<List<PageFileResponse>> findAllPageFiles();
 
     /* Upload */
     @Operation(description = "Upload a file belonging to a specific page language version, returns the external URL to access the file", tags = "FileTransferAPI")
@@ -254,8 +252,7 @@ public interface FileTransferAPI {
     @PostMapping(path = BASE_PATH + "/" + PAGE_FILES, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<?> uploadPageFile(@RequestPart("uploadFile") MultipartFile uploadFile,
             @RequestParam("language") String language,
-            @RequestParam("pageId") long pageId,
-            HttpServletRequest request);
+            @RequestParam("pageId") long pageId);
 
     /* Download */
     @Operation(description = "Download a page file", tags = "FileTransferAPI")
@@ -270,7 +267,7 @@ public interface FileTransferAPI {
     @GetMapping(path = BASE_PATH + "/" + PAGE_FILES + "/{pageId}/{language}/{fileName}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     ResponseEntity<byte[]> downloadPageFile(@PathVariable("pageId") long pageId,
             @PathVariable("language") String language,
-            @PathVariable("fileName") String fileName, HttpServletRequest request);
+            @PathVariable("fileName") String fileName);
 
     /* Remove */
     @Operation(description = "Remove a page file", tags = "FileTransferAPI")
@@ -286,5 +283,5 @@ public interface FileTransferAPI {
     @DeleteMapping(path = BASE_PATH + "/" + PAGE_FILES + "/{pageId}/{language}/{fileName}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ActionResponse> removePageFile(@PathVariable("pageId") long pageId,
             @PathVariable("language") String language,
-            @PathVariable("fileName") String fileName, HttpServletRequest request);
+            @PathVariable("fileName") String fileName);
 }

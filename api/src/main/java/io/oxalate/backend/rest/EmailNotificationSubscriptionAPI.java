@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +26,7 @@ public interface EmailNotificationSubscriptionAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EmailNotificationSubscriptionResponse>> getAllEmailNotificationSubscriptions(HttpServletRequest request);
+    ResponseEntity<List<EmailNotificationSubscriptionResponse>> getAllEmailNotificationSubscriptions();
 
     @Operation(description = "Set subscriptions of the user, this always takes the complete list of subscriptions, including the existing ones" +
             "To unsubscribe, send an empty list",
@@ -39,6 +38,6 @@ public interface EmailNotificationSubscriptionAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EmailNotificationSubscriptionResponse>> subscribeToEmailNotifications(HttpServletRequest request, @RequestBody EmailNotificationSubscriptionRequest subscriptions);
+    ResponseEntity<List<EmailNotificationSubscriptionResponse>> subscribeToEmailNotifications(@RequestBody EmailNotificationSubscriptionRequest subscriptions);
 
 }

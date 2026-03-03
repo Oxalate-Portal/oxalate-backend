@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,7 @@ public interface PortalConfigurationAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PortalConfigurationResponse>> getAllConfigurations(HttpServletRequest request);
+    ResponseEntity<List<PortalConfigurationResponse>> getAllConfigurations();
 
     @Operation(description = "Update a configuration value", tags = "PortalConfigurationAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Configuration update request", required = true)
@@ -40,8 +39,7 @@ public interface PortalConfigurationAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PortalConfigurationResponse> updateConfigurationValue(@RequestBody PortalConfigurationRequest portalConfigurationRequest,
-            HttpServletRequest request);
+    ResponseEntity<PortalConfigurationResponse> updateConfigurationValue(@RequestBody PortalConfigurationRequest portalConfigurationRequest);
 
     @Operation(description = "Get frontend configurations", tags = "PortalConfigurationAPI")
     @ApiResponses(value = {
@@ -49,7 +47,7 @@ public interface PortalConfigurationAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping(path = BASE_PATH + "/frontend", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<FrontendConfigurationResponse>> getFrontendConfigurations(HttpServletRequest request);
+    ResponseEntity<List<FrontendConfigurationResponse>> getFrontendConfigurations();
 
     @Operation(description = "Reload portal configurations", tags = "PortalConfigurationAPI")
     @ApiResponses(value = {
@@ -58,5 +56,5 @@ public interface PortalConfigurationAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/reload", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PortalConfigurationResponse>> reloadPortalConfigurations(HttpServletRequest request);
+    ResponseEntity<List<PortalConfigurationResponse>> reloadPortalConfigurations();
 }

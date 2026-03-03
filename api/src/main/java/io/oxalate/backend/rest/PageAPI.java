@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +30,7 @@ public interface PageAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping(path = BASE_PATH + "/navigation-elements", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PageGroupResponse>> getNavigationElements(@RequestParam(name = "language") String language, HttpServletRequest request);
+    ResponseEntity<List<PageGroupResponse>> getNavigationElements(@RequestParam(name = "language") String language);
 
     @Operation(description = "Get all pages from the blogs page group for a given language with pagination, sorting and search support", tags = "PageAPI")
     @ApiResponses(value = {
@@ -40,7 +39,7 @@ public interface PageAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @PostMapping(path = BASE_PATH + "/blogs", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(@RequestBody PagedRequest pagedRequest, HttpServletRequest request);
+    ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(@RequestBody PagedRequest pagedRequest);
 
     @Operation(description = "Get page by the given page ID", tags = "PageAPI")
     @Parameter(name = "pageId", description = "Page ID to be retrieved", example = "1", required = true)
@@ -53,6 +52,5 @@ public interface PageAPI {
     })
     @GetMapping(path = BASE_PATH + "/{pageId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageResponse> getPageById(@PathVariable(name = "pageId") long pageId,
-            @RequestParam(name = "language", required = false) String language,
-            HttpServletRequest request);
+            @RequestParam(name = "language", required = false) String language);
 }

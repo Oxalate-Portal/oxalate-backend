@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -40,7 +39,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventResponse>> getFutureEvents(HttpServletRequest request);
+    ResponseEntity<List<EventResponse>> getFutureEvents();
 
     @Operation(description = "Get a list of all ongoing events. The list is empty if no ongoing events exist.", tags = "EventAPI")
     @ApiResponses(value = {
@@ -49,7 +48,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/ongoing", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventResponse>> getOngoingEvents(HttpServletRequest request);
+    ResponseEntity<List<EventResponse>> getOngoingEvents();
 
     @Operation(description = "Get a list of all past events.", tags = "EventAPI")
     @ApiResponses(value = {
@@ -58,7 +57,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/past", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventResponse>> getPastEvents(HttpServletRequest request);
+    ResponseEntity<List<EventResponse>> getPastEvents();
 
     @Operation(description = "Get a list of all events for a specific user", tags = "EventAPI")
     @Parameter(name = "userId", description = "User ID for which all events should be fetched", example = "123")
@@ -68,7 +67,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventListResponse>> getEventsForUser(@PathVariable(name = "userId") long userId, HttpServletRequest request);
+    ResponseEntity<List<EventListResponse>> getEventsForUser(@PathVariable(name = "userId") long userId);
 
     @Operation(description = "Create a new event", tags = "EventAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New event request", required = true)
@@ -79,7 +78,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<EventResponse> createEvent(@RequestBody EventRequest eventRequest, HttpServletRequest request);
+    ResponseEntity<EventResponse> createEvent(@RequestBody EventRequest eventRequest);
 
     @Operation(description = "Update event", tags = "EventAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Updated event request", required = true)
@@ -90,7 +89,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<EventResponse> updateEvent(@RequestBody EventRequest eventRequest, HttpServletRequest request);
+    ResponseEntity<EventResponse> updateEvent(@RequestBody EventRequest eventRequest);
 
     @Operation(description = "Fetch event based on the ID", tags = "EventAPI")
     @Parameter(name = "eventId", description = "ID of the event", example = "123", required = true)
@@ -101,7 +100,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/{eventId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<EventResponse> getEventById(@NotNull @PathVariable("eventId") long eventId, HttpServletRequest request);
+    ResponseEntity<EventResponse> getEventById(@NotNull @PathVariable("eventId") long eventId);
 
     @Operation(description = "Get the dive counts of an event", tags = "EventAPI")
     @Parameter(name = "eventId", description = "ID of the event for which the dives are to be fetched", example = "123", required = true)
@@ -112,7 +111,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/{eventId}/dives", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<EventDiveListResponse> getEventDives(@PathVariable("eventId") long eventId, HttpServletRequest request);
+    ResponseEntity<EventDiveListResponse> getEventDives(@PathVariable("eventId") long eventId);
 
     @Operation(description = "Update the dive counts of an event", tags = "EventAPI")
     @Parameter(name = "eventId", description = "ID of the event for which the dives are to be updated", example = "123", required = true)
@@ -124,8 +123,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH + "/{eventId}/dives", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<EventDiveListResponse> updateEventDives(@PathVariable("eventId") long eventId, @RequestBody EventDiveListRequest eventDiveListRequest,
-            HttpServletRequest request);
+    ResponseEntity<EventDiveListResponse> updateEventDives(@PathVariable("eventId") long eventId, @RequestBody EventDiveListRequest eventDiveListRequest);
 
     @Operation(description = "Cancel the event", tags = "EventAPI")
     @Parameter(name = "eventId", description = "ID of the event to be cancelled", example = "123", required = true)
@@ -136,7 +134,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/{eventId}")
-    ResponseEntity<HttpStatus> cancelEvent(@PathVariable("eventId") long eventId, HttpServletRequest request);
+    ResponseEntity<HttpStatus> cancelEvent(@PathVariable("eventId") long eventId);
 
     @Operation(description = "Subscribe to an event", tags = "EventAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "EventSubscribeRequest", required = true)
@@ -147,7 +145,7 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(path = BASE_PATH + "/subscribe", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<EventResponse> subscribe(Authentication auth, @RequestBody EventSubscribeRequest eventSubscribeRequest, HttpServletRequest request);
+    ResponseEntity<EventResponse> subscribe(Authentication auth, @RequestBody EventSubscribeRequest eventSubscribeRequest);
 
     @Operation(description = "Unsubscribe from an event", tags = "EventAPI")
     @Parameter(name = "eventId", description = "ID of the event to which the user unsubscribes from", example = "123", required = true)
@@ -159,5 +157,5 @@ public interface EventAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/{eventId}/unsubscribe")
-    ResponseEntity<EventResponse> unSubscribe(Authentication auth, @PathVariable(name = "eventId") long eventId, HttpServletRequest request);
+    ResponseEntity<EventResponse> unSubscribe(Authentication auth, @PathVariable(name = "eventId") long eventId);
 }

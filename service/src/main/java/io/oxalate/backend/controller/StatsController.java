@@ -1,7 +1,5 @@
 package io.oxalate.backend.controller;
 
-import static io.oxalate.backend.api.AuditLevelEnum.INFO;
-import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import static io.oxalate.backend.api.RoleEnum.ROLE_USER;
@@ -9,6 +7,8 @@ import io.oxalate.backend.api.response.stats.AggregateResponse;
 import io.oxalate.backend.api.response.stats.EventPeriodReportResponse;
 import io.oxalate.backend.api.response.stats.MultiYearValueResponse;
 import io.oxalate.backend.api.response.stats.YearlyDiversListResponse;
+import io.oxalate.backend.audit.AuditSource;
+import io.oxalate.backend.audit.Audited;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_AGGREGATE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_AGGREGATE_START;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_AGGREGATE_UNAUTHORIZED;
@@ -30,11 +30,10 @@ import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_PAYMEN
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_REGISTRATION_OK;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_REGISTRATION_START;
 import static io.oxalate.backend.events.AppAuditMessages.STATS_GET_YEARLY_REGISTRATION_UNAUTHORIZED;
-import io.oxalate.backend.events.AppEventPublisher;
+import io.oxalate.backend.exception.OxalateUnauthorizedException;
 import io.oxalate.backend.rest.StatsAPI;
 import io.oxalate.backend.service.StatsService;
 import io.oxalate.backend.tools.AuthTools;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,91 +45,70 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
+@AuditSource("StatsController")
 public class StatsController implements StatsAPI {
     private final StatsService statsService;
-    private static final String AUDIT_NAME = "StatsController";
-    private final AppEventPublisher appEventPublisher;
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValueResponse>> getYearlyRegistrationTimeSeries(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_REGISTRATION_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
+    @Audited(startMessage = STATS_GET_YEARLY_REGISTRATION_START, okMessage = STATS_GET_YEARLY_REGISTRATION_OK)
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyRegistrationTimeSeries() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
-            appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_REGISTRATION_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.error("User ID {} tried to access yearly registration stats without proper permission", AuthTools.getCurrentUserId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            throw new OxalateUnauthorizedException(STATS_GET_YEARLY_REGISTRATION_UNAUTHORIZED, HttpStatus.NOT_FOUND);
         }
 
         var multiYearValues = statsService.getYearlyRegistrations();
-        appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_REGISTRATION_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.ok().body(multiYearValues);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValueResponse>> getYearlyEventTimeSeries(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_EVENTS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
+    @Audited(startMessage = STATS_GET_YEARLY_EVENTS_START, okMessage = STATS_GET_YEARLY_EVENTS_OK)
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyEventTimeSeries() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
-            appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_EVENTS_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.error("User ID {} tried to access yearly event stats without proper permission", AuthTools.getCurrentUserId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            throw new OxalateUnauthorizedException(STATS_GET_YEARLY_EVENTS_UNAUTHORIZED, HttpStatus.NOT_FOUND);
         }
 
         var multiYearValues = statsService.getYearlyEvents();
-        appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_EVENTS_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.ok().body(multiYearValues);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValueResponse>> getYearlyOrganizerTimeSeries(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_ORGANIZERS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
+    @Audited(startMessage = STATS_GET_YEARLY_ORGANIZERS_START, okMessage = STATS_GET_YEARLY_ORGANIZERS_OK)
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyOrganizerTimeSeries() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
-            appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_ORGANIZERS_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.error("User ID {} tried to access yearly organizer stats without proper permission", AuthTools.getCurrentUserId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            throw new OxalateUnauthorizedException(STATS_GET_YEARLY_ORGANIZERS_UNAUTHORIZED, HttpStatus.NOT_FOUND);
         }
 
         var multiYearValues = statsService.getYearlyOrganizers();
-        appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_ORGANIZERS_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         return ResponseEntity.ok().body(multiYearValues);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<MultiYearValueResponse>> getYearlyPaymentTimeSeries(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_PAYMENTS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
+    @Audited(startMessage = STATS_GET_YEARLY_PAYMENTS_START, okMessage = STATS_GET_YEARLY_PAYMENTS_OK)
+    public ResponseEntity<List<MultiYearValueResponse>> getYearlyPaymentTimeSeries() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
-            appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_PAYMENTS_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.error("User ID {} tried to access yearly payment stats without proper permission", AuthTools.getCurrentUserId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            throw new OxalateUnauthorizedException(STATS_GET_YEARLY_PAYMENTS_UNAUTHORIZED, HttpStatus.NOT_FOUND);
         }
 
-        appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_PAYMENTS_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         var multiYearValues = statsService.getYearlyPayments();
         return ResponseEntity.ok().body(multiYearValues);
     }
 
     @Override
-    public ResponseEntity<AggregateResponse> getAggregateStats(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_AGGREGATE_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
+    @Audited(startMessage = STATS_GET_YEARLY_AGGREGATE_START, okMessage = STATS_GET_YEARLY_AGGREGATE_OK)
+    public ResponseEntity<AggregateResponse> getAggregateStats() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
-            appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_AGGREGATE_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.error("User ID {} tried to access yearly aggregate stats without proper permission", AuthTools.getCurrentUserId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            throw new OxalateUnauthorizedException(STATS_GET_YEARLY_AGGREGATE_UNAUTHORIZED, HttpStatus.NOT_FOUND);
         }
 
-        appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_AGGREGATE_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         var aggregateResponse = statsService.getAggregateData();
         return ResponseEntity.ok()
                              .body(aggregateResponse);
@@ -138,35 +116,26 @@ public class StatsController implements StatsAPI {
 
     @Override
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<EventPeriodReportResponse>> getEventReports(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_EVENT_REPORTS_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
+    @Audited(startMessage = STATS_GET_YEARLY_EVENT_REPORTS_START, okMessage = STATS_GET_YEARLY_EVENT_REPORTS_OK)
+    public ResponseEntity<List<EventPeriodReportResponse>> getEventReports() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
-            appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_EVENT_REPORTS_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(),
-                    auditUuid);
             log.error("User ID {} tried to access event reports without proper permission", AuthTools.getCurrentUserId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            throw new OxalateUnauthorizedException(STATS_GET_YEARLY_EVENT_REPORTS_UNAUTHORIZED, HttpStatus.NOT_FOUND);
         }
 
-        appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_EVENT_REPORTS_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         var reports = statsService.getEventReports();
         return ResponseEntity.ok().body(reports);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
-    public ResponseEntity<List<YearlyDiversListResponse>> yearlyDiverList(HttpServletRequest request) {
-        var auditUuid = appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_DIVER_LIST_START, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId());
-
+    @Audited(startMessage = STATS_GET_YEARLY_DIVER_LIST_START, okMessage = STATS_GET_YEARLY_DIVER_LIST_OK)
+    public ResponseEntity<List<YearlyDiversListResponse>> yearlyDiverList() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER, ROLE_USER)) {
-            appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_DIVER_LIST_UNAUTHORIZED, WARN, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
             log.error("User ID {} tried to access yearly diver list stats without proper permission", AuthTools.getCurrentUserId());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                 .body(null);
+            throw new OxalateUnauthorizedException(STATS_GET_YEARLY_DIVER_LIST_UNAUTHORIZED, HttpStatus.NOT_FOUND);
         }
 
-        appEventPublisher.publishAuditEvent(STATS_GET_YEARLY_DIVER_LIST_OK, INFO, request, AUDIT_NAME, AuthTools.getCurrentUserId(), auditUuid);
         var yearlyLists = statsService.getYearlyDiversList();
         return ResponseEntity.ok()
                              .body(yearlyLists);
