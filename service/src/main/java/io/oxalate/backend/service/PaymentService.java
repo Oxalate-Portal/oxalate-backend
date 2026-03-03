@@ -384,6 +384,7 @@ public class PaymentService {
                                  .userId(userId)
                                  .paymentType(ONE_TIME)
                                  .created(Instant.now())
+                                 .startDate(LocalDate.now())
                                  .endDate(calculateEndDateForMode(PaymentTypeEnum.ONE_TIME, effectivePaymentMode, LocalDate.now()))
                                  .paymentCount(count)
                                  .build();
