@@ -14,16 +14,25 @@ public class PeriodTool {
             throw new IllegalArgumentException("Invalid period start value for the given calendar unit.");
         }
 
-        // Align the first period's start date
-        // Iterate forward in unitCount increments to find the correct period
-        LocalDate periodStartDate = alignFirstPeriodStart(startDate, calendarUnit, (int) periodStart);
+        if (unitCount <= 0) {
+            throw new IllegalArgumentException("Unit count must be greater than zero.");
+        }
 
+        // Align the first period's start date
+        var periodStartDate = alignFirstPeriodStart(startDate, calendarUnit, (int) periodStart);
+
+        // Move backwards when querying dates earlier than the configured anchor to avoid forward overflow.
+        while (currentDate.isBefore(periodStartDate)) {
+            periodStartDate = periodStartDate.minus(unitCount, calendarUnit);
+        }
+
+        // Iterate forward in unitCount increments to find the matching period.
         while (!isDateWithinPeriod(currentDate, periodStartDate, calendarUnit, (int) unitCount)) {
             periodStartDate = periodStartDate.plus(unitCount, calendarUnit);
         }
 
         // Calculate the end date of the identified period
-        LocalDate periodEndDate = calculatePeriodEnd(periodStartDate, calendarUnit, (int) unitCount);
+        var periodEndDate = calculatePeriodEnd(periodStartDate, calendarUnit, (int) unitCount);
 
         return PeriodResult.builder()
                            .startDate(periodStartDate)
