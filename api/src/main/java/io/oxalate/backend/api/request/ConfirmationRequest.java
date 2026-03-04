@@ -5,11 +5,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-@Schema(description = "Signup request")
+@Schema(description = "Confirmation request")
 @Data
-public class TermRequest {
+public class ConfirmationRequest {
     @NotBlank
     @Schema(description = "User answer to whether they accept the terms and conditions, is either yes or no", example = "yes", requiredMode = Schema.RequiredMode.REQUIRED)
-    @JsonProperty("termAnswer")
-    private String termAnswer;
+    @JsonProperty("confirmationAnswer")
+    private boolean confirmationAnswer;
 }

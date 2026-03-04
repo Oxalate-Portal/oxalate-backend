@@ -6,7 +6,7 @@ import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import static io.oxalate.backend.api.UserStatusEnum.ANONYMIZED;
 import io.oxalate.backend.api.request.AdminUserRequest;
-import io.oxalate.backend.api.request.TermRequest;
+import io.oxalate.backend.api.request.ConfirmationRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
@@ -28,6 +28,9 @@ import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_HEALTHCHECK
 import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_TERM_OK;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_TERM_START;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_RESET_TERM_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.USERS_SET_HEALTHCHECK_OK;
+import static io.oxalate.backend.events.AppAuditMessages.USERS_SET_HEALTHCHECK_START;
+import static io.oxalate.backend.events.AppAuditMessages.USERS_SET_HEALTHCHECK_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_SET_TERM_OK;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_SET_TERM_START;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_SET_TERM_UNAUTHORIZED;
@@ -224,7 +227,7 @@ public class UserController implements UserAPI {
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = USERS_SET_TERM_START, okMessage = USERS_SET_TERM_OK)
-    public ResponseEntity<Void> recordTermAnswer(TermRequest termRequest) {
+    public ResponseEntity<Void> recordTermAnswer(ConfirmationRequest confirmationRequest) {
         var userId = AuthTools.getCurrentUserId();
 
         if (userId < 0) {
@@ -232,8 +235,23 @@ public class UserController implements UserAPI {
             throw new OxalateUnauthorizedException(AuditLevelEnum.ERROR, USERS_SET_TERM_UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        userService.setTermAnswer(userId, termRequest.getTermAnswer()
-                                                     .equalsIgnoreCase("yes"));
+        userService.setTermAnswer(userId, confirmationRequest.isConfirmationAnswer());
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(null);
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    @Audited(startMessage = USERS_SET_HEALTHCHECK_START, okMessage = USERS_SET_HEALTHCHECK_OK)
+    public ResponseEntity<Void> recordHealthCheckAnswer(ConfirmationRequest confirmationRequest) {
+        var userId = AuthTools.getCurrentUserId();
+
+        if (userId < 0) {
+            log.error("Someone unauthorized tried to set health check answer");
+            throw new OxalateUnauthorizedException(AuditLevelEnum.ERROR, USERS_SET_HEALTHCHECK_UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        userService.setHealthCheckAnswer(userId, confirmationRequest.isConfirmationAnswer());
         return ResponseEntity.status(HttpStatus.OK)
                              .body(null);
     }

@@ -4,7 +4,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.AdminUserRequest;
-import io.oxalate.backend.api.request.TermRequest;
+import io.oxalate.backend.api.request.ConfirmationRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
@@ -85,7 +85,17 @@ public interface UserAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/accept-terms")
-    ResponseEntity<Void> recordTermAnswer(@RequestBody TermRequest termRequest);
+    ResponseEntity<Void> recordTermAnswer(@RequestBody ConfirmationRequest confirmationRequest);
+
+    @Operation(description = "Receive answer to whether the user accepts or rejects the terms", tags = "UserAPI")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "TermRequest", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Term answer registered successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(value = BASE_PATH + "/confirm-health-check")
+    ResponseEntity<Void> recordHealthCheckAnswer(@RequestBody ConfirmationRequest confirmationRequest);
 
     @Operation(description = "Reset term and conditions answer for all users, forcing them to re-approve", tags = "UserAPI")
     @ApiResponses(value = {
