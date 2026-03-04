@@ -11,3 +11,8 @@ logging:
 oxalate:
   app:
     env: production
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
