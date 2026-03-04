@@ -239,6 +239,10 @@ public class AppAuditMessages {
     public static final String USERS_RESET_TERM_UNAUTHORIZED = "User not authorized to reset terms and conditions";
     public static final String USERS_RESET_TERM_OK = "Terms and conditions reset";
 
+    public static final String USERS_SET_HEALTHCHECK_START = "Setting health check";
+    public static final String USERS_SET_HEALTHCHECK_UNAUTHORIZED = "User not authorized to set health check";
+    public static final String USERS_SET_HEALTHCHECK_OK = "Health check set";
+
     public static final String USERS_RESET_HEALTHCHECK_START = "Resetting health check";
     public static final String USERS_RESET_HEALTHCHECK_UNAUTHORIZED = "User not authorized to reset health check";
     public static final String USERS_RESET_HEALTHCHECK_OK = "Health check reset";

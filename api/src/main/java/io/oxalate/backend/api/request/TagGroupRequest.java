@@ -5,6 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "Signup request")
+@Schema(description = "Tag group request")
 public class TagGroupRequest extends TagGroupResponse {
 }
