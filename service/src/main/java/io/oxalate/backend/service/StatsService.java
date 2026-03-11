@@ -10,7 +10,10 @@ import io.oxalate.backend.api.response.stats.YearlyDiversListResponse;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.Year;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -377,7 +380,14 @@ public class StatsService {
 
         for (Object[] o : results) {
             var eventId = (Long) o[0];
-            var eventDateTime = ((java.sql.Timestamp) o[1]).toInstant();
+            var eventDateTime = mapToInstant(o[1]);
+            if (eventDateTime == null) {
+                log.warn("Skipping event report row due to unsupported event date type: {}", o[1] != null ?
+                        o[1].getClass()
+                            .getName() :
+                        "null");
+                continue;
+            }
             var organizerName = (String) o[2];
             var eventCount = (Long) o[3];
             var diveCount = (Long) o[4];
@@ -393,6 +403,35 @@ public class StatsService {
         }
 
         return eventReportResponses;
+    }
+
+    private Instant mapToInstant(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Instant instant) {
+            return instant;
+        }
+
+        if (value instanceof java.sql.Timestamp timestamp) {
+            return timestamp.toInstant();
+        }
+
+        if (value instanceof LocalDateTime localDateTime) {
+            return localDateTime.atZone(ZoneId.systemDefault())
+                                .toInstant();
+        }
+
+        if (value instanceof OffsetDateTime offsetDateTime) {
+            return offsetDateTime.toInstant();
+        }
+
+        if (value instanceof java.util.Date date) {
+            return date.toInstant();
+        }
+
+        return null;
     }
 
     /**
