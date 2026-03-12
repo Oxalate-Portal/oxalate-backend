@@ -286,10 +286,16 @@ public class PageService {
         var pageGroup = PageGroup.of(pageGroupRequest);
         var newPageGroup = pageGroupRepository.save(pageGroup);
         // Save all PageGroupVersions as per configured languages
+        log.debug("Configured languages: {}", languageVersions);
+        log.debug("PageGroupRequest: {}", pageGroupRequest);
+
         for (var pageGroupVersionRequest : pageGroupRequest.getPageGroupVersions()) {
             if (languageVersions.contains(pageGroupVersionRequest.getLanguage())) {
                 var pageGroupVersion = PageGroupVersion.of(pageGroupVersionRequest);
+                // Creation must always use DB-generated IDs and the newly created parent group ID.
+                pageGroupVersion.setId(null);
                 pageGroupVersion.setPageGroupId(newPageGroup.getId());
+                log.debug("Saving pageGroupVersion: {}", pageGroupVersion);
                 pageGroupVersionRepository.save(pageGroupVersion);
             }
         }

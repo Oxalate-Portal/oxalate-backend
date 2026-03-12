@@ -14,7 +14,7 @@ import io.oxalate.backend.api.response.MembershipResponse;
 import io.oxalate.backend.model.Membership;
 import io.oxalate.backend.model.PeriodResult;
 import io.oxalate.backend.repository.MembershipRepository;
-import io.oxalate.backend.tools.PeriodTool;
+import io.oxalate.backend.tools.PeriodTools;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -192,7 +192,7 @@ public class MembershipService {
                     MEMBERSHIP_PERIOD_START_POINT.key);
             var calculationStart = portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key);
             var calculationStartDate = LocalDate.parse(calculationStart);
-            periodResult = PeriodTool.calculatePeriod(localDateNow, calculationStartDate, membershipPeriodUnit, membershipPeriodStartPoint,
+            periodResult = PeriodTools.calculatePeriod(localDateNow, calculationStartDate, membershipPeriodUnit, membershipPeriodStartPoint,
                     membershipPeriodLength);
         } else {
             periodResult.setStartDate(localDateNow);

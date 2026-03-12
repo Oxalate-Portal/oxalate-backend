@@ -21,7 +21,7 @@ import io.oxalate.backend.model.Payment;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.PaymentRepository;
 import io.oxalate.backend.repository.UserRepository;
-import io.oxalate.backend.tools.PeriodTool;
+import io.oxalate.backend.tools.PeriodTools;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -467,7 +467,7 @@ public class PaymentService {
         var periodStart = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
         var periodAnchor = LocalDate.parse(portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key));
 
-        return PeriodTool.calculatePeriod(calculationDate, periodAnchor, chronoUnit, periodStart, unitCount)
+        return PeriodTools.calculatePeriod(calculationDate, periodAnchor, chronoUnit, periodStart, unitCount)
                          .getEndDate();
     }
 

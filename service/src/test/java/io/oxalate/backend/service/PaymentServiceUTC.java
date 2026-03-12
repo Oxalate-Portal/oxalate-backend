@@ -1,6 +1,6 @@
 package io.oxalate.backend.service;
 
-import io.oxalate.backend.tools.PeriodTool;
+import io.oxalate.backend.tools.PeriodTools;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +52,7 @@ public class PaymentServiceUTC {
             return null;
         }
         case "periodical" -> {
-            var periodResult = PeriodTool.calculatePeriod(LocalDate.now(), startDate, chronoUnit, periodStartPoint, unitCounts);
+            var periodResult = PeriodTools.calculatePeriod(LocalDate.now(), startDate, chronoUnit, periodStartPoint, unitCounts);
             return periodResult.getEndDate();
         }
         case "durational" -> {
