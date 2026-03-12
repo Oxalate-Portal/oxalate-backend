@@ -11,7 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 @Slf4j
-public class PeriodToolUTC {
+public class PeriodToolsUTC {
     @CsvSource({
             "2024-02-06, 2023-04-22, YEARS,   2, 1, 2024-02-01, 2025-02-01", // Easy case
             "2024-02-06, 2023-04-22, YEARS,   3, 1, 2023-03-01, 2024-03-01", // Handle leap year
@@ -24,7 +24,7 @@ public class PeriodToolUTC {
     @ParameterizedTest
     void periodResultV2Ok(LocalDate nowInstant, LocalDate localDate, ChronoUnit calendarUnit, long periodStart, long unitCount, LocalDate startDate,
             LocalDate endDate) {
-        var periodResult = PeriodTool.calculatePeriod(nowInstant, localDate, calendarUnit, periodStart, unitCount);
+        var periodResult = PeriodTools.calculatePeriod(nowInstant, localDate, calendarUnit, periodStart, unitCount);
         assertEquals(startDate, periodResult.getStartDate());
         assertEquals(endDate, periodResult.getEndDate());
     }
@@ -40,7 +40,7 @@ public class PeriodToolUTC {
         var periodStart = 1L;
         var unitCount = 1L;
 
-        var periodResult = PeriodTool.calculatePeriod(nowInstant, localDate, calendarUnit, periodStart, unitCount);
+        var periodResult = PeriodTools.calculatePeriod(nowInstant, localDate, calendarUnit, periodStart, unitCount);
         assertEquals(LocalDate.of(currentYear + 5, 1, 1), periodResult.getStartDate());
         assertEquals(LocalDate.of(currentYear + 6, 1, 1), periodResult.getEndDate());
     }

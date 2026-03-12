@@ -1,11 +1,17 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.PageStatusEnum;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.SortDirectionEnum;
+import io.oxalate.backend.api.request.PageGroupRequest;
+import io.oxalate.backend.api.request.PageGroupVersionRequest;
 import io.oxalate.backend.api.request.PagedRequest;
+import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
 import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.model.Page;
+import io.oxalate.backend.model.PageGroup;
+import io.oxalate.backend.model.PageGroupVersion;
 import io.oxalate.backend.model.PageVersion;
 import io.oxalate.backend.repository.PageGroupRepository;
 import io.oxalate.backend.repository.PageGroupVersionRepository;
@@ -15,6 +21,7 @@ import io.oxalate.backend.repository.PageVersionRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -35,6 +43,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -379,6 +388,119 @@ class PageServiceUTC {
         // Then
         assertNotNull(result);
         assertFalse(result.isEmpty());
+    }
+
+    @Test
+    void createPathRequestWithZeroIdsUsesGeneratedGroupIdOk() {
+        // Given
+        when(portalConfigurationService.getArrayConfiguration(any(), any()))
+                .thenReturn(List.of("en", "fi"));
+
+        var pageGroupRequest = PageGroupRequest.builder()
+                                               .id(0L)
+                                               .status(PageStatusEnum.PUBLISHED)
+                                               .pageGroupVersions(new LinkedHashSet<>(Set.of(
+                                                       PageGroupVersionRequest.builder()
+                                                                              .id(0L)
+                                                                              .pageGroupId(0L)
+                                                                              .title("English")
+                                                                              .language("en")
+                                                                              .build(),
+                                                       PageGroupVersionRequest.builder()
+                                                                              .id(0L)
+                                                                              .pageGroupId(0L)
+                                                                              .title("Suomi")
+                                                                              .language("fi")
+                                                                              .build()
+                                               )))
+                                               .build();
+
+        var savedPageGroup = PageGroup.builder()
+                                      .id(100L)
+                                      .status(PageStatusEnum.PUBLISHED)
+                                      .build();
+
+        when(pageGroupRepository.save(any(PageGroup.class))).thenReturn(savedPageGroup);
+        when(pageGroupVersionRepository.findAllByPageGroupIdOrderByLanguageAsc(100L))
+                .thenReturn(List.of(
+                        PageGroupVersion.builder()
+                                        .id(201L)
+                                        .pageGroupId(100L)
+                                        .language("en")
+                                        .title("English")
+                                        .build(),
+                        PageGroupVersion.builder()
+                                        .id(202L)
+                                        .pageGroupId(100L)
+                                        .language("fi")
+                                        .title("Suomi")
+                                        .build()
+                ));
+        when(pageRepository.findAllByPageGroupIdOrderByIdAsc(100L)).thenReturn(List.of());
+
+        // When
+        PageGroupResponse result = pageService.createPath(pageGroupRequest);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(100L, result.getId());
+        assertEquals(2, result.getPageGroupVersions()
+                              .size());
+
+        var captor = ArgumentCaptor.forClass(PageGroupVersion.class);
+        verify(pageGroupVersionRepository, times(2)).save(captor.capture());
+        for (var savedVersion : captor.getAllValues()) {
+            assertEquals(100L, savedVersion.getPageGroupId());
+            assertEquals(null, savedVersion.getId());
+        }
+    }
+
+    @Test
+    void createPathUnsupportedLanguageIsSkippedOk() {
+        // Given
+        when(portalConfigurationService.getArrayConfiguration(any(), any()))
+                .thenReturn(List.of("en"));
+
+        var pageGroupRequest = PageGroupRequest.builder()
+                                               .id(0L)
+                                               .status(PageStatusEnum.PUBLISHED)
+                                               .pageGroupVersions(new LinkedHashSet<>(Set.of(
+                                                       PageGroupVersionRequest.builder()
+                                                                              .id(0L)
+                                                                              .pageGroupId(0L)
+                                                                              .title("English")
+                                                                              .language("en")
+                                                                              .build(),
+                                                       PageGroupVersionRequest.builder()
+                                                                              .id(0L)
+                                                                              .pageGroupId(0L)
+                                                                              .title("Deutsch")
+                                                                              .language("de")
+                                                                              .build()
+                                               )))
+                                               .build();
+
+        var savedPageGroup = PageGroup.builder()
+                                      .id(101L)
+                                      .status(PageStatusEnum.PUBLISHED)
+                                      .build();
+
+        when(pageGroupRepository.save(any(PageGroup.class))).thenReturn(savedPageGroup);
+        when(pageGroupVersionRepository.findAllByPageGroupIdOrderByLanguageAsc(101L))
+                .thenReturn(List.of(PageGroupVersion.builder()
+                                                    .id(203L)
+                                                    .pageGroupId(101L)
+                                                    .language("en")
+                                                    .title("English")
+                                                    .build()));
+        when(pageRepository.findAllByPageGroupIdOrderByIdAsc(101L)).thenReturn(List.of());
+
+        // When
+        PageGroupResponse result = pageService.createPath(pageGroupRequest);
+
+        // Then
+        assertNotNull(result);
+        verify(pageGroupVersionRepository, times(1)).save(any(PageGroupVersion.class));
     }
 
     private Page createMockPage(Long id, String title, String ingress, String body) {

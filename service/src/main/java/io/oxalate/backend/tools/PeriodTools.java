@@ -7,7 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
 
-public class PeriodTool {
+public class PeriodTools {
     public static PeriodResult calculatePeriod(LocalDate currentDate, LocalDate startDate, ChronoUnit calendarUnit, long periodStart, long unitCount) {
         // Ensure valid input for the period start
         if (periodStart <= 0 || periodStart > getMaxUnitValue(calendarUnit)) {
