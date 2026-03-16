@@ -19,11 +19,11 @@
         <java.version>25</java.version>
         <spring.boot.version>4.0.3</spring.boot.version> <!-- Keep this in sync with the parent version -->
         <jjwt.version>0.13.0</jjwt.version>
-        <swagger.version>2.2.44</swagger.version>
+        <swagger.version>2.2.45</swagger.version>
         <testcontainers.version>2.0.3</testcontainers.version>
         <apache-maven.version>3.5.5</apache-maven.version>
         <jboss-logging.component.version>3.0.4.Final</jboss-logging.component.version>
-        <lombok.version>1.18.42</lombok.version>
+        <lombok.version>1.18.44</lombok.version>
     </properties>
 
     <build>
