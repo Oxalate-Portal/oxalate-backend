@@ -3,6 +3,7 @@ package io.oxalate.backend.tools;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.security.service.UserDetailsImpl;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -53,14 +54,24 @@ public class AuthTools {
         return false;
     }
 
-    public static boolean currentUserHasAcceptedTerms() {
+    public static boolean currentUserHasNotAcceptedTerms() {
         var authentication = getAuthentication();
 
         if (authentication == null) {
-            return false;
+            return true;
         }
 
-        return ((UserDetailsImpl) authentication.getPrincipal()).isApprovedTerms();
+        return !((UserDetailsImpl) Objects.requireNonNull(authentication.getPrincipal())).isApprovedTerms();
+    }
+
+    public static boolean currentUserHasNotAcceptedHealthStatement() {
+        var authentication = getAuthentication();
+
+        if (authentication == null) {
+            return true;
+        }
+
+        return (((UserDetailsImpl) Objects.requireNonNull(authentication.getPrincipal())).getHealthStatementId() != null);
     }
 
     public static long getCurrentUserId() {

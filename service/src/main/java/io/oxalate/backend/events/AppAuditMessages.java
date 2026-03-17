@@ -163,6 +163,7 @@ public class AppAuditMessages {
 
     public static final String EVENTS_SUBSCRIBE_START = "Subscribing to event with ID: ";
     public static final String EVENTS_SUBSCRIBE_TERMS_NOT_ACCEPTED = "User has not accepted terms and conditions";
+    public static final String EVENTS_SUBSCRIBE_HEALTH_STATEMENT_NOT_ACCEPTED = "User has not accepted health statement";
     public static final String EVENTS_SUBSCRIBE_UNKNOWN_USER = "Unknown user account: ";
     public static final String EVENTS_SUBSCRIBE_NOT_FOUND = "Could not find event with ID: ";
     public static final String EVENTS_SUBSCRIBE_FAIL = "Failed to subscribe to event with ID: ";
