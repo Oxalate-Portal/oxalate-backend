@@ -44,6 +44,7 @@ import static io.oxalate.backend.events.AppAuditMessages.EVENTS_GET_USER_OK;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_GET_USER_START;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_GET_USER_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_SUBSCRIBE_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_SUBSCRIBE_HEALTH_STATEMENT_NOT_ACCEPTED;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_SUBSCRIBE_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_SUBSCRIBE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_SUBSCRIBE_START;
@@ -97,7 +98,7 @@ public class EventController implements EventAPI {
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = EVENTS_GET_FUTURE_START, okMessage = EVENTS_GET_FUTURE_OK, failMessage = EVENTS_GET_FUTURE_FAIL)
     public ResponseEntity<List<EventResponse>> getFutureEvents() {
-        if (!AuthTools.currentUserHasAcceptedTerms()) {
+        if (AuthTools.currentUserHasNotAcceptedTerms()) {
             log.error("User ID {} has not accepted terms and conditions", AuthTools.getCurrentUserId());
             throw new OxalateValidationException(AuditLevelEnum.WARN, EVENTS_GET_FUTURE_TERMS_NOT_ACCEPTED, HttpStatus.NO_CONTENT);
         }
@@ -116,7 +117,7 @@ public class EventController implements EventAPI {
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = EVENTS_GET_CURRENT_START, okMessage = EVENTS_GET_CURRENT_OK)
     public ResponseEntity<List<EventResponse>> getOngoingEvents() {
-        if (!AuthTools.currentUserHasAcceptedTerms()) {
+        if (AuthTools.currentUserHasNotAcceptedTerms()) {
             log.error("User ID {} has not accepted terms and conditions", AuthTools.getCurrentUserId());
             throw new OxalateValidationException(AuditLevelEnum.WARN, EVENTS_GET_CURRENT_TERMS_NOT_ACCEPTED, HttpStatus.NO_CONTENT);
         }
@@ -134,7 +135,7 @@ public class EventController implements EventAPI {
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = EVENTS_GET_PAST_START, okMessage = EVENTS_GET_PAST_OK)
     public ResponseEntity<List<EventResponse>> getPastEvents() {
-        if (!AuthTools.currentUserHasAcceptedTerms()) {
+        if (AuthTools.currentUserHasNotAcceptedTerms()) {
             log.error("User ID {} has not accepted terms and conditions", AuthTools.getCurrentUserId());
             throw new OxalateValidationException(AuditLevelEnum.WARN, EVENTS_GET_PAST_TERMS_NOT_ACCEPTED, HttpStatus.NO_CONTENT);
         }
@@ -324,9 +325,14 @@ public class EventController implements EventAPI {
     public ResponseEntity<EventResponse> subscribe(Authentication auth, EventSubscribeRequest eventSubscribeRequest) {
         var eventId = eventSubscribeRequest.getDiveEventId();
 
-        if (!AuthTools.currentUserHasAcceptedTerms()) {
+        if (AuthTools.currentUserHasNotAcceptedTerms()) {
             log.error("User ID {} has not accepted terms and conditions", AuthTools.getCurrentUserId());
             throw new OxalateValidationException(AuditLevelEnum.INFO, EVENTS_SUBSCRIBE_TERMS_NOT_ACCEPTED, HttpStatus.NO_CONTENT);
+        }
+
+        if (AuthTools.currentUserHasNotAcceptedHealthStatement()) {
+            log.error("User ID {} has not accepted health statement", AuthTools.getCurrentUserId());
+            throw new OxalateValidationException(AuditLevelEnum.INFO, EVENTS_SUBSCRIBE_HEALTH_STATEMENT_NOT_ACCEPTED, HttpStatus.NO_CONTENT);
         }
 
         var optionalUser = userService.findByUsername(auth.getName());
@@ -336,6 +342,8 @@ public class EventController implements EventAPI {
             throw new OxalateNotFoundException(AuditLevelEnum.WARN, EVENTS_SUBSCRIBE_UNKNOWN_USER + auth.getName(), HttpStatus.NOT_FOUND);
         }
 
+        var user = optionalUser.get();
+
         var eventResponse = eventService.findById(eventId);
 
         if (eventResponse == null) {
@@ -343,13 +351,12 @@ public class EventController implements EventAPI {
             throw new OxalateNotFoundException(AuditLevelEnum.WARN, EVENTS_SUBSCRIBE_NOT_FOUND + eventId, HttpStatus.NOT_FOUND);
         }
 
-        log.info("Adding user ID {} to event {}", optionalUser.get().getId(), eventId);
+        log.info("Adding user ID {} to event {}", user.getId(), eventId);
 
-        var newEventResponse = eventService.addUserToEvent(optionalUser.get(), eventSubscribeRequest);
+        var newEventResponse = eventService.addUserToEvent(user, eventSubscribeRequest);
 
         if (newEventResponse == null) {
-            log.error("Can not subscribe user ID {} to event: {}", optionalUser.get()
-                                                                               .getId(), eventId);
+            log.error("Can not subscribe user ID {} to event: {}", user.getId(), eventId);
             throw new OxalateValidationException(AuditLevelEnum.WARN, EVENTS_SUBSCRIBE_FAIL + eventId, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
