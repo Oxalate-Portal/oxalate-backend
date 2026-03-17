@@ -311,7 +311,7 @@ public class UserService {
 
         if (user.isPresent()) {
             user.get()
-                .setHealthCheckId(healthCheckAnswer ? 0L : null);
+                .setHealthStatementId(healthCheckAnswer ? 0L : null);
             userRepository.save(user.get());
         }
     }

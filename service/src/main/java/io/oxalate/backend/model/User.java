@@ -104,8 +104,8 @@ public class User {
     private boolean approvedTerms;
 
     @Nullable
-    @Column(name = "healthcheck_id")
-    private Long healthCheckId;
+    @Column(name = "health_statement_id")
+    private Long healthStatementId;
 
     @Size(min = 2, max = 2, message = "Language code is given with 2 characters as per ISO-639-1")
     @Column(name = "language", nullable = false)
@@ -161,7 +161,7 @@ public class User {
         this.status = UserStatusEnum.REGISTERED;
         this.registered = Instant.now();
         this.approvedTerms = signupRequest.isApprovedTerms();
-        this.healthCheckId = signupRequest.getHealthCheckId();
+        this.healthStatementId = signupRequest.getHealthStatementId();
         this.language = signupRequest.getLanguage();
         this.diveCount = 0L;
         this.lastSeen = Instant.now();
@@ -232,7 +232,7 @@ public class User {
                            .diveCount(this.diveCount)
                            .payments(paymentResponses)
                            .approvedTerms(this.approvedTerms)
-                           .healthCheckId(this.healthCheckId)
+                           .healthStatementId(this.healthStatementId)
                            .language(this.language)
                            .primaryUserType(this.primaryUserType)
                            .tags(tagResponses)
@@ -274,7 +274,7 @@ public class User {
                                 .nextOfKin(this.getNextOfKin())
                                 .registered(this.registered)
                                 .approvedTerms(this.approvedTerms)
-                                .healthCheckId(this.healthCheckId)
+                                .healthStatementId(this.healthStatementId)
                                 .diveCount(this.diveCount)
                                 .payments(paymentResponses)
                                 .memberships(membershipResponses)

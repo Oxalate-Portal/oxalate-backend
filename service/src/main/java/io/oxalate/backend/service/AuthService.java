@@ -172,7 +172,7 @@ public class AuthService {
                                           .expiresAt(Instant.now()
                                                             .plus(expirationTime, ChronoUnit.SECONDS))
                                           .approvedTerms(user.isApprovedTerms())
-                                          .healthCheckId(user.getHealthCheckId())
+                                          .healthStatementId(user.getHealthStatementId())
                                           .payments(paymentResponses)
                                           .language(user.getLanguage())
                                           .build();
