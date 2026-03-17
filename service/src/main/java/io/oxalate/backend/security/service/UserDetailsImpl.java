@@ -27,18 +27,18 @@ public class UserDetailsImpl implements UserDetails {
     private final String password;
     private final Collection<? extends GrantedAuthority> authorities;
     private final boolean approvedTerms;
-    private final Long healthCheckId;
+    private final Long healthStatementId;
     private final boolean locked;
     private final String language;
 
     public UserDetailsImpl(Long id, String username, String password,
-            Collection<? extends GrantedAuthority> authorities, boolean approvedTerms, Long healthCheckId, boolean locked, String language) {
+            Collection<? extends GrantedAuthority> authorities, boolean approvedTerms, Long healthStatementId, boolean locked, String language) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.authorities = authorities;
         this.approvedTerms = approvedTerms;
-        this.healthCheckId = healthCheckId;
+        this.healthStatementId = healthStatementId;
         this.locked = locked;
         this.language = language;
     }
@@ -53,7 +53,7 @@ public class UserDetailsImpl implements UserDetails {
                 user.getPassword(),
                 authorities,
                 user.isApprovedTerms(),
-                user.getHealthCheckId(),
+                user.getHealthStatementId(),
                 (user.getStatus() != ACTIVE && user.getStatus() != REGISTERED),
                 user.getLanguage());
     }

@@ -68,12 +68,12 @@ public abstract class AbstractUser {
     private boolean approvedTerms;
 
     @Schema(description = """
-            Document ID if the user has uploaded the healthcheck document. If the value is 0, then the user has confirmed the health statement.
+            Document ID if the user has uploaded the health statement document. If the value is 0, then the user has confirmed the health statement.
             If the value is null, then the user has not agreed to the health statement.
             """,
             example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
-    @JsonProperty("healthCheckId")
-    private Long healthCheckId;
+    @JsonProperty("healthStatementId")
+    private Long healthStatementId;
 
     @Schema(description = "Primary user type", example = "FREE_DIVER", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("primaryUserType")

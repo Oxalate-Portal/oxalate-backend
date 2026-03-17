@@ -487,7 +487,7 @@ class PageControllerRTC extends AbstractIntegrationTest {
                 user.getPassword(),
                 authorities,
                 user.isApprovedTerms(),
-                user.getHealthCheckId(),
+                user.getHealthStatementId(),
                 false,
                 user.getLanguage()
         );

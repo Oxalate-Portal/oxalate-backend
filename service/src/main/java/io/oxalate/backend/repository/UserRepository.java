@@ -34,7 +34,7 @@ public interface UserRepository extends ListCrudRepository<User, Long>, CrudRepo
     @Modifying
     void resetTermAnswers();
 
-    @Query(nativeQuery = true, value = "UPDATE users SET  healthcheck_id = NULL WHERE users.status <> 'ANONYMIZED'")
+    @Query(nativeQuery = true, value = "UPDATE users SET  health_statement_id = NULL WHERE users.status <> 'ANONYMIZED'")
     @Modifying
     void resetHealthChecks();
 
