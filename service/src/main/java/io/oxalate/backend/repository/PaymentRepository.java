@@ -65,7 +65,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query(nativeQuery = true, value = """
             UPDATE payments
-            SET end_date = NOW()
+            SET end_date = CURRENT_DATE - INTERVAL '1 day'
             WHERE (end_date > NOW()
                    OR end_date IS NULL)
               AND payment_type = :paymentType

@@ -248,8 +248,7 @@ public class PaymentService {
         var overlappingOnePayments = oneTimePayments.stream()
                                                     .filter(payment -> payment.getPaymentType()
                                                                               .equals(ONE_TIME)
-                                                            && (payment.getEndDate() == null || payment.getEndDate()
-                                                                                                       .isAfter(requestedStartDate)))
+                                                            && isActiveOnDate(payment, now))
                                                     .toList();
 
         if (!overlappingOnePayments.isEmpty()) {
@@ -297,9 +296,7 @@ public class PaymentService {
         var overlappingPeriodPayments = periodicalPayments.stream()
                                                           .filter(payment -> payment.getPaymentType()
                                                                                     .equals(PERIODICAL)
-                                                                  && (payment.getEndDate() == null
-                                                                  || payment.getEndDate()
-                                                                            .isAfter(requestedStartDate)))
+                                                                  && isActiveOnDate(payment, now))
                                                           .toList();
 
         if (!overlappingPeriodPayments.isEmpty()) {
@@ -312,9 +309,7 @@ public class PaymentService {
                                                .stream()
                                                .filter(payment -> payment.getPaymentType()
                                                                          .equals(ONE_TIME)
-                                                       && payment.getEndDate() != null
-                                                       && payment.getEndDate()
-                                                                 .isAfter(requestedStartDate))
+                                                       && isActiveOnDate(payment, now))
                                                .toList();
 
         if (!oneTimePayments.isEmpty()) {
@@ -489,6 +484,14 @@ public class PaymentService {
 
     private PeriodicPaymentTypeEnum normalizePeriodicType(String type) {
         return PeriodicPaymentTypeEnum.valueOf(type.toUpperCase(Locale.ROOT));
+    }
+
+    private boolean isActiveOnDate(Payment payment, LocalDate date) {
+        var started = payment.getStartDate() == null || !payment.getStartDate()
+                                                                .isAfter(date);
+        var notEnded = payment.getEndDate() == null || !payment.getEndDate()
+                                                               .isBefore(date);
+        return started && notEnded;
     }
 
     /**
