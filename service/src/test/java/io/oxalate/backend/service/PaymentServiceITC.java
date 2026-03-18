@@ -205,6 +205,28 @@ class PaymentServiceITC extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldIgnoreExpiredOneTimeEvenWhenRequestStartDateIsHistorical() {
+        applyPaymentModeConfig(PeriodicPaymentTypeEnum.PERIODICAL, PeriodicPaymentTypeEnum.PERIODICAL);
+
+        createPayment(diver.getId(), ONE_TIME, 1, LocalDate.now()
+                                                           .minusYears(7), LocalDate.now()
+                                                                                    .minusDays(1));
+
+        var response = paymentService.savePayment(PaymentRequest.builder()
+                                                                .userId(diver.getId())
+                                                                .paymentCount(2)
+                                                                .paymentType(ONE_TIME)
+                                                                .startDate(LocalDate.now()
+                                                                                    .minusYears(7))
+                                                                .build());
+
+        assertNotNull(response);
+        assertTrue(response.getId() > 0);
+        assertEquals(2, response.getPaymentCount());
+        assertTrue(response.getStartDate() != null);
+    }
+
+    @Test
     void shouldKeepHistoricalRangeWhenProvided() {
         applyPaymentModeConfig(PeriodicPaymentTypeEnum.PERIODICAL, PeriodicPaymentTypeEnum.PERIODICAL);
 
@@ -265,6 +287,26 @@ class PaymentServiceITC extends AbstractIntegrationTest {
 
         assertNotNull(response);
         assertEquals(existing.getId(), response.getId());
+    }
+
+    @Test
+    void shouldIgnoreExpiredPeriodicalEvenWhenRequestStartDateIsHistorical() {
+        applyPaymentModeConfig(PeriodicPaymentTypeEnum.PERIODICAL, PeriodicPaymentTypeEnum.PERIODICAL);
+
+        createPayment(diver.getId(), PERIODICAL, 0, LocalDate.now()
+                                                             .minusYears(7), LocalDate.now()
+                                                                                      .minusDays(1));
+
+        var response = paymentService.savePayment(PaymentRequest.builder()
+                                                                .userId(diver.getId())
+                                                                .paymentType(PERIODICAL)
+                                                                .startDate(LocalDate.now()
+                                                                                    .minusYears(7))
+                                                                .build());
+
+        assertNotNull(response);
+        assertEquals(PERIODICAL, response.getPaymentType());
+        assertTrue(response.getId() > 0);
     }
 
     @Test
