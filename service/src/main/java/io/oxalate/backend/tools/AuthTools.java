@@ -5,11 +5,13 @@ import io.oxalate.backend.security.service.UserDetailsImpl;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+@Slf4j
 public class AuthTools {
 
     public static boolean isUserIdCurrentUser(long userId) {
@@ -68,10 +70,14 @@ public class AuthTools {
         var authentication = getAuthentication();
 
         if (authentication == null) {
+            log.debug("Authentication is null, treating as user that has not accepted health statement");
             return true;
         }
 
-        return (((UserDetailsImpl) Objects.requireNonNull(authentication.getPrincipal())).getHealthStatementId() != null);
+        var healthStatementId = ((UserDetailsImpl) Objects.requireNonNull(authentication.getPrincipal())).getHealthStatementId();
+        log.debug("The retrieved health statement ID is: {}", healthStatementId);
+
+        return (healthStatementId == null);
     }
 
     public static long getCurrentUserId() {

@@ -345,7 +345,7 @@ public class PaymentService {
 
         if (oneTimePayment.isEmpty() || oneTimePayment.get()
                                                       .getPaymentCount() < 1) {
-            log.warn("User {} does not have any valid time payment entries", userId);
+            log.warn("User {} does not have any valid one time payment entries", userId);
             return null;
         }
 
