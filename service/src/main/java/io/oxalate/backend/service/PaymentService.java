@@ -173,6 +173,7 @@ public class PaymentService {
         var now = LocalDate.now();
         var userId = paymentRequest.getUserId();
         var effectivePaymentMode = getEffectivePaymentMode();
+        log.debug("saveOneTimePayment called with request={}, now={}, effectivePaymentMode={}", paymentRequest, now, effectivePaymentMode);
 
         if (effectivePaymentMode.equals(PeriodicPaymentTypeEnum.DISABLED)) {
             log.warn("Payment creation/update is disabled by configuration, skipping one-time payment handling");
@@ -243,6 +244,7 @@ public class PaymentService {
 
         var requestedStartDate = paymentRequest.getStartDate() != null ? paymentRequest.getStartDate() : now;
         var requestedEndDate = resolveRequestedOrCalculatedEndDate(paymentRequest, PaymentTypeEnum.ONE_TIME, effectivePaymentMode, requestedStartDate);
+        log.debug("saveOneTimePayment resolved requestedStartDate={}, requestedEndDate={} for userId={}", requestedStartDate, requestedEndDate, userId);
 
         var oneTimePayments = paymentRepository.findAllByUserIdAndPaymentType(userId, ONE_TIME);
         var overlappingOnePayments = oneTimePayments.stream()
@@ -267,6 +269,7 @@ public class PaymentService {
                              .build();
 
         var newPayment = paymentRepository.save(payment);
+        log.debug("saveOneTimePayment persisted payment={}", newPayment);
 
         return newPayment.toPaymentResponse();
     }
@@ -283,6 +286,7 @@ public class PaymentService {
         var now = LocalDate.now();
         var userId = paymentRequest.getUserId();
         var effectivePaymentMode = getEffectivePaymentMode();
+        log.debug("savePeriodPayment called with request={}, now={}, effectivePaymentMode={}", paymentRequest, now, effectivePaymentMode);
 
         if (effectivePaymentMode.equals(PeriodicPaymentTypeEnum.DISABLED)) {
             log.warn("Payment creation/update is disabled by configuration, skipping periodical payment handling");
@@ -291,6 +295,7 @@ public class PaymentService {
 
         var requestedStartDate = paymentRequest.getStartDate() != null ? paymentRequest.getStartDate() : now;
         var requestedEndDate = resolveRequestedOrCalculatedEndDate(paymentRequest, PaymentTypeEnum.PERIODICAL, effectivePaymentMode, requestedStartDate);
+        log.debug("savePeriodPayment resolved requestedStartDate={}, requestedEndDate={} for userId={}", requestedStartDate, requestedEndDate, userId);
 
         var periodicalPayments = paymentRepository.findAllByUserIdAndPaymentType(userId, PERIODICAL);
         var overlappingPeriodPayments = periodicalPayments.stream()
@@ -328,6 +333,7 @@ public class PaymentService {
                              .build();
 
         var newPayment = paymentRepository.save(payment);
+        log.debug("savePeriodPayment persisted payment={}", newPayment);
 
         return newPayment.toPaymentResponse();
     }
@@ -417,26 +423,34 @@ public class PaymentService {
     }
 
     private PeriodicPaymentTypeEnum getEffectivePaymentMode() {
-        var oneTimeExpirationType = normalizePeriodicType(
-                portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key));
-        var periodicalMethodType = normalizePeriodicType(
-                portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_TYPE.key));
+        var rawOneTimeExpirationType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key);
+        var rawPeriodicalMethodType = portalConfigurationService.getEnumConfiguration(PAYMENT.group, PERIODICAL_PAYMENT_METHOD_TYPE.key);
+        var oneTimeExpirationType = normalizePeriodicType(rawOneTimeExpirationType);
+        var periodicalMethodType = normalizePeriodicType(rawPeriodicalMethodType);
+
+        log.debug(
+                "getEffectivePaymentMode rawOneTimeExpirationType={}, rawPeriodicalMethodType={}, normalizedOneTimeExpirationType={}, normalizedPeriodicalMethodType={}",
+                rawOneTimeExpirationType, rawPeriodicalMethodType, oneTimeExpirationType, periodicalMethodType);
 
         if (oneTimeExpirationType.equals(PeriodicPaymentTypeEnum.DISABLED)
                 || periodicalMethodType.equals(PeriodicPaymentTypeEnum.DISABLED)) {
+            log.debug("getEffectivePaymentMode resolved DISABLED because at least one payment mode is disabled");
             return PeriodicPaymentTypeEnum.DISABLED;
         }
 
         if (oneTimeExpirationType.equals(PeriodicPaymentTypeEnum.PERPETUAL)
                 || periodicalMethodType.equals(PeriodicPaymentTypeEnum.PERPETUAL)) {
+            log.debug("getEffectivePaymentMode resolved PERPETUAL because at least one payment mode is perpetual");
             return PeriodicPaymentTypeEnum.PERPETUAL;
         }
 
+        log.debug("getEffectivePaymentMode resolved {}", oneTimeExpirationType);
         return oneTimeExpirationType;
     }
 
     private LocalDate calculateEndDateForMode(PaymentTypeEnum paymentType, PeriodicPaymentTypeEnum paymentMode, LocalDate calculationDate) {
         if (paymentMode.equals(PeriodicPaymentTypeEnum.PERPETUAL)) {
+            log.debug("calculateEndDateForMode returning null for perpetual mode, paymentType={}, calculationDate={}", paymentType, calculationDate);
             return null;
         }
 
@@ -462,8 +476,14 @@ public class PaymentService {
         var periodStart = portalConfigurationService.getNumericConfiguration(PAYMENT.group, PAYMENT_PERIOD_START_POINT.key);
         var periodAnchor = LocalDate.parse(portalConfigurationService.getStringConfiguration(PAYMENT.group, PAYMENT_PERIOD_START.key));
 
-        return PeriodTools.calculatePeriod(calculationDate, periodAnchor, chronoUnit, periodStart, unitCount)
-                         .getEndDate();
+        log.debug(
+                "calculateEndDateForMode called with paymentType={}, paymentMode={}, calculationDate={}, useSharedPeriodConfig={}, chronoUnit={}, unitCount={}, periodStart={}, periodAnchor={}",
+                paymentType, paymentMode, calculationDate, useSharedPeriodConfig, chronoUnit, unitCount, periodStart, periodAnchor);
+
+        var periodResult = PeriodTools.calculatePeriod(calculationDate, periodAnchor, chronoUnit, periodStart, unitCount);
+        log.debug("calculateEndDateForMode resolved periodResult={}", periodResult);
+
+        return periodResult.getEndDate();
     }
 
     private LocalDate resolveRequestedOrCalculatedEndDate(PaymentRequest paymentRequest,
@@ -471,15 +491,21 @@ public class PaymentService {
             PeriodicPaymentTypeEnum paymentMode,
             LocalDate requestedStartDate) {
         var requestedEndDate = paymentRequest.getEndDate();
+        log.debug(
+                "resolveRequestedOrCalculatedEndDate called with paymentRequest={}, paymentType={}, paymentMode={}, requestedStartDate={}, requestedEndDate={}",
+                paymentRequest, paymentType, paymentMode, requestedStartDate, requestedEndDate);
 
         // Preserve explicitly provided historical ranges used by integrations/imports.
         if (paymentRequest.getStartDate() != null
                 && requestedEndDate != null
                 && !requestedEndDate.isAfter(LocalDate.now())) {
+            log.debug("resolveRequestedOrCalculatedEndDate preserving requested historical end date {}", requestedEndDate);
             return requestedEndDate;
         }
 
-        return calculateEndDateForMode(paymentType, paymentMode, requestedStartDate);
+        var calculatedEndDate = calculateEndDateForMode(paymentType, paymentMode, requestedStartDate);
+        log.debug("resolveRequestedOrCalculatedEndDate calculated end date {}", calculatedEndDate);
+        return calculatedEndDate;
     }
 
     private PeriodicPaymentTypeEnum normalizePeriodicType(String type) {

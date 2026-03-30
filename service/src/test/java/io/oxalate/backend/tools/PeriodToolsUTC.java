@@ -44,4 +44,15 @@ public class PeriodToolsUTC {
         assertEquals(LocalDate.of(currentYear + 5, 1, 1), periodResult.getStartDate());
         assertEquals(LocalDate.of(currentYear + 6, 1, 1), periodResult.getEndDate());
     }
+
+    @Test
+    void periodBoundaryDateBelongsToNextPeriodOk() {
+        var currentDate = LocalDate.of(2026, 1, 1);
+        var anchorDate = LocalDate.of(2025, 3, 3);
+
+        var periodResult = PeriodTools.calculatePeriod(currentDate, anchorDate, ChronoUnit.YEARS, 1, 1);
+
+        assertEquals(LocalDate.of(2026, 1, 1), periodResult.getStartDate());
+        assertEquals(LocalDate.of(2027, 1, 1), periodResult.getEndDate());
+    }
 }
