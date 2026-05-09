@@ -114,7 +114,7 @@ jobs:
           newVersion: ${{ steps.newVer.outputs.newVersion }}
 
       - name: Create tag
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.TAG_CREATION_TOKEN }}
           script: |
@@ -126,7 +126,7 @@ jobs:
             })
 
       - name: Create GitHub Release
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
