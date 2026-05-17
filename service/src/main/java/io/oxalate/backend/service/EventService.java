@@ -524,8 +524,9 @@ public class EventService {
     public EventDiveListResponse getEventDives(long eventId) {
         var eventDives = eventParticipantsRepository.findEventDives(eventId);
 
-        var eventDiveListResponse = new EventDiveListResponse();
-        eventDiveListResponse.setDives(new HashSet<>());
+        var eventDiveListResponse = EventDiveListResponse.builder()
+                                                         .dives(new HashSet<>())
+                                                         .build();
 
         for (EventsParticipant eventsParticipant : eventDives) {
             var user = userService.findUserEntityById(eventsParticipant.getUserId());

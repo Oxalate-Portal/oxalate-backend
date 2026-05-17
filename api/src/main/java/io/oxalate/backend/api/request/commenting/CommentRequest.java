@@ -4,11 +4,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.CommentStatusEnum;
 import io.oxalate.backend.api.CommentTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CommentRequest {
     @Schema(description = "ID of the comment, is effective only for updating comments", example = "123", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("id")

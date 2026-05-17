@@ -5,11 +5,15 @@ import io.oxalate.backend.api.AbstractEvent;
 import io.oxalate.backend.api.EventStatusEnum;
 import java.util.List;
 import java.util.Set;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class EventResponse extends AbstractEvent {
 
     @JsonProperty("status")

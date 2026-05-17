@@ -7,10 +7,12 @@ import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Schema(description = "Event subscription request")
 @Data
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class EventSubscribeRequest {
     @Min(value = 1L)
