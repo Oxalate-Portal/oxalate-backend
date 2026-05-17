@@ -5,9 +5,15 @@ import io.oxalate.backend.api.CommentStatusEnum;
 import io.oxalate.backend.api.CommentTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Date;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CommentFilterRequest {
 
     @Schema(description = "ID of the comments author", example = "123", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
@@ -51,29 +57,4 @@ public class CommentFilterRequest {
 
     @Schema(description = "Filter comments with this many reports", example = "123", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Long reportCount;
-
-    // Constructor to apply default values if fields are null
-    public CommentFilterRequest() {
-        if (this.userId == null) {
-            this.userId = 0L;
-        }
-        if (this.forumId == null) {
-            this.forumId = 0L;
-        }
-        if (this.diveEventId == null) {
-            this.diveEventId = 0L;
-        }
-        if (this.commentId == null) {
-            this.commentId = 0L;
-        }
-        if (this.parentId == null) {
-            this.parentId = 0L;
-        }
-        if (this.depth == null) {
-            this.depth = 0L;
-        }
-        if (this.reportCount == null) {
-            this.reportCount = 0L;
-        }
-    }
 }

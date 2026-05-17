@@ -3,10 +3,16 @@ package io.oxalate.backend.api.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Schema(description = "User password reset request")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserResetPasswordRequest {
     @Size(min = 10)
     @Schema(description = "New password", example = "Avery^S3curePasswd", requiredMode = Schema.RequiredMode.REQUIRED)

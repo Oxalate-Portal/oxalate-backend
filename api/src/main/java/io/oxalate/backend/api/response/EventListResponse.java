@@ -5,10 +5,12 @@ import io.oxalate.backend.api.AbstractEvent;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class EventListResponse extends AbstractEvent {
 

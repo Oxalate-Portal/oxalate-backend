@@ -7,10 +7,12 @@ import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
 @Schema(description = "Certificate request")
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class CertificateRequest {
     @Schema(description = "ID of the certificate entity", example = "123", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

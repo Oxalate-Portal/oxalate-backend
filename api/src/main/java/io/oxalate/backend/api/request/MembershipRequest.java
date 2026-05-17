@@ -6,11 +6,13 @@ import io.oxalate.backend.api.MembershipTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Schema(description = "Membership request")
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class MembershipRequest {

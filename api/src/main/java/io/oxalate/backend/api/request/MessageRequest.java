@@ -6,9 +6,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Schema(description = "Login request")
 @Data
+@SuperBuilder
+@NoArgsConstructor
 @AllArgsConstructor
 public class MessageRequest extends AbstractMessage {
 

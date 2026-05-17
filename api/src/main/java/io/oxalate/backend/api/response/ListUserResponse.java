@@ -6,8 +6,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * A minimum user response containing only the id and name which is the last and first name concatenated. Is not anonymized since this should only be used by
@@ -17,6 +19,8 @@ import lombok.Data;
 @Schema(description = "")
 @Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ListUserResponse {
     @Schema(description = "Unique identifier of the user", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("id")
