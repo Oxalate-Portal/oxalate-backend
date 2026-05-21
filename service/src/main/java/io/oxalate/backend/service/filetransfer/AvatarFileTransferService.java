@@ -2,6 +2,7 @@ package io.oxalate.backend.service.filetransfer;
 
 import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
+import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.AvatarFileResponse;
@@ -50,7 +51,7 @@ public class AvatarFileTransferService {
                 .map(AvatarFile::toResponse).toList();
 
         log.info("Found {} avatar files", avatarFileResponses.size());
-        avatarFileResponses.forEach(avatarFileResponse -> avatarFileResponse.setUrl(getAvatarFileUrl(avatarFileResponse.getFilename())));
+        avatarFileResponses.forEach(avatarFileResponse -> avatarFileResponse.setUrl(getAvatarFileUrl(avatarFileResponse.getId())));
 
         return avatarFileResponses;
     }
@@ -70,16 +71,21 @@ public class AvatarFileTransferService {
                                  .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         // Base structure of the upload directory is: BaseDir/userId.[suffix]
         var uploadPath = Paths.get(uploadMainDirectory, AVATARS);
-        log.debug("Upload path for page file: {}", uploadPath);
+        log.debug("Upload path for avatar file: {}", uploadPath);
 
         verifyUploadPath(uploadPath);
         var fileSuffix = getFileSuffix(uploadFile);
         var fileName = userId + fileSuffix;
         var destinationFile = Paths.get(uploadPath.toString(), fileName);
 
-        // If the file already exists, remove it
+        // If metadata exists for this user, keep and update that entity; only remove the old physical file if needed.
         var optionalAvatarFile = avatarFileRepository.findByCreator(user);
-        optionalAvatarFile.ifPresent(avatarFile -> removeAvatarFile(avatarFile.getId(), userId));
+        optionalAvatarFile.ifPresent(existingAvatarFile -> {
+            var previousAvatarFilePath = Paths.get(uploadPath.toString(), existingAvatarFile.getFileName());
+            if (!previousAvatarFilePath.equals(destinationFile) && Files.exists(previousAvatarFilePath)) {
+                removeFile(previousAvatarFilePath, "Avatar file");
+            }
+        });
 
         // Also remove any physical file that might exist
         if (Files.exists(destinationFile)) {
@@ -89,7 +95,7 @@ public class AvatarFileTransferService {
 
         try {
             Files.copy(uploadFile.getInputStream(), destinationFile);
-            log.info("Page file saved: {}", destinationFile);
+            log.info("Avatar file saved: {}", destinationFile);
         } catch (IOException e) {
             log.error("Could not save avatar file: {}", destinationFile, e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Avatar file could not be stored");
@@ -97,6 +103,8 @@ public class AvatarFileTransferService {
 
         var fileChecksum = FileTools.getSha1OfFile(destinationFile.toFile());
         var fileSize = uploadFile.getSize();
+
+        long avatarId;
 
         if (optionalAvatarFile.isEmpty()) {
             var avatarFile = AvatarFile.builder()
@@ -107,7 +115,8 @@ public class AvatarFileTransferService {
                                        .mimeType(uploadFile.getContentType())
                                        .createdAt(Instant.now())
                                        .build();
-            avatarFileRepository.save(avatarFile);
+            var savedAvatarFile = avatarFileRepository.save(avatarFile);
+            avatarId = savedAvatarFile.getId();
         } else {
             var avatarFile = optionalAvatarFile.get();
             avatarFile.setFileName(fileName);
@@ -116,10 +125,11 @@ public class AvatarFileTransferService {
             avatarFile.setMimeType(uploadFile.getContentType());
             avatarFile.setCreatedAt(Instant.now());
             avatarFileRepository.save(avatarFile);
+            avatarId = avatarFile.getId();
         }
 
         return UploadResponse.builder()
-                             .url(getAvatarFileUrl(fileName))
+                             .url(getAvatarFileUrl(avatarId))
                              .build();
     }
 
@@ -185,7 +195,7 @@ public class AvatarFileTransferService {
                                   .build();
     }
 
-    private String getAvatarFileUrl(String fileName) {
-        return backendUrl + AVATARS + "/" + fileName;
+    private String getAvatarFileUrl(long avatarId) {
+        return backendUrl.replaceAll("/+$", "") + FILES_URL + "/" + AVATARS + "/" + avatarId;
     }
 }
