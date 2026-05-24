@@ -6,7 +6,8 @@ public enum PortalConfigEnum {
     GENERAL("general", GeneralConfigEnum.class),
     MEMBERSHIP("membership", MembershipConfigEnum.class),
     PAYMENT("payment", PaymentConfigEnum.class),
-    COMMENTING("commenting", CommentConfigEnum.class);
+    COMMENTING("commenting", CommentConfigEnum.class),
+    FILES("files", FileConfigEnum.class);
 
     public final String group;
     public final Class<?> subEnum;
@@ -112,6 +113,18 @@ public enum PortalConfigEnum {
         public final String key;
 
         PaymentConfigEnum(String key) {
+            this.key = key;
+        }
+    }
+
+    // Sub-enum for file feature support settings
+    public enum FileConfigEnum {
+        DIVE_FILES_SUPPORTED("dive-files-supported"),
+        DOCUMENTS_SUPPORTED("documents-supported");
+
+        public final String key;
+
+        FileConfigEnum(String key) {
             this.key = key;
         }
     }

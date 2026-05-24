@@ -15,6 +15,7 @@ import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.MembershipRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
+import io.oxalate.backend.service.filetransfer.AvatarFileTransferService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,7 @@ public class UserService {
     private final EventRepository eventRepository;
     private final PaymentService paymentService;
     private final MembershipRepository membershipRepository;
+    private final AvatarFileTransferService avatarFileTransferService;
 
     private static List<AdminUserResponse> getAdminUserResponseList(List<User> users) {
         var adminUserResponses = new ArrayList<AdminUserResponse>();
@@ -154,6 +156,7 @@ public class UserService {
         user.setMembership(memberships);
         user.setPayments(paymentService.findAllByUserId(user.getId()));
         user.setDiveCount(eventRepository.countDivesByUserId(user.getId()));
+        user.setAvatarUrl(avatarFileTransferService.getAvatarUrlByUserId(user.getId()));
     }
 
     @Transactional

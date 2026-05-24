@@ -16,6 +16,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -176,6 +177,24 @@ class AvatarFileTransferServiceUTC {
         assertTrue(Files.exists(avatarDirectory.resolve("100.jpg")), "New avatar file should be written");
         verify(avatarFileRepository, never()).delete(any());
         verify(avatarFileRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    void getAvatarUrlByUserId_returnsAvatarUrlWhenAvatarExists() {
+        when(avatarFileRepository.findByUserId(100L)).thenReturn(Optional.of(testAvatarFile));
+
+        var url = avatarFileTransferService.getAvatarUrlByUserId(100L);
+
+        assertEquals("http://localhost:8080/api/files/avatars/42", url);
+    }
+
+    @Test
+    void getAvatarUrlByUserId_returnsNullWhenNoAvatarExists() {
+        when(avatarFileRepository.findByUserId(100L)).thenReturn(Optional.empty());
+
+        var url = avatarFileTransferService.getAvatarUrlByUserId(100L);
+
+        assertNull(url);
     }
 }
 

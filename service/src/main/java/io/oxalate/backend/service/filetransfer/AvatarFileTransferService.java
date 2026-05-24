@@ -160,6 +160,12 @@ public class AvatarFileTransferService {
         }
     }
 
+    public String getAvatarUrlByUserId(long userId) {
+        return avatarFileRepository.findByUserId(userId)
+                                   .map(avatarFile -> getAvatarFileUrl(avatarFile.getId()))
+                                   .orElse(null);
+    }
+
     /**
      * Remove the avatar file from the filesystem and the database
      *

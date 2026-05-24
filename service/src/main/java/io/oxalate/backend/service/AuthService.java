@@ -164,6 +164,7 @@ public class AuthService {
                                           .phoneNumber(user.getPhoneNumber())
                                           .firstName(user.getFirstName())
                                           .lastName(user.getLastName())
+                                          .avatarUrl(user.getAvatarUrl())
                                           .roles(roles)
                                           .status(user.getStatus())
                                           .registered(user.getRegistered())

@@ -411,16 +411,19 @@ public class AppAuditMessages {
     public static final String FILE_DIVE_FILE_UPLOAD_UNAUTHORIZED = "User not authorized to upload dive plan";
     public static final String FILE_DIVE_FILE_UPLOAD_FAIL = "Failed to upload dive plan";
     public static final String FILE_DIVE_FILE_UPLOAD_OK = "Dive plan uploaded";
+    public static final String FILE_DIVE_FILE_UPLOAD_DISABLED = "Dive file uploads are disabled by configuration";
 
     public static final String FILE_DOCUMENT_GET_ALL_START = "Start fetching all document files";
     public static final String FILE_DOCUMENT_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all document files";
     public static final String FILE_DOCUMENT_GET_ALL_FAIL = "Failed to fetch all document files";
     public static final String FILE_DOCUMENT_GET_ALL_OK = "Document files retrieved";
+    public static final String FILE_DOCUMENT_GET_ALL_DISABLED = "Document file listing is disabled by configuration";
 
     public static final String FILE_DOCUMENT_UPLOAD_START = "Uploading document";
     public static final String FILE_DOCUMENT_UPLOAD_UNAUTHORIZED = "User not authorized to upload document";
     public static final String FILE_DOCUMENT_UPLOAD_FAIL = "Failed to upload document";
     public static final String FILE_DOCUMENT_UPLOAD_OK = "Document uploaded";
+    public static final String FILE_DOCUMENT_UPLOAD_DISABLED = "Document uploads are disabled by configuration";
 
     public static final String FILE_DOCUMENT_REMOVE_START = "Removing document";
     public static final String FILE_DOCUMENT_REMOVE_UNAUTHORIZED = "User not authorized to remove document";
