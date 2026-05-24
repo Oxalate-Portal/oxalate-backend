@@ -131,6 +131,9 @@ public class User {
     private long diveCount;
 
     @Transient
+    private String avatarUrl;
+
+    @Transient
     private List<Payment> payments;
 
     @Transient
@@ -226,6 +229,7 @@ public class User {
                            .id(this.id)
                            .firstName(this.firstName)
                            .lastName(this.lastName)
+                           .avatarUrl(this.avatarUrl)
                            .username(this.username)
                            .phoneNumber(this.phoneNumber)
                            .registered(this.registered)
@@ -267,6 +271,7 @@ public class User {
                                 .id(this.id)
                                 .firstName(this.firstName)
                                 .lastName(this.lastName)
+                                .avatarUrl(this.avatarUrl)
                                 .username(this.username)
                                 .status(this.getStatus())
                                 .phoneNumber(this.phoneNumber)

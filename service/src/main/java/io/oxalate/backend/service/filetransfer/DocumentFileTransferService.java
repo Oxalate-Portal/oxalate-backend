@@ -48,6 +48,15 @@ public class DocumentFileTransferService {
 
     public List<DocumentFileResponse> findAllDocumentFiles() {
         var documentFiles = documentFileRepository.findAll();
+        return mapDocumentFilesToResponses(documentFiles);
+    }
+
+    public List<DocumentFileResponse> findDocumentFilesByCreatorId(long creatorId) {
+        var documentFiles = documentFileRepository.findAllByCreator_Id(creatorId);
+        return mapDocumentFilesToResponses(documentFiles);
+    }
+
+    private List<DocumentFileResponse> mapDocumentFilesToResponses(List<DocumentFile> documentFiles) {
         var documentFileResponses = documentFiles.stream()
                                                  .map(DocumentFile::toResponse)
                                                  .toList();
@@ -187,7 +196,7 @@ public class DocumentFileTransferService {
     }
 
     private String getDocumentUrl(long documentId) {
-        return backendUrl + FILES_URL + "/" + DOCUMENTS + "/" + documentId;
+        return backendUrl.replaceAll("/+$", "") + FILES_URL + "/" + DOCUMENTS + "/" + documentId;
     }
 
     private Path getGetUploadPath(String sanitizedFilename) {

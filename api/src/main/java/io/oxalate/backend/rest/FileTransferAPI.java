@@ -191,7 +191,7 @@ public interface FileTransferAPI {
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/" + DOCUMENTS, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<DocumentFileResponse>> findAllDocumentFiles();
+    ResponseEntity<List<DocumentFileResponse>> findAllDocumentFiles(@RequestParam(value = "creatorId", required = false) Long creatorId);
 
     /* Upload */
     @Operation(description = "Upload a document not linked to user or page, returns the external URL to access the file", tags = "FileTransferAPI")

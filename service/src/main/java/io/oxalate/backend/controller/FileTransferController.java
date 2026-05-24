@@ -1,6 +1,9 @@
 package io.oxalate.backend.controller;
 
 import io.oxalate.backend.api.AuditLevelEnum;
+import static io.oxalate.backend.api.PortalConfigEnum.FILES;
+import static io.oxalate.backend.api.PortalConfigEnum.FileConfigEnum.DIVE_FILES_SUPPORTED;
+import static io.oxalate.backend.api.PortalConfigEnum.FileConfigEnum.DOCUMENTS_SUPPORTED;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import io.oxalate.backend.api.response.ActionResponse;
@@ -40,6 +43,7 @@ import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_GET_ALL_
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_GET_ALL_OK;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_GET_ALL_START;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_GET_ALL_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_UPLOAD_DISABLED;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_UPLOAD_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_UPLOAD_OK;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_UPLOAD_START;
@@ -50,6 +54,7 @@ import static io.oxalate.backend.events.AppAuditMessages.FILE_DOCUMENT_GET_ALL_U
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DOCUMENT_REMOVE_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DOCUMENT_REMOVE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DOCUMENT_REMOVE_START;
+import static io.oxalate.backend.events.AppAuditMessages.FILE_DOCUMENT_UPLOAD_DISABLED;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DOCUMENT_UPLOAD_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DOCUMENT_UPLOAD_OK;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DOCUMENT_UPLOAD_START;
@@ -66,6 +71,7 @@ import static io.oxalate.backend.events.AppAuditMessages.FILE_PAGE_FILE_UPLOAD_S
 import io.oxalate.backend.exception.OxalateUnauthorizedException;
 import io.oxalate.backend.exception.OxalateValidationException;
 import io.oxalate.backend.rest.FileTransferAPI;
+import io.oxalate.backend.service.PortalConfigurationService;
 import io.oxalate.backend.service.filetransfer.AvatarFileTransferService;
 import io.oxalate.backend.service.filetransfer.CertificateFileTransferService;
 import io.oxalate.backend.service.filetransfer.DiveFileTransferService;
@@ -95,6 +101,7 @@ public class FileTransferController implements FileTransferAPI {
     private final DiveFileTransferService diveFileTransferService;
     private final DocumentFileTransferService documentFileTransferService;
     private final PageFileTransferService pageFileTransferService;
+    private final PortalConfigurationService portalConfigurationService;
 
     /* Avatar */
     @PreAuthorize("hasRole('ADMIN')")
@@ -239,6 +246,10 @@ public class FileTransferController implements FileTransferAPI {
     @Override
     @Audited(startMessage = FILE_DIVE_FILE_GET_ALL_START, okMessage = FILE_DIVE_FILE_GET_ALL_OK)
     public ResponseEntity<List<DiveFileResponse>> findAllDiveFiles() {
+        if (!portalConfigurationService.getBooleanConfiguration(FILES.group, DIVE_FILES_SUPPORTED.key)) {
+            return ResponseEntity.ok(List.of());
+        }
+
         var userId = AuthTools.getCurrentUserId();
 
         if (userId < 0 || !currentUserHasRole(ROLE_ADMIN)) {
@@ -259,6 +270,12 @@ public class FileTransferController implements FileTransferAPI {
     @Override
     @Audited(startMessage = FILE_DIVE_FILE_UPLOAD_START, okMessage = FILE_DIVE_FILE_UPLOAD_OK, failMessage = FILE_DIVE_FILE_UPLOAD_FAIL)
     public ResponseEntity<?> uploadDiveFile(MultipartFile uploadFile, long eventId, long diveGroupId) {
+        // Check if dive files are enabled
+        if (!portalConfigurationService.getBooleanConfiguration(FILES.group, DIVE_FILES_SUPPORTED.key)) {
+            log.warn("Dive file upload attempted but feature is disabled by configuration");
+            throw new OxalateValidationException(AuditLevelEnum.WARN, FILE_DIVE_FILE_UPLOAD_DISABLED, HttpStatus.OK);
+        }
+
         var userId = AuthTools.getCurrentUserId();
         UploadResponse uploadResponse;
 
@@ -291,15 +308,34 @@ public class FileTransferController implements FileTransferAPI {
     }
 
     /* Document */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Override
     @Audited(startMessage = FILE_DOCUMENT_GET_ALL_START, okMessage = FILE_DOCUMENT_GET_ALL_OK)
-    public ResponseEntity<List<DocumentFileResponse>> findAllDocumentFiles() {
+    public ResponseEntity<List<DocumentFileResponse>> findAllDocumentFiles(Long creatorId) {
+        // Check if documents are enabled
+        if (!portalConfigurationService.getBooleanConfiguration(FILES.group, DOCUMENTS_SUPPORTED.key)) {
+            log.warn("Document file listing attempted but feature is disabled by configuration");
+            return ResponseEntity.ok(List.of());
+        }
+
         var userId = AuthTools.getCurrentUserId();
 
-        if (userId < 0 || !currentUserHasRole(ROLE_ADMIN)) {
+        if (userId < 0) {
             log.error("Unauthorized access with user ID: {}", userId);
             throw new OxalateUnauthorizedException(FILE_DOCUMENT_GET_ALL_UNAUTHORIZED, HttpStatus.FORBIDDEN);
+        }
+
+        var isAdmin = currentUserHasRole(ROLE_ADMIN);
+        if (creatorId != null && !isAdmin && creatorId != userId) {
+            throw new OxalateUnauthorizedException(FILE_DOCUMENT_GET_ALL_UNAUTHORIZED, HttpStatus.FORBIDDEN);
+        }
+
+        if (creatorId != null && isAdmin) {
+            return ResponseEntity.ok(documentFileTransferService.findDocumentFilesByCreatorId(creatorId));
+        }
+
+        if (!isAdmin) {
+            return ResponseEntity.ok(documentFileTransferService.findDocumentFilesByCreatorId(userId));
         }
 
         var allDocumentFiles = documentFileTransferService.findAllDocumentFiles();
@@ -311,10 +347,16 @@ public class FileTransferController implements FileTransferAPI {
         return ResponseEntity.ok(allDocumentFiles);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Override
     @Audited(startMessage = FILE_DOCUMENT_UPLOAD_START, okMessage = FILE_DOCUMENT_UPLOAD_OK, failMessage = FILE_DOCUMENT_UPLOAD_FAIL)
     public ResponseEntity<?> uploadDocumentFile(MultipartFile uploadFile, HttpServletRequest request) {
+        // Check if documents are enabled
+        if (!portalConfigurationService.getBooleanConfiguration(FILES.group, DOCUMENTS_SUPPORTED.key)) {
+            log.warn("Document upload attempted but feature is disabled by configuration");
+            throw new OxalateValidationException(AuditLevelEnum.WARN, FILE_DOCUMENT_UPLOAD_DISABLED, HttpStatus.OK);
+        }
+
         log.debug("Uploading document file: {}", uploadFile.getOriginalFilename());
         var userId = AuthTools.getCurrentUserId();
         var uploadResponse = documentFileTransferService.uploadDocumentFile(uploadFile, userId);

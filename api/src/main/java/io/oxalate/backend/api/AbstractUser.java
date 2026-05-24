@@ -36,6 +36,12 @@ public abstract class AbstractUser {
     @JsonProperty("lastName")
     private String lastName;
 
+    @Size(max = 1024)
+    @Schema(description = "Avatar URL of the user. Null when no avatar exists.", example = "http://localhost:8080/api/files/avatars/123",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @JsonProperty("avatarUrl")
+    private String avatarUrl;
+
     @Size(max = 255)
     @Schema(description = "Phone number, should not contain the + prefix", example = "358403214321", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("phoneNumber")
