@@ -50,6 +50,15 @@ public class AppAuditMessages {
     public static final String AUTH_RESET_PASSWORD_UNKNOWN_ERROR = "User password failed for unknown reason";
     public static final String AUTH_RESET_PASSWORD_OK = "User password updated";
 
+    public static final String AUTH_EMAIL_CHANGE_REQUEST_START = "Email change requested";
+    public static final String AUTH_EMAIL_CHANGE_REQUEST_OK = "Email change request accepted";
+    public static final String AUTH_EMAIL_CHANGE_REQUEST_FAIL = "Email change request rejected";
+    public static final String AUTH_EMAIL_CHANGE_REQUEST_LOCKED = "Email change request max attempts reached and account locked";
+    public static final String AUTH_EMAIL_CHANGE_VERIFY_START = "Verifying email change token";
+    public static final String AUTH_EMAIL_CHANGE_VERIFY_OK = "Email address changed successfully";
+    public static final String AUTH_EMAIL_CHANGE_VERIFY_INVALID_TOKEN = "Email change token invalid or expired";
+    public static final String AUTH_EMAIL_CHANGE_VERIFY_INVALID_EMAIL = "Email change token payload email invalid";
+
     // BlockedDateController
     public static final String BLOCKED_DATE_GET_ALL_START = "Getting all blocked dates";
     public static final String BLOCKED_DATE_GET_ALL_UNAUTHORIZED = "User not authorized to get list of blocked dates";

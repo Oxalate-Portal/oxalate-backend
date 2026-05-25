@@ -30,11 +30,17 @@ public class RegistrationService {
 
     @Transactional
     public String generateToken(long userId, TokenType tokenType) {
+        return generateToken(userId, tokenType, null);
+    }
+
+    @Transactional
+    public String generateToken(long userId, TokenType tokenType, String data) {
         var token = Hashing.sha256().hashString(UUID.randomUUID().toString(), UTF_8).toString();
         var registrationToken = Token.builder()
                 .token(token)
                 .tokenType(tokenType)
                 .userId(userId)
+                                     .data(data)
                 .createdAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60 * 60 * tokenExpiresAfter))
                 .build();
@@ -52,6 +58,11 @@ public class RegistrationService {
     @Transactional
     public void removeTokenByUserId(long userId) {
         tokenRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public void removeTokenByUserIdAndType(long userId, TokenType tokenType) {
+        tokenRepository.deleteByUserIdAndTokenType(userId, tokenType);
     }
 
     /**

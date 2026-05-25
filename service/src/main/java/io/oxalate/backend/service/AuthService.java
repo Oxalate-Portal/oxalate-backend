@@ -1,5 +1,8 @@
 package io.oxalate.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import static io.oxalate.backend.api.AuditLevelEnum.ERROR;
 import static io.oxalate.backend.api.AuditLevelEnum.INFO;
 import static io.oxalate.backend.api.AuditLevelEnum.WARN;
@@ -8,6 +11,7 @@ import io.oxalate.backend.api.UpdateStatusEnum;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import static io.oxalate.backend.api.UserStatusEnum.LOCKED;
 import static io.oxalate.backend.api.UserStatusEnum.REGISTERED;
+import io.oxalate.backend.api.request.EmailChangeRequest;
 import io.oxalate.backend.api.request.EmailRequest;
 import io.oxalate.backend.api.request.LoginRequest;
 import io.oxalate.backend.api.request.SignupRequest;
@@ -22,6 +26,12 @@ import io.oxalate.backend.api.response.UserUpdateStatus;
 import io.oxalate.backend.audit.AuditContext;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_NO_ROLES;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_REQUEST_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_REQUEST_LOCKED;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_REQUEST_OK;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_VERIFY_INVALID_EMAIL;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_VERIFY_INVALID_TOKEN;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_VERIFY_OK;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOST_PASSWORD_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOST_PASSWORD_INACTIVE_STATUS;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOST_PASSWORD_OK;
@@ -48,10 +58,12 @@ import static io.oxalate.backend.events.AppAuditMessages.AUTH_UPDATE_PASSWORD_OL
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_UPDATE_PASSWORD_UNAUTHORIZED;
 import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.exception.OxalateAuthenticationException;
+import static io.oxalate.backend.model.TokenType.EMAIL_CHANGE;
 import static io.oxalate.backend.model.TokenType.EMAIL_RESEND;
 import static io.oxalate.backend.model.TokenType.PASSWORD_RESET;
 import static io.oxalate.backend.model.TokenType.REGISTRATION;
 import io.oxalate.backend.model.User;
+import io.oxalate.backend.security.LoginAttemptService;
 import io.oxalate.backend.security.jwt.JwtUtils;
 import io.oxalate.backend.security.service.UserDetailsImpl;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,7 +72,10 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -93,6 +108,9 @@ public class AuthService {
     private final RegistrationService registrationService;
     private final EmailService emailService;
     private final JwtUtils jwtUtils;
+    private final LoginAttemptService loginAttemptService;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final String EMAIL_CHANGE_ATTEMPT_KEY_PREFIX = "email-change:";
 
     @Value("${oxalate.app.jwt-expiration}")
     private int expirationTime;
@@ -102,6 +120,8 @@ public class AuthService {
     private String sameSite;
     @Value("${oxalate.token.registration-url}")
     private String registrationUrl;
+    @Value("${oxalate.token.email-change-url}")
+    private String emailChangeUrl;
 
     @Transactional(readOnly = true)
     public UserSessionToken authenticate(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
@@ -506,6 +526,81 @@ public class AuthService {
                                    .build();
     }
 
+    @Transactional
+    public boolean requestEmailChange(long userId, EmailChangeRequest emailChangeRequest, HttpServletRequest request, HttpServletResponse response) {
+        var auditUuid = AuditContext.getTraceId();
+        var user = userService.findUserEntityById(userId);
+
+        if (user == null || user.getStatus() != ACTIVE) {
+            return false;
+        }
+
+        var attemptKey = EMAIL_CHANGE_ATTEMPT_KEY_PREFIX + userId;
+        if (loginAttemptService.isBlocked(attemptKey)) {
+            lockUserAndInvalidateSession(userId, request, auditUuid, response);
+            return false;
+        }
+
+        var normalizedEmail = emailChangeRequest.getNewEmail()
+                                                .trim()
+                                                .toLowerCase(Locale.ROOT);
+        var emailValid = userService.isUsernameAvailableForUser(normalizedEmail, userId) &&
+                !normalizedEmail.equals(user.getUsername());
+        var passwordValid = validateCurrentPassword(user.getUsername(), emailChangeRequest.getPassword());
+
+        if (!emailValid || !passwordValid) {
+            loginAttemptService.loginFailed(attemptKey);
+            var attempts = loginAttemptService.getAttempts(attemptKey);
+            appEventPublisher.publishAuditEvent(AUTH_EMAIL_CHANGE_REQUEST_FAIL + " userId=" + userId + " attempts=" + attempts,
+                    WARN, request, AUDIT_NAME, userId, auditUuid);
+
+            if (attempts >= LoginAttemptService.MAX_ATTEMPT) {
+                lockUserAndInvalidateSession(userId, request, auditUuid, response);
+            }
+            return false;
+        }
+
+        loginAttemptService.resetAttempts(attemptKey);
+        registrationService.removeTokenByUserIdAndType(userId, EMAIL_CHANGE);
+        var tokenPayload = createEmailChangeTokenPayload(normalizedEmail);
+        var token = registrationService.generateToken(userId, EMAIL_CHANGE, tokenPayload);
+        emailService.sendEmailChangeConfirmationEmail(user, normalizedEmail, token);
+        appEventPublisher.publishAuditEvent(AUTH_EMAIL_CHANGE_REQUEST_OK + " userId=" + userId, INFO, request, AUDIT_NAME, userId, auditUuid);
+        return true;
+    }
+
+    @Transactional
+    public URI verifyEmailChange(String tokenString, HttpServletRequest request, HttpServletResponse response) {
+        var auditUuid = AuditContext.getTraceId();
+        var token = registrationService.getValidToken(tokenString, EMAIL_CHANGE);
+        var returnStatus = "OK";
+
+        if (token == null) {
+            appEventPublisher.publishAuditEvent(AUTH_EMAIL_CHANGE_VERIFY_INVALID_TOKEN, WARN, request, AUDIT_NAME, null, auditUuid);
+            returnStatus = "INVALID";
+            return buildEmailChangeRedirectUri(returnStatus);
+        }
+
+        var pendingEmail = parsePendingEmail(token.getData());
+        if (pendingEmail == null || !userService.isUsernameAvailableForUser(pendingEmail, token.getUserId())) {
+            appEventPublisher.publishAuditEvent(AUTH_EMAIL_CHANGE_VERIFY_INVALID_EMAIL, WARN, request, AUDIT_NAME, token.getUserId(), auditUuid);
+            registrationService.removeTokenByUserIdAndType(token.getUserId(), EMAIL_CHANGE);
+            returnStatus = "INVALID";
+            return buildEmailChangeRedirectUri(returnStatus);
+        }
+
+        if (!userService.updateUsername(token.getUserId(), pendingEmail)) {
+            returnStatus = "INVALID";
+            return buildEmailChangeRedirectUri(returnStatus);
+        }
+
+        registrationService.removeTokenByUserIdAndType(token.getUserId(), EMAIL_CHANGE);
+        clearJwtCookie(response);
+        SecurityContextHolder.clearContext();
+        appEventPublisher.publishAuditEvent(AUTH_EMAIL_CHANGE_VERIFY_OK, INFO, request, AUDIT_NAME, token.getUserId(), auditUuid);
+        return buildEmailChangeRedirectUri(returnStatus);
+    }
+
     public URI verifyRegistration(String token, HttpServletRequest request) {
         var auditUuid = AuditContext.getTraceId();
         var registrationToken = registrationService.getValidToken(token, REGISTRATION);
@@ -525,5 +620,71 @@ public class AuthService {
                                    .query("status={returnStatus}")
                                    .buildAndExpand(returnStatus)
                                    .toUri();
+    }
+
+    private boolean validateCurrentPassword(String username, String password) {
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+            return true;
+        } catch (AuthenticationException e) {
+            return false;
+        }
+    }
+
+    private String createEmailChangeTokenPayload(String newEmail) {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("newEmail", newEmail);
+
+        try {
+            return OBJECT_MAPPER.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to create email-change token payload", e);
+            return null;
+        }
+    }
+
+    private String parsePendingEmail(String tokenData) {
+        if (tokenData == null || tokenData.isBlank()) {
+            return null;
+        }
+
+        try {
+            Map<String, String> payload = OBJECT_MAPPER.readValue(tokenData, new TypeReference<>() {
+            });
+            var email = payload.get("newEmail");
+            return email == null ?
+                    null :
+                    email.trim()
+                         .toLowerCase(Locale.ROOT);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse email-change token payload", e);
+            return null;
+        }
+    }
+
+    private URI buildEmailChangeRedirectUri(String returnStatus) {
+        return UriComponentsBuilder.fromUriString(emailChangeUrl)
+                                   .query("status={returnStatus}")
+                                   .buildAndExpand(returnStatus)
+                                   .toUri();
+    }
+
+    private void lockUserAndInvalidateSession(long userId, HttpServletRequest request, java.util.UUID auditUuid, HttpServletResponse response) {
+        userService.updateStatus(userId, LOCKED);
+        clearJwtCookie(response);
+        SecurityContextHolder.clearContext();
+        appEventPublisher.publishAuditEvent(AUTH_EMAIL_CHANGE_REQUEST_LOCKED + " userId=" + userId, WARN, request, AUDIT_NAME, userId, auditUuid);
+    }
+
+    private void clearJwtCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(JWT_TOKEN, "")
+                                              .httpOnly(true)
+                                              .secure(secureCookie)
+                                              .path("/")
+                                              .maxAge(0)
+                                              .sameSite(sameSite)
+                                              .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }
