@@ -2,6 +2,7 @@ package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
+import io.oxalate.backend.api.request.EmailChangeRequest;
 import io.oxalate.backend.api.request.EmailRequest;
 import io.oxalate.backend.api.request.LoginRequest;
 import io.oxalate.backend.api.request.SignupRequest;
@@ -114,4 +115,23 @@ public interface AuthAPI {
     })
     @PostMapping(path = BASE_PATH + "/reset-password")
     ResponseEntity<ActionResponse> resetPassword(@RequestBody UserResetPasswordRequest userResetPasswordRequest, HttpServletRequest request);
+
+    @Operation(description = "Authenticated endpoint to request email-address change", tags = "AuthAPI")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "EmailChangeRequest", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Validation and request handling completed. Returns true only when request was accepted."),
+            @ApiResponse(responseCode = "403", description = "Not authorized")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PostMapping(path = BASE_PATH + "/email-change/requests", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Boolean> requestEmailChange(@Valid @RequestBody EmailChangeRequest emailChangeRequest, HttpServletRequest request,
+            HttpServletResponse response);
+
+    @Operation(description = "Endpoint used in the email change confirmation link", tags = "AuthAPI")
+    @Parameter(name = "token", description = "Email change token", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "302", description = "Redirect to frontend page with status query parameter")
+    })
+    @GetMapping(path = BASE_PATH + "/email-change/confirmations")
+    ResponseEntity<Void> verifyEmailChange(@RequestParam(name = "token") String token, HttpServletRequest request, HttpServletResponse response);
 }

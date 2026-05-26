@@ -21,5 +21,8 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
     @Modifying
     void deleteByUserId(long userId);
 
+    @Modifying
+    void deleteByUserIdAndTokenType(long userId, TokenType tokenType);
+
     Optional<Token> findByUserIdAndTokenType(long userId, TokenType tokenType);
 }

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="sv">
+<head>
+    <title>Bekrafta e-postandring for [[${orgName}]]</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<p>Hej <span th:text="${name}"></span>!</p>
+
+<p>Vi har fatt en begaran om att byta din e-postadress i [[${orgName}]]-portalen till <strong th:text="${newEmail}"></strong>.</p>
+
+<p>Bekrafta andringen genom att klicka <a th:href="@{${url}}">har</a>.</p>
+
+<p>Lanken ar giltig i [[${tokenTtl}]] timmar.</p>
+
+<p>Om du inte begarde den har andringen kan du ignorera meddelandet eller kontakta [[${supportEmail}]].</p>
+
+<p>Vanliga halsningar, [[${orgName}]]</p>
+</body>
+</html>
+

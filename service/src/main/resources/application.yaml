@@ -99,6 +99,8 @@ oxalate:
     maxRetryCount: 3
     registration-url: ${oxalate.app.frontend-url}/registration
     confirmation-url: ${oxalate.app.backend-url}/api/auth/registrations
+    email-change-confirmation-url: ${oxalate.app.backend-url}/api/auth/email-change/confirmations
+    email-change-url: ${oxalate.app.frontend-url}/auth/email-change
     lost-password-url: ${oxalate.app.frontend-url}/auth/new-password
   audit:
     retention:

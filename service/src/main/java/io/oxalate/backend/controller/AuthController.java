@@ -1,6 +1,7 @@
 package io.oxalate.backend.controller;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
+import io.oxalate.backend.api.request.EmailChangeRequest;
 import io.oxalate.backend.api.request.EmailRequest;
 import io.oxalate.backend.api.request.LoginRequest;
 import io.oxalate.backend.api.request.SignupRequest;
@@ -15,6 +16,10 @@ import io.oxalate.backend.audit.AuditSource;
 import io.oxalate.backend.audit.Audited;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_OK;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_AUTHENTICATION_START;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_REQUEST_OK;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_REQUEST_START;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_VERIFY_OK;
+import static io.oxalate.backend.events.AppAuditMessages.AUTH_EMAIL_CHANGE_VERIFY_START;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOGOUT_OK;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOGOUT_START;
 import static io.oxalate.backend.events.AppAuditMessages.AUTH_LOST_PASSWORD_START;
@@ -97,9 +102,27 @@ public class AuthController implements AuthAPI {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    @Audited(startMessage = AUTH_EMAIL_CHANGE_REQUEST_START, okMessage = AUTH_EMAIL_CHANGE_REQUEST_OK)
+    public ResponseEntity<Boolean> requestEmailChange(EmailChangeRequest emailChangeRequest, HttpServletRequest request, HttpServletResponse response) {
+        var userId = AuthTools.getCurrentUserId();
+        var changeRequested = authService.requestEmailChange(userId, emailChangeRequest, request, response);
+        return ResponseEntity.ok(changeRequested);
+    }
+
+    @Override
     @Audited(startMessage = AUTH_REGISTRATION_VERIFY_START, okMessage = AUTH_REGISTRATION_VERIFY_OK)
     public ResponseEntity<Void> verifyRegistration(String token, HttpServletRequest request) {
         var uri = authService.verifyRegistration(token, request);
+        return ResponseEntity.status(301)
+                             .location(uri)
+                             .build();
+    }
+
+    @Override
+    @Audited(startMessage = AUTH_EMAIL_CHANGE_VERIFY_START, okMessage = AUTH_EMAIL_CHANGE_VERIFY_OK)
+    public ResponseEntity<Void> verifyEmailChange(String token, HttpServletRequest request, HttpServletResponse response) {
+        var uri = authService.verifyEmailChange(token, request, response);
         return ResponseEntity.status(301)
                              .location(uri)
                              .build();

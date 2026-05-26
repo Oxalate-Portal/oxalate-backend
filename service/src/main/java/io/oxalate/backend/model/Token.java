@@ -41,6 +41,9 @@ public class Token {
     @Column(name = "retry_count", nullable = false)
     private int retryCount;
 
+    @Column(name = "data")
+    private String data;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

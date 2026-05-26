@@ -56,6 +56,9 @@ public class EmailService {
     @Value("${oxalate.token.lost-password-url}")
     private String lostPasswordUrl;
 
+    @Value("${oxalate.token.email-change-confirmation-url}")
+    private String emailChangeConfirmationUrl;
+
     @Value("${oxalate.app.frontend-url}")
     private String frontendUrl;
 
@@ -103,6 +106,30 @@ public class EmailService {
         }
 
         return false;
+    }
+
+    public void sendEmailChangeConfirmationEmail(User user, String newEmail, String token) {
+        var confirmationUrlWithToken = emailChangeConfirmationUrl + "?token=" + token;
+        var userLanguage =
+                user.getLanguage() != null ? user.getLanguage() : portalConfigurationService.getStringConfiguration(GENERAL.group, DEFAULT_LANGUAGE.key);
+        var locale = Locale.forLanguageTag(userLanguage);
+        var organizationName = portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key);
+        var subject = messageSource.getMessage("email.email-change.subject", new Object[] { organizationName }, locale);
+
+        Context context = new Context(locale);
+        context.setVariable("name", user.getFirstName());
+        context.setVariable("url", confirmationUrlWithToken);
+        context.setVariable("newEmail", newEmail);
+        context.setVariable("supportEmail", portalConfigurationService.getStringConfiguration(EMAIL.group, SUPPORT_EMAIL.key));
+        context.setVariable("orgName", organizationName);
+        context.setVariable("tokenTtl", tokenTtl);
+        String body = templateEngine.process("emailChangeTemplate_" + locale.getLanguage(), context);
+
+        try {
+            sendHtmlMail(portalConfigurationService.getStringConfiguration(EMAIL.group, SYSTEM_EMAIL.key), newEmail, subject, body);
+        } catch (MailException e) {
+            log.error("Sending email change confirmation failed: ", e);
+        }
     }
 
     public void sendEventNotificationEmail(String emailAddress, String language, EmailNotificationDetailEnum detail, Event event) {

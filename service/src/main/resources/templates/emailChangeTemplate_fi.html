@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fi">
+<head>
+    <title>Vahvista sahkopostiosoitteen vaihto palvelussa [[${orgName}]]</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<p>Hei <span th:text="${name}"></span>!</p>
+
+<p>Saimme pyynnon vaihtaa [[${orgName}]]-portaalin sahkopostiosoitteesi osoitteeseen <strong th:text="${newEmail}"></strong>.</p>
+
+<p>Vahvista muutos klikkaamalla <a th:href="@{${url}}">tata linkkia</a>.</p>
+
+<p>Linkki on voimassa [[${tokenTtl}]] tuntia.</p>
+
+<p>Jos et pyytanyt muutosta, voit jattaa viestin huomiotta tai ottaa yhteytta osoitteeseen [[${supportEmail}]].</p>
+
+<p>Ystavaisin terveisin, [[${orgName}]]</p>
+</body>
+</html>
+

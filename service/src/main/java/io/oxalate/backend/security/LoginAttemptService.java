@@ -45,10 +45,26 @@ public class LoginAttemptService {
     }
 
     public boolean isBlocked() {
+        return isBlocked(getRemoteIp(request));
+    }
+
+    public boolean isBlocked(String key) {
         try {
-            return attemptsCache.get(getRemoteIp(request)) >= MAX_ATTEMPT;
+            return attemptsCache.get(key) >= MAX_ATTEMPT;
         } catch (final ExecutionException e) {
             return false;
         }
+    }
+
+    public int getAttempts(String key) {
+        try {
+            return attemptsCache.get(key);
+        } catch (final ExecutionException e) {
+            return 0;
+        }
+    }
+
+    public void resetAttempts(String key) {
+        attemptsCache.invalidate(key);
     }
 }

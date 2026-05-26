@@ -16,6 +16,8 @@ import io.oxalate.backend.repository.MembershipRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.service.filetransfer.AvatarFileTransferService;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -290,6 +292,47 @@ public class UserService {
     public boolean isUsernameValid(String username) {
         return findByUsername(username).isEmpty() &&
                 !username.contains("%");
+    }
+
+    public boolean isEmailAddressFormatValid(String username) {
+        if (username == null || username.isBlank() || username.contains("%")) {
+            return false;
+        }
+
+        try {
+            var internetAddress = new InternetAddress(username);
+            internetAddress.validate();
+            return true;
+        } catch (AddressException e) {
+            return false;
+        }
+    }
+
+    public boolean isUsernameAvailableForUser(String username, long userId) {
+        if (!isEmailAddressFormatValid(username)) {
+            return false;
+        }
+
+        var normalizedUsername = username.trim()
+                                         .toLowerCase();
+        var optionalUser = findByUsername(normalizedUsername);
+
+        return optionalUser.isEmpty();
+    }
+
+    @Transactional
+    public boolean updateUsername(long userId, String newUsername) {
+        var optionalUser = userRepository.findById(userId);
+
+        if (optionalUser.isEmpty()) {
+            return false;
+        }
+
+        var user = optionalUser.get();
+        user.setUsername(newUsername.trim()
+                                    .toLowerCase());
+        userRepository.save(user);
+        return true;
     }
 
     @Transactional

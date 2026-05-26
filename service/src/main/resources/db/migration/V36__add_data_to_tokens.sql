@@ -1,0 +1,3 @@
+ALTER TABLE tokens
+    ADD COLUMN data TEXT;
+

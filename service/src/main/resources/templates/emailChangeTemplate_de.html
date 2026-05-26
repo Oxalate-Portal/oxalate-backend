@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <title>E-Mail-Anderung fur [[${orgName}]] bestaetigen</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<p>Hallo <span th:text="${name}"></span>!</p>
+
+<p>Wir haben eine Anfrage erhalten, Ihre E-Mail-Adresse im [[${orgName}]]-Portal auf <strong th:text="${newEmail}"></strong> zu andern.</p>
+
+<p>Bitte bestaetigen Sie die Anderung durch Klick auf <a th:href="@{${url}}">diesen Link</a>.</p>
+
+<p>Der Link ist [[${tokenTtl}]] Stunden gueltig.</p>
+
+<p>Falls Sie diese Anderung nicht angefordert haben, ignorieren Sie diese E-Mail oder kontaktieren Sie [[${supportEmail}]].</p>
+
+<p>Viele Grusse, [[${orgName}]]</p>
+</body>
+</html>
+
