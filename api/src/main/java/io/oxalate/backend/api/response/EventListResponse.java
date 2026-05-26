@@ -20,6 +20,9 @@ public class EventListResponse extends AbstractEvent {
     @JsonProperty("participantCount")
     private int participantCount;
 
+    @JsonProperty("waitingListCount")
+    private int waitingListCount;
+
     @JsonProperty("eventCommentId")
     private long eventCommentId;
 

@@ -47,6 +47,9 @@ public class EventsParticipant {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "notified_at")
+    private Instant notifiedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "event_user_type", nullable = false)
     private UserTypeEnum eventUserType;

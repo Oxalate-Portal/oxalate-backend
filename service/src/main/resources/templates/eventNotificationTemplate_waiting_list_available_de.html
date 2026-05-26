@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Wartelistenplatz verfugbar</title>
+</head>
+<body>
+<p>Liebes Mitglied,</p>
+<p>Ein Platz fur die Veranstaltung <strong th:text="${eventTitle}"></strong> am <strong th:text="${eventDate}"></strong> ist frei geworden.</p>
+<p>Bitte bestatigen Sie Ihre Teilnahme innerhalb des konfigurierten Zeitfensters auf der Veranstaltungsseite:</p>
+<p><a th:href="${frontendUrl + '/events/' + eventId}" th:text="${frontendUrl + '/events/' + eventId}"></a></p>
+<p>Mit freundlichen Grussen,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
+

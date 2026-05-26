@@ -158,4 +158,28 @@ public interface EventAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/{eventId}/unsubscribe")
     ResponseEntity<EventResponse> unSubscribe(Authentication auth, @PathVariable(name = "eventId") long eventId);
+
+    @Operation(description = "Join the waiting list for a fully booked event", tags = "EventAPI")
+    @Parameter(name = "eventId", description = "ID of the event to join the waiting list for", example = "123", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully joined waiting list"),
+            @ApiResponse(responseCode = "400", description = "Cannot join waiting list (event not full or user already registered)"),
+            @ApiResponse(responseCode = "404", description = "Event does not exist"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PostMapping(path = BASE_PATH + "/{eventId}/waiting-list/join", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<EventResponse> joinWaitingList(Authentication auth, @PathVariable("eventId") long eventId);
+
+    @Operation(description = "Leave the waiting list for an event", tags = "EventAPI")
+    @Parameter(name = "eventId", description = "ID of the event to leave the waiting list for", example = "123", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully left waiting list"),
+            @ApiResponse(responseCode = "400", description = "User is not in the waiting list"),
+            @ApiResponse(responseCode = "404", description = "Event does not exist"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PostMapping(path = BASE_PATH + "/{eventId}/waiting-list/leave", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<EventResponse> leaveWaitingList(Authentication auth, @PathVariable("eventId") long eventId);
 }

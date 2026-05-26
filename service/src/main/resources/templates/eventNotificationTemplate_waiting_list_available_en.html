@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Waiting List Spot Available</title>
+</head>
+<body>
+<p>Dear member,</p>
+<p>A spot has become available for event <strong th:text="${eventTitle}"></strong> at <strong th:text="${eventDate}"></strong>.</p>
+<p>Please confirm your participation within the configured time window from the event page:</p>
+<p><a th:href="${frontendUrl + '/events/' + eventId}" th:text="${frontendUrl + '/events/' + eventId}"></a></p>
+<p>Best regards,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
+

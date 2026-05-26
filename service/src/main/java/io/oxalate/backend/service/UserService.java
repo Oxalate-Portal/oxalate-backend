@@ -144,6 +144,16 @@ public class UserService {
         return participants;
     }
 
+    public List<User> findWaitingListParticipants(Long eventId) {
+        var participants = userRepository.findEventParticipantsByTypesOrderByRegistrationTime(eventId, List.of(ParticipantTypeEnum.WAITING_LIST.name()));
+
+        for (User user : participants) {
+            populateUser(user);
+        }
+
+        return participants;
+    }
+
     private void populateUser(User user) {
         var roles = roleService.findRolesForUser(user.getId());
         user.setRoles(roles);

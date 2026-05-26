@@ -67,9 +67,21 @@ import static io.oxalate.backend.events.AppAuditMessages.EVENTS_UPDATE_NOT_FOUND
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_UPDATE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_UPDATE_ORGANIZER_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_UPDATE_START;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_JOIN_ALREADY_IN_QUEUE;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_JOIN_ALREADY_PARTICIPATING;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_JOIN_EVENT_NOT_FOUND;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_JOIN_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_JOIN_NOT_FULL;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_JOIN_OK;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_JOIN_START;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_LEAVE_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_LEAVE_NOT_IN_LIST;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_LEAVE_OK;
+import static io.oxalate.backend.events.AppAuditMessages.EVENTS_WAITING_LIST_LEAVE_START;
 import io.oxalate.backend.exception.OxalateNotFoundException;
 import io.oxalate.backend.exception.OxalateUnauthorizedException;
 import io.oxalate.backend.exception.OxalateValidationException;
+import io.oxalate.backend.model.User;
 import io.oxalate.backend.rest.EventAPI;
 import io.oxalate.backend.service.EventService;
 import io.oxalate.backend.service.UserService;
@@ -386,6 +398,85 @@ public class EventController implements EventAPI {
         }
 
         return ResponseEntity.ok().body(eventResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('USER')")
+    @Audited(startMessage = EVENTS_WAITING_LIST_JOIN_START, okMessage = EVENTS_WAITING_LIST_JOIN_OK, failMessage = EVENTS_WAITING_LIST_JOIN_FAIL)
+    public ResponseEntity<EventResponse> joinWaitingList(Authentication auth, long eventId) {
+        if (AuthTools.currentUserHasNotAcceptedTerms()) {
+            log.error("User ID {} has not accepted terms and conditions", AuthTools.getCurrentUserId());
+            throw new OxalateValidationException(AuditLevelEnum.INFO, EVENTS_SUBSCRIBE_TERMS_NOT_ACCEPTED, HttpStatus.NO_CONTENT);
+        }
+
+        if (AuthTools.currentUserHasNotAcceptedHealthStatement()) {
+            log.error("User ID {} has not accepted health statement", AuthTools.getCurrentUserId());
+            throw new OxalateValidationException(AuditLevelEnum.INFO, EVENTS_SUBSCRIBE_HEALTH_STATEMENT_NOT_ACCEPTED, HttpStatus.NO_CONTENT);
+        }
+
+        var user = getCurrentUser(auth);
+
+        var eventResponse = eventService.findById(eventId);
+
+        if (eventResponse == null) {
+            throw new OxalateNotFoundException(AuditLevelEnum.WARN, EVENTS_WAITING_LIST_JOIN_EVENT_NOT_FOUND + eventId, HttpStatus.NOT_FOUND);
+        }
+
+        var isParticipating = eventResponse.getParticipants()
+                                           .stream()
+                                           .anyMatch(participant -> participant.getId() == user.getId());
+        if (isParticipating) {
+            throw new OxalateValidationException(EVENTS_WAITING_LIST_JOIN_ALREADY_PARTICIPATING + eventId, HttpStatus.BAD_REQUEST);
+        }
+
+        var isInQueue = eventResponse.getWaitingList()
+                                     .stream()
+                                     .anyMatch(participant -> participant.getId() == user.getId());
+        if (isInQueue) {
+            throw new OxalateValidationException(EVENTS_WAITING_LIST_JOIN_ALREADY_IN_QUEUE + eventId, HttpStatus.BAD_REQUEST);
+        }
+
+        if (eventResponse.getParticipants()
+                         .size() < eventResponse.getMaxParticipants()) {
+            throw new OxalateValidationException(EVENTS_WAITING_LIST_JOIN_NOT_FULL + eventId, HttpStatus.BAD_REQUEST);
+        }
+
+        var updatedEventResponse = eventService.joinWaitingList(user, eventId);
+
+        if (updatedEventResponse == null) {
+            throw new OxalateValidationException(EVENTS_WAITING_LIST_JOIN_FAIL + eventId, HttpStatus.BAD_REQUEST);
+        }
+
+        return ResponseEntity.ok(updatedEventResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('USER')")
+    @Audited(startMessage = EVENTS_WAITING_LIST_LEAVE_START, okMessage = EVENTS_WAITING_LIST_LEAVE_OK, failMessage = EVENTS_WAITING_LIST_LEAVE_FAIL)
+    public ResponseEntity<EventResponse> leaveWaitingList(Authentication auth, long eventId) {
+        var user = getCurrentUser(auth);
+
+        if (eventService.findById(eventId) == null) {
+            throw new OxalateNotFoundException(AuditLevelEnum.WARN, EVENTS_WAITING_LIST_JOIN_EVENT_NOT_FOUND + eventId, HttpStatus.NOT_FOUND);
+        }
+
+        var updatedEventResponse = eventService.leaveWaitingList(user, eventId);
+
+        if (updatedEventResponse == null) {
+            throw new OxalateValidationException(EVENTS_WAITING_LIST_LEAVE_NOT_IN_LIST + eventId, HttpStatus.BAD_REQUEST);
+        }
+
+        return ResponseEntity.ok(updatedEventResponse);
+    }
+
+    private User getCurrentUser(Authentication auth) {
+        var optionalUser = userService.findByUsername(auth.getName());
+
+        if (optionalUser.isEmpty()) {
+            throw new OxalateNotFoundException(AuditLevelEnum.WARN, EVENTS_SUBSCRIBE_UNKNOWN_USER + auth.getName(), HttpStatus.NOT_FOUND);
+        }
+
+        return optionalUser.get();
     }
 }
 
