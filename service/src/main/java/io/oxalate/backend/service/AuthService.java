@@ -19,6 +19,7 @@ import io.oxalate.backend.api.request.TokenRequest;
 import io.oxalate.backend.api.request.UserResetPasswordRequest;
 import io.oxalate.backend.api.request.UserUpdatePasswordRequest;
 import io.oxalate.backend.api.response.ActionResponse;
+import io.oxalate.backend.api.response.MembershipResponse;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.RegistrationResponse;
 import io.oxalate.backend.api.response.UserSessionToken;
@@ -178,6 +179,14 @@ public class AuthService {
             paymentResponses.add(payment.toPaymentResponse());
         }
 
+        var membershipResponses = new ArrayList<MembershipResponse>();
+
+        if (user.getMembership() != null) {
+            for (var membership : user.getMembership()) {
+                membershipResponses.add(membership.toResponse());
+            }
+        }
+
         var jwtResponse = UserSessionToken.builder()
                                           .id(userDetails.getId())
                                           .username(userDetails.getUsername())
@@ -195,6 +204,8 @@ public class AuthService {
                                           .approvedTerms(user.isApprovedTerms())
                                           .healthStatementId(user.getHealthStatementId())
                                           .payments(paymentResponses)
+                                          .memberships(membershipResponses)
+                                          .primaryUserType(user.getPrimaryUserType())
                                           .language(user.getLanguage())
                                           .build();
 

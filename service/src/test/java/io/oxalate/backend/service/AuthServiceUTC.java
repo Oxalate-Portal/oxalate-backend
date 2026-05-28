@@ -1,19 +1,32 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.MembershipStatusEnum;
+import io.oxalate.backend.api.MembershipTypeEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import static io.oxalate.backend.api.UserStatusEnum.LOCKED;
+import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EmailChangeRequest;
+import io.oxalate.backend.api.request.LoginRequest;
 import io.oxalate.backend.events.AppEventPublisher;
+import io.oxalate.backend.model.Membership;
+import io.oxalate.backend.model.Role;
 import io.oxalate.backend.model.Token;
 import static io.oxalate.backend.model.TokenType.EMAIL_CHANGE;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.security.LoginAttemptService;
 import io.oxalate.backend.security.jwt.JwtUtils;
+import io.oxalate.backend.security.service.UserDetailsImpl;
 import java.net.URI;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +47,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -205,5 +219,185 @@ class AuthServiceUTC {
                    .language("en")
                    .build();
     }
-}
 
+    // -------------------------------------------------------------------------
+    // authenticate() tests
+    // -------------------------------------------------------------------------
+
+    @Test
+    void authenticatePrimaryUserTypePopulatedOk() {
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+        var loginRequest = LoginRequest.builder()
+                                       .username("test@example.com")
+                                       .password("TestPassword1!")
+                                       .build();
+
+        var user = buildActiveUserWithTypeAndMemberships(100L, "test@example.com",
+                UserTypeEnum.SCUBA_DIVER, List.of());
+
+        var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        var userDetails = new UserDetailsImpl(100L, "test@example.com", "hash",
+                authorities, true, null, false, "en");
+        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+
+        ReflectionTestUtils.setField(authService, "expirationTime", 3600);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(userService.findByUsername("test@example.com")).thenReturn(Optional.of(user));
+        when(jwtUtils.generateJwtToken(authentication)).thenReturn("jwt-token");
+
+        var result = authService.authenticate(loginRequest, request, response);
+
+        assertNotNull(result);
+        assertEquals(UserTypeEnum.SCUBA_DIVER, result.getPrimaryUserType());
+    }
+
+    @Test
+    void authenticateWithMembershipsPopulatedOk() {
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+        var loginRequest = LoginRequest.builder()
+                                       .username("test@example.com")
+                                       .password("TestPassword1!")
+                                       .build();
+
+        var user = buildActiveUserWithTypeAndMemberships(100L, "test@example.com",
+                UserTypeEnum.FREE_DIVER, buildSingleMembership(100L, "test@example.com"));
+
+        var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        var userDetails = new UserDetailsImpl(100L, "test@example.com", "hash",
+                authorities, true, null, false, "en");
+        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+
+        ReflectionTestUtils.setField(authService, "expirationTime", 3600);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(userService.findByUsername("test@example.com")).thenReturn(Optional.of(user));
+        when(jwtUtils.generateJwtToken(authentication)).thenReturn("jwt-token");
+
+        var result = authService.authenticate(loginRequest, request, response);
+
+        assertNotNull(result);
+        assertNotNull(result.getMemberships());
+        assertEquals(1, result.getMemberships()
+                              .size());
+        assertEquals(MembershipTypeEnum.PERIODICAL, result.getMemberships()
+                                                          .get(0)
+                                                          .getType());
+        assertEquals(MembershipStatusEnum.ACTIVE, result.getMemberships()
+                                                        .get(0)
+                                                        .getStatus());
+    }
+
+    @Test
+    void authenticateWithNoMembershipsReturnsEmptyListOk() {
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+        var loginRequest = LoginRequest.builder()
+                                       .username("test@example.com")
+                                       .password("TestPassword1!")
+                                       .build();
+
+        var user = buildActiveUserWithTypeAndMemberships(100L, "test@example.com",
+                UserTypeEnum.SCUBA_DIVER, List.of());
+
+        var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        var userDetails = new UserDetailsImpl(100L, "test@example.com", "hash",
+                authorities, true, null, false, "en");
+        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+
+        ReflectionTestUtils.setField(authService, "expirationTime", 3600);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(userService.findByUsername("test@example.com")).thenReturn(Optional.of(user));
+        when(jwtUtils.generateJwtToken(authentication)).thenReturn("jwt-token");
+
+        var result = authService.authenticate(loginRequest, request, response);
+
+        assertNotNull(result);
+        assertNotNull(result.getMemberships());
+        assertTrue(result.getMemberships()
+                         .isEmpty());
+    }
+
+    @Test
+    void authenticateWithNullPrimaryUserTypeOk() {
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+        var loginRequest = LoginRequest.builder()
+                                       .username("test@example.com")
+                                       .password("TestPassword1!")
+                                       .build();
+
+        var user = buildActiveUserWithTypeAndMemberships(100L, "test@example.com",
+                null, List.of());
+
+        var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        var userDetails = new UserDetailsImpl(100L, "test@example.com", "hash",
+                authorities, true, null, false, "en");
+        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+
+        ReflectionTestUtils.setField(authService, "expirationTime", 3600);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(userService.findByUsername("test@example.com")).thenReturn(Optional.of(user));
+        when(jwtUtils.generateJwtToken(authentication)).thenReturn("jwt-token");
+
+        var result = authService.authenticate(loginRequest, request, response);
+
+        assertNotNull(result);
+        assertNull(result.getPrimaryUserType());
+    }
+
+    private User buildActiveUserWithTypeAndMemberships(long id, String username,
+            UserTypeEnum primaryUserType, List<Membership> memberships) {
+        var role = new Role();
+        role.setName(io.oxalate.backend.api.RoleEnum.ROLE_USER);
+
+        return User.builder()
+                   .id(id)
+                   .username(username)
+                   .firstName("Test")
+                   .lastName("User")
+                   .status(ACTIVE)
+                   .phoneNumber("358401234567")
+                   .privacy(false)
+                   .password("$2a$10$hash")
+                   .approvedTerms(true)
+                   .language("en")
+                   .primaryUserType(primaryUserType)
+                   .roles(Set.of(role))
+                   .membership(memberships)
+                   .payments(List.of())
+                   .build();
+    }
+
+    private List<Membership> buildSingleMembership(long userId, String username) {
+        var innerUser = User.builder()
+                            .id(userId)
+                            .username(username)
+                            .firstName("Test")
+                            .lastName("User")
+                            .status(ACTIVE)
+                            .password("$2a$10$hash")
+                            .phoneNumber("358401234567")
+                            .privacy(false)
+                            .approvedTerms(true)
+                            .language("en")
+                            .build();
+
+        var membership = Membership.builder()
+                                   .id(1L)
+                                   .userId(userId)
+                                   .type(MembershipTypeEnum.PERIODICAL)
+                                   .status(MembershipStatusEnum.ACTIVE)
+                                   .startDate(LocalDate.now())
+                                   .endDate(LocalDate.now()
+                                                     .plusYears(1))
+                                   .created(Instant.now())
+                                   .user(innerUser)
+                                   .build();
+        return List.of(membership);
+    }
+}
