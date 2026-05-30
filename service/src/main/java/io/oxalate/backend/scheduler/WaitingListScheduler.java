@@ -14,7 +14,7 @@ public class WaitingListScheduler {
 
     @Scheduled(fixedDelay = 15 * 60 * 1000)
     public void processWaitingList() {
-        eventService.processWaitingListTimeouts();
+        eventService.cleanupWaitingListForPastEvents();
         log.debug("Waiting list queue processed");
     }
 }

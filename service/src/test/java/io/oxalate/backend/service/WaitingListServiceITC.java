@@ -70,6 +70,7 @@ class WaitingListServiceITC extends AbstractIntegrationTest {
     private User organizer;
     private User diverA;
     private User diverB;
+    private User diverC;
     private Event event;
 
     @BeforeEach
@@ -77,6 +78,7 @@ class WaitingListServiceITC extends AbstractIntegrationTest {
         organizer = generateUser(ACTIVE, ROLE_ORGANIZER);
         diverA = generateUser(ACTIVE, ROLE_USER);
         diverB = generateUser(ACTIVE, ROLE_USER);
+        diverC = generateUser(ACTIVE, ROLE_USER);
 
         event = Event.builder()
                      .type(DiveTypeEnum.CAVE)
@@ -108,6 +110,11 @@ class WaitingListServiceITC extends AbstractIntegrationTest {
                                                  .paymentCount(3)
                                                  .paymentType(ONE_TIME)
                                                  .build());
+        paymentService.savePayment(PaymentRequest.builder()
+                                                 .userId(diverC.getId())
+                                                 .paymentCount(3)
+                                                 .paymentType(ONE_TIME)
+                                                 .build());
     }
 
     @AfterEach
@@ -121,7 +128,9 @@ class WaitingListServiceITC extends AbstractIntegrationTest {
         roleRepository.deleteAllUserRolesByUserId(organizer.getId());
         roleRepository.deleteAllUserRolesByUserId(diverA.getId());
         roleRepository.deleteAllUserRolesByUserId(diverB.getId());
+        roleRepository.deleteAllUserRolesByUserId(diverC.getId());
 
+        userRepository.deleteById(diverC.getId());
         userRepository.deleteById(diverB.getId());
         userRepository.deleteById(diverA.getId());
         userRepository.deleteById(organizer.getId());
@@ -186,7 +195,7 @@ class WaitingListServiceITC extends AbstractIntegrationTest {
     }
 
     @Test
-    void unsubscribeNotifiesWaitingListUserOk() {
+    void cancelParticipationWithWaitingListOk() {
         var subscribeRequest = EventSubscribeRequest.builder()
                                                     .diveEventId(event.getId())
                                                     .userType(UserTypeEnum.SCUBA_DIVER)
@@ -196,11 +205,67 @@ class WaitingListServiceITC extends AbstractIntegrationTest {
 
         var response = eventService.removeUserFromEvent(diverA, event.getId());
         assertNotNull(response);
+        assertEquals(1, response.getParticipants()
+                                .size());
+        assertEquals(diverB.getId(), response.getParticipants()
+                                             .getFirst()
+                                             .getId());
+        assertTrue(response.getWaitingList()
+                           .isEmpty());
 
         var waitingEntry = eventParticipantsRepository.findWaitingListEntryByEventIdAndUserId(event.getId(), diverB.getId());
-        assertTrue(waitingEntry.isPresent());
-        assertNotNull(waitingEntry.get()
-                                  .getNotifiedAt());
+        assertTrue(waitingEntry.isEmpty());
+
+        var unreadMessages = messageRepository.findUnreadUserMessages(diverB.getId());
+        assertEquals(1, unreadMessages.size());
+    }
+
+    @Test
+    void cancelParticipationWithoutWaitingListOk() {
+        var subscribeRequest = EventSubscribeRequest.builder()
+                                                    .diveEventId(event.getId())
+                                                    .userType(UserTypeEnum.SCUBA_DIVER)
+                                                    .build();
+        assertNotNull(eventService.addUserToEvent(diverA, subscribeRequest));
+
+        var response = eventService.removeUserFromEvent(diverA, event.getId());
+        assertNotNull(response);
+        assertTrue(response.getParticipants()
+                           .isEmpty());
+        assertTrue(response.getWaitingList()
+                           .isEmpty());
+
+        var unreadMessages = messageRepository.findUnreadUserMessages(diverA.getId());
+        assertTrue(unreadMessages.isEmpty());
+    }
+
+    @Test
+    void cancelParticipationWithMultipleWaitingListOk() {
+        var subscribeRequest = EventSubscribeRequest.builder()
+                                                    .diveEventId(event.getId())
+                                                    .userType(UserTypeEnum.SCUBA_DIVER)
+                                                    .build();
+        assertNotNull(eventService.addUserToEvent(diverA, subscribeRequest));
+        assertNotNull(eventService.joinWaitingList(diverB, event.getId()));
+        assertNotNull(eventService.joinWaitingList(diverC, event.getId()));
+
+        var response = eventService.removeUserFromEvent(diverA, event.getId());
+        assertNotNull(response);
+        assertEquals(1, response.getParticipants()
+                                .size());
+        assertEquals(diverB.getId(), response.getParticipants()
+                                             .getFirst()
+                                             .getId());
+        assertEquals(1, response.getWaitingList()
+                                .size());
+        assertEquals(diverC.getId(), response.getWaitingList()
+                                             .getFirst()
+                                             .getId());
+
+        var unreadMessagesB = messageRepository.findUnreadUserMessages(diverB.getId());
+        var unreadMessagesC = messageRepository.findUnreadUserMessages(diverC.getId());
+        assertEquals(1, unreadMessagesB.size());
+        assertTrue(unreadMessagesC.isEmpty());
     }
 
     private User generateUser(UserStatusEnum userStatusEnum, RoleEnum roleEnum) {

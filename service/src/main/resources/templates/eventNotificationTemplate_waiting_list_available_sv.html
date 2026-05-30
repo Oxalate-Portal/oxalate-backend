@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Plats tillganglig pa vantelistan</title>
+    <title>Flyttad fran vantelistan</title>
 </head>
 <body>
 <p>Kara medlem,</p>
-<p>En plats har blivit tillganglig for evenemanget <strong th:text="${eventTitle}"></strong> den <strong th:text="${eventDate}"></strong>.</p>
-<p>Bekrafta ditt deltagande inom den konfigurerade tidsgransen pa evenemangssidan:</p>
+<p>Du har flyttats fran vantelistan till evenemanget <strong th:text="${eventTitle}"></strong> den <strong th:text="${eventDate}"></strong>.</p>
+<p>Du kan se evenemangsdetaljerna via den har lanken:</p>
 <p><a th:href="${frontendUrl + '/events/' + eventId}" th:text="${frontendUrl + '/events/' + eventId}"></a></p>
 <p>Vanliga halsningar,<br/> <strong th:text="${orgName}"></strong></p>
 </body>

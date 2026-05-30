@@ -19,6 +19,7 @@ import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
+import io.oxalate.backend.repository.MessageRepository;
 import io.oxalate.backend.repository.PaymentRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
@@ -37,11 +38,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -70,6 +73,10 @@ class EventControllerWaitingListRTC extends AbstractIntegrationTest {
     @Autowired
     private EventService eventService;
     @Autowired
+    private MessageRepository messageRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    @Autowired
     private PortalConfigurationService portalConfigurationService;
 
     private MockMvc mockMvc;
@@ -79,6 +86,7 @@ class EventControllerWaitingListRTC extends AbstractIntegrationTest {
     private User participant;
     private Event event;
     private String jwtToken;
+    private String participantJwtToken;
 
     @BeforeEach
     void setUp() {
@@ -95,6 +103,12 @@ class EventControllerWaitingListRTC extends AbstractIntegrationTest {
                 activeUser.isApprovedTerms(), activeUser.getHealthStatementId(), false, activeUser.getLanguage());
         var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
         jwtToken = jwtUtils.generateJwtToken(authentication);
+
+        var participantAuthorities = List.of(new SimpleGrantedAuthority(RoleEnum.ROLE_USER.name()));
+        var participantUserDetails = new UserDetailsImpl(participant.getId(), participant.getUsername(), participant.getPassword(), participantAuthorities,
+                participant.isApprovedTerms(), participant.getHealthStatementId(), false, participant.getLanguage());
+        var participantAuthentication = new UsernamePasswordAuthenticationToken(participantUserDetails, null, participantAuthorities);
+        participantJwtToken = jwtUtils.generateJwtToken(participantAuthentication);
 
         portalConfigurationService.setRuntimeValue(PAYMENT.group, SINGLE_PAYMENT_ENABLED.key, "true");
         portalConfigurationService.setRuntimeValue(PAYMENT.group, ONE_TIME_PAYMENT_EXPIRATION_TYPE.key, PeriodicPaymentTypeEnum.PERIODICAL.name());
@@ -131,6 +145,8 @@ class EventControllerWaitingListRTC extends AbstractIntegrationTest {
     @AfterEach
     void tearDown() {
         eventParticipantsRepository.deleteAll();
+        jdbcTemplate.execute("DELETE FROM message_receivers");
+        messageRepository.deleteAll();
         eventRepository.deleteAll();
         paymentRepository.deleteAll();
 
@@ -182,6 +198,32 @@ class EventControllerWaitingListRTC extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/events/{eventId}/waiting-list/leave", event.getId())
                        .cookie(new Cookie(JWT_TOKEN, jwtToken)))
                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void cancelParticipationWithWaitingListOk() throws Exception {
+        var subscribeRequest = EventSubscribeRequest.builder()
+                                                    .diveEventId(event.getId())
+                                                    .userType(UserTypeEnum.SCUBA_DIVER)
+                                                    .build();
+        eventService.addUserToEvent(participant, subscribeRequest);
+
+        mockMvc.perform(post("/api/events/{eventId}/waiting-list/join", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, jwtToken)))
+               .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/events/{eventId}/unsubscribe", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, participantJwtToken)))
+               .andExpect(status().isOk());
+
+        var eventResponse = eventService.findById(event.getId());
+        assertFalse(eventResponse.getParticipants()
+                                 .isEmpty());
+        assertFalse(eventResponse.getParticipants()
+                                 .stream()
+                                 .noneMatch(user -> user.getId() == activeUser.getId()));
+        assertFalse(messageRepository.findUnreadUserMessages(activeUser.getId())
+                                     .isEmpty());
     }
 
     private User createUser(UserStatusEnum status, RoleEnum roleEnum) {

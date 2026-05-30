@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Notificacion de pagina eliminada</title>
+</head>
+<body>
+<p>Estimado miembro,</p>
+<p>Lamentamos informarte de que la pagina titulada: <strong th:text="${pageTitle}"></strong> ha sido eliminada.</p>
+<p>Para mas detalles, visita nuestro <a th:href="${frontendUrl}">sitio web</a>.</p>
+<p>Saludos cordiales,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
+

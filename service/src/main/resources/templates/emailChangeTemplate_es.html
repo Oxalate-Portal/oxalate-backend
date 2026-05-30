@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <title>Confirma el cambio de correo para [[${orgName}]]</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<p>Hola <span th:text="${name}"></span>!</p>
+
+<p>Hemos recibido una solicitud para cambiar tu direccion de correo electronico en el portal [[${orgName}]] a <strong th:text="${newEmail}"></strong>.</p>
+
+<p>Confirma el cambio haciendo clic <a th:href="@{${url}}">aqui</a>.</p>
+
+<p>El enlace es valido durante [[${tokenTtl}]] horas.</p>
+
+<p>Si no solicitaste este cambio, ignora este correo o contacta con [[${supportEmail}]].</p>
+
+<p>Saludos cordiales, [[${orgName}]]</p>
+</body>
+</html>
+

@@ -34,18 +34,6 @@ public interface EventParticipantsRepository extends CrudRepository<EventsPartic
     void promoteWaitingListUser(@Param("eventId") long eventId, @Param("userId") long userId, @Param("paymentType") String paymentType);
 
     @Modifying
-    @Query(nativeQuery = true, value = "UPDATE event_participants SET notified_at = :notifiedAt WHERE event_id = :eventId AND user_id = :userId AND participant_type = 'WAITING_LIST'")
-    void setNotifiedAt(@Param("eventId") long eventId, @Param("userId") long userId, @Param("notifiedAt") Instant notifiedAt);
-
-    @Query(nativeQuery = true, value = """
-            SELECT ep.* FROM event_participants ep
-            WHERE ep.participant_type = 'WAITING_LIST'
-              AND ep.notified_at IS NOT NULL
-              AND ep.notified_at < :expiryTime
-            """)
-    List<EventsParticipant> findExpiredWaitingListNotifications(@Param("expiryTime") Instant expiryTime);
-
-    @Modifying
     @Query(nativeQuery = true, value = """
             DELETE FROM event_participants ep
             WHERE ep.participant_type = 'WAITING_LIST'
@@ -55,15 +43,6 @@ public interface EventParticipantsRepository extends CrudRepository<EventsPartic
             """)
     void removeWaitingListForPastEvents(@Param("now") Instant now);
 
-    @Query(nativeQuery = true, value = """
-            SELECT ep.* FROM event_participants ep
-            WHERE ep.event_id = :eventId
-              AND ep.participant_type = 'WAITING_LIST'
-              AND ep.notified_at IS NULL
-            ORDER BY ep.created_at ASC
-            LIMIT 1
-            """)
-    Optional<EventsParticipant> findNextUnnotifiedWaitingListEntry(@Param("eventId") long eventId);
 
     List<EventsParticipant> findAllByEventId(long eventId);
 

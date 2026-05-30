@@ -8,8 +8,6 @@ import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
 import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
-import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
-import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.WAITING_LIST_HOURS;
 import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.request.EventSubscribeRequest;
@@ -25,7 +23,6 @@ import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
 import io.oxalate.backend.service.commenting.CommentService;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -303,53 +300,60 @@ public class EventService {
         }
 
         eventRepository.removeParticipantFromEvent(user.getId(), eventId);
-
-        if (waitingListEntry.get()
-                            .getNotifiedAt() != null) {
-            notifyNextWaitingListUser(eventId);
-        }
-
         return getRefreshedEventResponse(eventId).orElse(null);
     }
 
     @Transactional
-    public void notifyNextWaitingListUser(long eventId) {
-        var optionalNextWaitingEntry = eventParticipantsRepository.findNextUnnotifiedWaitingListEntry(eventId);
-
-        if (optionalNextWaitingEntry.isEmpty()) {
+    public void moveNextWaitingListUserToEvent(long eventId) {
+        var waitingListEntries = eventParticipantsRepository.findWaitingListByEventId(eventId);
+        if (waitingListEntries.isEmpty()) {
             return;
         }
 
-        var nextWaitingEntry = optionalNextWaitingEntry.get();
-        eventParticipantsRepository.setNotifiedAt(nextWaitingEntry.getEventId(), nextWaitingEntry.getUserId(), Instant.now());
-
         var optionalEvent = eventRepository.findById(eventId);
-        var user = userService.findUserEntityById(nextWaitingEntry.getUserId());
-
-        if (optionalEvent.isEmpty() || user == null) {
-            log.warn("Could not notify waiting list user {} for event {}", nextWaitingEntry.getUserId(), eventId);
+        if (optionalEvent.isEmpty()) {
+            log.warn("Could not move waiting list user for missing event {}", eventId);
             return;
         }
 
         var event = optionalEvent.get();
-        emailService.sendEventNotificationEmail(user.getUsername(), user.getLanguage(), EmailNotificationDetailEnum.WAITING_LIST_AVAILABLE, event);
-        messageService.createSimpleNotification(user.getId(), SYSTEM_USER_ID, "Waiting list update", "Spot available",
-                "A spot is available for event: " + event.getTitle());
+
+        for (var waitingListEntry : waitingListEntries) {
+            var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(waitingListEntry.getUserId());
+            if (optionalPaymentTypeEnum.isEmpty()) {
+                // Payment may have expired while waiting; skip this entry and continue.
+                eventRepository.removeParticipantFromEvent(waitingListEntry.getUserId(), eventId);
+                continue;
+            }
+
+            var paymentTypeEnum = optionalPaymentTypeEnum.get();
+            eventParticipantsRepository.promoteWaitingListUser(eventId, waitingListEntry.getUserId(), paymentTypeEnum.name());
+
+            if (paymentTypeEnum.equals(ONE_TIME)) {
+                paymentService.decreaseOneTimePayment(waitingListEntry.getUserId());
+            }
+
+            var user = userService.findUserEntityById(waitingListEntry.getUserId());
+            if (user == null) {
+                log.warn("Could not find promoted waiting list user {} for event {}", waitingListEntry.getUserId(), eventId);
+                return;
+            }
+
+            emailService.sendEventNotificationEmail(user.getUsername(), user.getLanguage(), EmailNotificationDetailEnum.WAITING_LIST_AVAILABLE, event);
+            messageService.createSimpleNotification(
+                    user.getId(),
+                    SYSTEM_USER_ID,
+                    "Waiting list update",
+                    "Moved to event",
+                    "You have been moved from waiting list to event: " + event.getTitle() + " (/events/" + eventId + ")"
+            );
+            return;
+        }
     }
 
     @Transactional
-    public void processWaitingListTimeouts() {
+    public void cleanupWaitingListForPastEvents() {
         eventParticipantsRepository.removeWaitingListForPastEvents(Instant.now());
-
-        var waitingListHours = portalConfigurationService.getNumericConfiguration(GENERAL.group, WAITING_LIST_HOURS.key);
-        var expiryTime = Instant.now()
-                                .minus(waitingListHours, ChronoUnit.HOURS);
-        var expiredEntries = eventParticipantsRepository.findExpiredWaitingListNotifications(expiryTime);
-
-        for (var expiredEntry : expiredEntries) {
-            eventRepository.removeParticipantFromEvent(expiredEntry.getUserId(), expiredEntry.getEventId());
-            notifyNextWaitingListUser(expiredEntry.getEventId());
-        }
     }
 
     private boolean isUserInList(long userId, List<ListUserResponse> listUserResponseList) {
@@ -415,7 +419,7 @@ public class EventService {
         }
 
         log.info("Removed user {} from event {}", user.getId(), eventId);
-        notifyNextWaitingListUser(eventId);
+        moveNextWaitingListUserToEvent(eventId);
 
         return getRefreshedEventResponse(eventId).orElse(null);
     }

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Jonotuslistan paikka vapautui</title>
+    <title>Siirretty jonotuslistalta</title>
 </head>
 <body>
 <p>Hyva jasen,</p>
-<p>Tapahtumaan <strong th:text="${eventTitle}"></strong> ajalle <strong th:text="${eventDate}"></strong> on vapautunut paikka.</p>
-<p>Vahvista osallistumisesi maaritetyn ajan sisalla tapahtumasivulla:</p>
+<p>Sinut on siirretty jonotuslistalta tapahtumaan <strong th:text="${eventTitle}"></strong> ajalle <strong th:text="${eventDate}"></strong>.</p>
+<p>Voit tarkistaa tapahtuman tiedot seuraavasta linkista:</p>
 <p><a th:href="${frontendUrl + '/events/' + eventId}" th:text="${frontendUrl + '/events/' + eventId}"></a></p>
 <p>Ystavallisin terveisin,<br/> <strong th:text="${orgName}"></strong></p>
 </body>
