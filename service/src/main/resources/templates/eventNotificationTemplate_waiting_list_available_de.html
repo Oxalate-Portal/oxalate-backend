@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Von Warteliste verschoben</title>
+</head>
+<body>
+<p>Liebes Mitglied,</p>
+<p>Sie wurden von der Warteliste in die Veranstaltung <strong th:text="${eventTitle}"></strong> am <strong th:text="${eventDate}"></strong> verschoben.</p>
+<p>Die Veranstaltungsdetails finden Sie unter folgendem Link:</p>
+<p><a th:href="${frontendUrl + '/events/' + eventId}" th:text="${frontendUrl + '/events/' + eventId}"></a></p>
+<p>Mit freundlichen Grussen,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
+

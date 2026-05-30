@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Notificacion de evento cancelado</title>
+</head>
+<body>
+<p>Estimado miembro,</p>
+<p>Lamentamos informarte de que el evento: <strong th:text="${eventTitle}"></strong> programado para <strong th:text="${eventDate}"></strong> ha sido cancelado.
+</p>
+<p>Para mas detalles, visita nuestro <a th:href="${frontendUrl}">sitio web</a>.</p>
+<p>Saludos cordiales,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
+

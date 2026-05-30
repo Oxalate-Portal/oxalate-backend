@@ -37,14 +37,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class EventService {
+    private static final long SYSTEM_USER_ID = 1L;
+
     private final EventRepository eventRepository;
     private final EventParticipantsRepository eventParticipantsRepository;
     private final UserService userService;
     private final PaymentService paymentService;
+    private final EmailService emailService;
     private final EmailQueueService emailQueueService;
     private final PortalConfigurationService portalConfigurationService;
     private final CommentService commentService;
     private final EventCommentRepository eventCommentRepository;
+    private final MessageService messageService;
 
     @Transactional(readOnly = true)
     public EventResponse findById(Long eventId) {
@@ -207,14 +211,16 @@ public class EventService {
             return null;
         }
 
-        if (eventResponse.getParticipants()
-                         .size() >= eventResponse.getMaxParticipants()) {
-            log.warn("Event {} is full", eventResponse.getTitle());
+        if (isUserInList(user.getId(), eventResponse.getParticipants())) {
+            log.warn("User {} already in event {}", user.getId(), eventId);
             return null;
         }
 
-        if (isUserInList(user.getId(), eventResponse.getParticipants())) {
-            log.warn("User {} already in event {}", user.getId(), eventId);
+        var waitingListEntry = eventParticipantsRepository.findWaitingListEntryByEventIdAndUserId(eventId, user.getId());
+
+        if (eventResponse.getParticipants()
+                         .size() >= eventResponse.getMaxParticipants()) {
+            log.warn("Event {} is full", eventResponse.getTitle());
             return null;
         }
 
@@ -227,6 +233,16 @@ public class EventService {
 
         var paymentTypeEnum = optionalPaymentTypeEnum.get();
 
+        if (waitingListEntry.isPresent()) {
+            eventParticipantsRepository.promoteWaitingListUser(eventId, user.getId(), paymentTypeEnum.name());
+
+            if (paymentTypeEnum.equals(ONE_TIME)) {
+                paymentService.decreaseOneTimePayment(user.getId());
+            }
+
+            return getRefreshedEventResponse(eventId).orElse(null);
+        }
+
         eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentTypeEnum.name(), Instant.now(),
                 eventSubscribeRequest.getUserType()
                                      .name());
@@ -238,7 +254,113 @@ public class EventService {
         return getRefreshedEventResponse(eventId).orElse(null);
     }
 
+    @Transactional
+    public EventResponse joinWaitingList(User user, long eventId) {
+        var eventResponse = findById(eventId);
+
+        if (eventResponse == null) {
+            return null;
+        }
+
+        if (eventResponse.getStartTime()
+                         .isBefore(Instant.now())) {
+            log.warn("Can not join waiting list for event {} as it has already started", eventId);
+            return null;
+        }
+
+        if (isUserInList(user.getId(), eventResponse.getParticipants())) {
+            log.warn("User {} already participates in event {}", user.getId(), eventId);
+            return null;
+        }
+
+        if (isUserInList(user.getId(), eventResponse.getWaitingList())) {
+            log.warn("User {} already in waiting list for event {}", user.getId(), eventId);
+            return null;
+        }
+
+        if (eventResponse.getParticipants()
+                         .size() < eventResponse.getMaxParticipants()) {
+            log.warn("Event {} is not full, waiting list join is not required", eventId);
+            return null;
+        }
+
+        eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.WAITING_LIST.name(), PaymentTypeEnum.NONE.name(), Instant.now(),
+                user.getPrimaryUserType()
+                    .name());
+        return getRefreshedEventResponse(eventId).orElse(null);
+    }
+
+    @Transactional
+    public EventResponse leaveWaitingList(User user, long eventId) {
+        var waitingListEntry = eventParticipantsRepository.findWaitingListEntryByEventIdAndUserId(eventId, user.getId());
+
+        if (waitingListEntry.isEmpty()) {
+            log.warn("User {} is not in waiting list for event {}", user.getId(), eventId);
+            return null;
+        }
+
+        eventRepository.removeParticipantFromEvent(user.getId(), eventId);
+        return getRefreshedEventResponse(eventId).orElse(null);
+    }
+
+    @Transactional
+    public void moveNextWaitingListUserToEvent(long eventId) {
+        var waitingListEntries = eventParticipantsRepository.findWaitingListByEventId(eventId);
+        if (waitingListEntries.isEmpty()) {
+            return;
+        }
+
+        var optionalEvent = eventRepository.findById(eventId);
+        if (optionalEvent.isEmpty()) {
+            log.warn("Could not move waiting list user for missing event {}", eventId);
+            return;
+        }
+
+        var event = optionalEvent.get();
+
+        for (var waitingListEntry : waitingListEntries) {
+            var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(waitingListEntry.getUserId());
+            if (optionalPaymentTypeEnum.isEmpty()) {
+                // Payment may have expired while waiting; skip this entry and continue.
+                eventRepository.removeParticipantFromEvent(waitingListEntry.getUserId(), eventId);
+                continue;
+            }
+
+            var paymentTypeEnum = optionalPaymentTypeEnum.get();
+            eventParticipantsRepository.promoteWaitingListUser(eventId, waitingListEntry.getUserId(), paymentTypeEnum.name());
+
+            if (paymentTypeEnum.equals(ONE_TIME)) {
+                paymentService.decreaseOneTimePayment(waitingListEntry.getUserId());
+            }
+
+            var user = userService.findUserEntityById(waitingListEntry.getUserId());
+            if (user == null) {
+                log.warn("Could not find promoted waiting list user {} for event {}", waitingListEntry.getUserId(), eventId);
+                return;
+            }
+
+            emailService.sendEventNotificationEmail(user.getUsername(), user.getLanguage(), EmailNotificationDetailEnum.WAITING_LIST_AVAILABLE, event);
+            messageService.createSimpleNotification(
+                    user.getId(),
+                    SYSTEM_USER_ID,
+                    "Waiting list update",
+                    "Moved to event",
+                    "You have been moved from waiting list to event: " + event.getTitle() + " (/events/" + eventId + ")"
+            );
+            return;
+        }
+    }
+
+    @Transactional
+    public void cleanupWaitingListForPastEvents() {
+        eventParticipantsRepository.removeWaitingListForPastEvents(Instant.now());
+    }
+
     private boolean isUserInList(long userId, List<ListUserResponse> listUserResponseList) {
+        if (listUserResponseList == null) {
+            return false;
+        }
+
         for (ListUserResponse listUserResponse : listUserResponseList) {
             if (listUserResponse.getId() == userId) {
                 return true;
@@ -297,6 +419,7 @@ public class EventService {
         }
 
         log.info("Removed user {} from event {}", user.getId(), eventId);
+        moveNextWaitingListUserToEvent(eventId);
 
         return getRefreshedEventResponse(eventId).orElse(null);
     }
@@ -592,9 +715,22 @@ public class EventService {
             participantList.add(eventUserResponse);
         }
 
+        var waitingListParticipants = userService.findWaitingListParticipants(event.getId());
+        var waitingList = new ArrayList<ListUserResponse>();
+
+        for (User waitingParticipant : waitingListParticipants) {
+            var waitingListUserResponse = waitingParticipant.toEventUserResponse();
+            var waitingListEntry = eventParticipantsRepository.findByEventIdAndUserId(event.getId(), waitingParticipant.getId());
+            waitingListUserResponse.setCreatedAt(waitingListEntry.getCreatedAt());
+            waitingListUserResponse.setEventDiveCount(countDivesByUserAndEvent(waitingParticipant.getId(), event.getId()));
+            waitingListUserResponse.setUserType(waitingListEntry.getEventUserType());
+            waitingList.add(waitingListUserResponse);
+        }
+
         var eventResponse = event.toEventResponse();
         eventResponse.setOrganizer(organizer.toUserResponse());
         eventResponse.setParticipants(participantList);
+        eventResponse.setWaitingList(waitingList);
 
         var eventCommentId = commentService.getEventCommentId(event.getId());
 
@@ -622,6 +758,7 @@ public class EventService {
         var eventListResponse = event.toEventListResponse();
         eventListResponse.setOrganizerName(organizer.getFirstName() + " " + organizer.getLastName());
         eventListResponse.setParticipantCount(participants.size());
+        eventListResponse.setWaitingListCount((int) eventParticipantsRepository.countWaitingListByEventId(event.getId()));
 
         var eventCommentId = commentService.getEventCommentId(event.getId());
 

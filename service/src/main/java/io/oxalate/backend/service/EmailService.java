@@ -143,6 +143,7 @@ public class EmailService {
         context.setVariable("orgName", portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key));
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("eventTitle", event.getTitle());
+        context.setVariable("eventId", event.getId());
         var timezoneString = portalConfigurationService.getStringConfiguration(GENERAL.group, TIMEZONE.key);
         var zoneId = ZoneId.of(timezoneString);
         context.setVariable("eventDate", event.getStartTime().atZone(zoneId).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));

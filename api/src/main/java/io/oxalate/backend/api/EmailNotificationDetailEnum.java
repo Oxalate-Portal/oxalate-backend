@@ -4,5 +4,6 @@ public enum EmailNotificationDetailEnum {
     NEW,
     UPDATED,
     CANCELLED,
-    DELETED
+    DELETED,
+    WAITING_LIST_AVAILABLE
 }

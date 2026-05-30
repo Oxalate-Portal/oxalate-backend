@@ -183,6 +183,19 @@ public class AppAuditMessages {
     public static final String EVENTS_UNSUBSCRIBE_FAIL = "Failed to unsubscribe from event with ID: ";
     public static final String EVENTS_UNSUBSCRIBE_OK = "Successfully unsubscribed from event with ID: ";
 
+    public static final String EVENTS_WAITING_LIST_JOIN_START = "Joining waiting list for event with ID: ";
+    public static final String EVENTS_WAITING_LIST_JOIN_EVENT_NOT_FOUND = "Event not found with ID when joining waiting list: ";
+    public static final String EVENTS_WAITING_LIST_JOIN_NOT_FULL = "Event is not full, waiting list join not allowed for event ID: ";
+    public static final String EVENTS_WAITING_LIST_JOIN_ALREADY_PARTICIPATING = "User is already participating in event: ";
+    public static final String EVENTS_WAITING_LIST_JOIN_ALREADY_IN_QUEUE = "User is already in the waiting list for event: ";
+    public static final String EVENTS_WAITING_LIST_JOIN_FAIL = "Failed to join waiting list for event with ID: ";
+    public static final String EVENTS_WAITING_LIST_JOIN_OK = "Successfully joined waiting list for event with ID: ";
+
+    public static final String EVENTS_WAITING_LIST_LEAVE_START = "Leaving waiting list for event with ID: ";
+    public static final String EVENTS_WAITING_LIST_LEAVE_NOT_IN_LIST = "User is not in the waiting list for event: ";
+    public static final String EVENTS_WAITING_LIST_LEAVE_FAIL = "Failed to leave waiting list for event with ID: ";
+    public static final String EVENTS_WAITING_LIST_LEAVE_OK = "Successfully left waiting list for event with ID: ";
+
     // PaymentController
     public static final String PAYMENTS_GET_ALL_ACTIVE_START = "Retrieving all active payment information";
     public static final String PAYMENTS_GET_ALL_ACTIVE_UNAUTHORIZED = "User was not authorized to retrieve all active payment information";

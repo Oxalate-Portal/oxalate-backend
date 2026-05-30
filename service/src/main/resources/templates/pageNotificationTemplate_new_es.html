@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Notificacion de nueva pagina</title>
+</head>
+<body>
+<p>Estimado miembro,</p>
+<p>Se ha agregado una nueva pagina titulada: <strong th:text="${pageTitle}"></strong>.</p>
+<p>Para mas detalles, visita nuestro <a th:href="${frontendUrl}">sitio web</a>.</p>
+<p>Saludos cordiales,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
+

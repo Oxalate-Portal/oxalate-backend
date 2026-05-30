@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Movido desde la lista de espera</title>
+</head>
+<body>
+<p>Estimado miembro,</p>
+<p>Has sido movido de la lista de espera al evento <strong th:text="${eventTitle}"></strong> en <strong th:text="${eventDate}"></strong>.</p>
+<p>Puedes ver los detalles del evento en este enlace:</p>
+<p><a th:href="${frontendUrl + '/events/' + eventId}" th:text="${frontendUrl + '/events/' + eventId}"></a></p>
+<p>Saludos cordiales,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
+

@@ -72,7 +72,8 @@ public enum PortalConfigEnum {
         ENABLED_LANGUAGES("enabled-language"),
         ORG_NAME("org-name"),
         TOP_DIVER_LIST_SIZE("top-divers-list-size"),
-        BLOG_ENABLED("blog-enabled");
+        BLOG_ENABLED("blog-enabled"),
+        WAITING_LIST_HOURS("waiting-list-hours");
 
         public final String key;
 
