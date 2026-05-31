@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     /**
      * Creates a new message and returns the response without adding any receivers.
@@ -55,6 +56,10 @@ public class MessageService {
         var messageResponse = save(messageRequest);
         messageRepository.addMessageReceiver(messageResponse.getId(), userId);
         log.debug("Created notification with ID {} for user ID {}", messageResponse.getId(), userId);
+
+        var userOptional = userRepository.findById(userId);
+        userOptional.ifPresent(user -> emailService.sendBulkNotificationEmail(user, messageRequest.getTitle(), messageRequest.getMessage(), messageRequest.getEventId()));
+
         return messageResponse;
     }
 
@@ -71,6 +76,8 @@ public class MessageService {
 
         for (Long userId : userIds) {
             messageRepository.addMessageReceiver(messageResponse.getId(), userId);
+            var userOptional = userRepository.findById((long) userId);
+            userOptional.ifPresent(user -> emailService.sendBulkNotificationEmail(user, messageRequest.getTitle(), messageRequest.getMessage(), messageRequest.getEventId()));
         }
 
         log.debug("Created notification with ID {} for {} users", messageResponse.getId(), userIds.size());
@@ -90,6 +97,7 @@ public class MessageService {
 
         for (var user : activeUsers) {
             messageRepository.addMessageReceiver(messageResponse.getId(), user.getId());
+            emailService.sendBulkNotificationEmail(user, messageRequest.getTitle(), messageRequest.getMessage(), messageRequest.getEventId());
         }
 
         log.debug("Created notification with ID {} for all {} active users", messageResponse.getId(), activeUsers.size());

@@ -1,5 +1,7 @@
 package io.oxalate.backend.controller;
 
+import io.oxalate.backend.api.AuditLevelEnum;
+import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.MarkReadRequest;
 import io.oxalate.backend.api.request.MessageRequest;
@@ -25,8 +27,10 @@ import io.oxalate.backend.rest.NotificationAPI;
 import io.oxalate.backend.service.MessageService;
 import io.oxalate.backend.tools.AuthTools;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,6 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController implements NotificationAPI {
 
     private final MessageService messageService;
+    private final MessageSource messageSource;
 
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
@@ -66,7 +71,7 @@ public class NotificationController implements NotificationAPI {
                                                    .build());
         } catch (Exception e) {
             log.error("Failed to mark notifications as read for user ID {}", userId, e);
-            throw new OxalateValidationException(io.oxalate.backend.api.AuditLevelEnum.WARN, NOTIFICATIONS_MARK_READ_FAIL, HttpStatus.OK,
+            throw new OxalateValidationException(AuditLevelEnum.WARN, NOTIFICATIONS_MARK_READ_FAIL, HttpStatus.OK,
                     ActionResponse.builder()
                                   .status(UpdateStatusEnum.FAIL)
                                   .message("Failed to mark notifications as read: " + e.getMessage())
@@ -86,7 +91,7 @@ public class NotificationController implements NotificationAPI {
         if (messageRequest.getRecipients() == null || messageRequest.getRecipients()
                                                                     .isEmpty()) {
             log.warn("No recipients specified for notification creation");
-            throw new OxalateValidationException(io.oxalate.backend.api.AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_FAIL, HttpStatus.BAD_REQUEST);
+            throw new OxalateValidationException(AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_FAIL, HttpStatus.BAD_REQUEST);
         }
 
         var recipientId = messageRequest.getRecipients()
@@ -96,18 +101,30 @@ public class NotificationController implements NotificationAPI {
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @Audited(startMessage = NOTIFICATIONS_CREATE_BULK_START, okMessage = NOTIFICATIONS_CREATE_BULK_OK)
     public ResponseEntity<ActionResponse> createBulkNotifications(MessageRequest messageRequest) {
         var creatorId = AuthTools.getCurrentUserId();
-        log.debug("Creating bulk notifications by admin user ID {}", creatorId);
+        log.debug("Creating bulk notifications by user ID {}", creatorId);
 
         messageRequest.setCreator(creatorId);
+
+        var senderLanguage = AuthTools.getLanguage();
+        var locale = Locale.forLanguageTag(senderLanguage);
 
         try {
             int recipientCount;
 
             if (Boolean.TRUE.equals(messageRequest.getSendAll())) {
+                if (!AuthTools.currentUserHasRole(RoleEnum.ROLE_ADMIN)) {
+                    log.warn("Organizer user ID {} attempted to use sendAll which is forbidden", creatorId);
+                    throw new OxalateValidationException(AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_BULK_FAIL, HttpStatus.FORBIDDEN,
+                            ActionResponse.builder()
+                                          .status(UpdateStatusEnum.FAIL)
+                                          .message(messageSource.getMessage("notification.bulk.organizer-sendall-forbidden", null, locale))
+                                          .build());
+                }
+
                 recipientCount = messageService.createNotificationForAllActiveUsers(messageRequest);
                 log.info("Created notification for all {} active users", recipientCount);
             } else if (messageRequest.getRecipients() != null && !messageRequest.getRecipients()
@@ -118,22 +135,22 @@ public class NotificationController implements NotificationAPI {
                 log.info("Created notification for {} specified users", recipientCount);
             } else {
                 log.warn("No recipients specified and sendAll is not set for bulk notification creation");
-                throw new OxalateValidationException(io.oxalate.backend.api.AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_BULK_FAIL, HttpStatus.OK,
+                throw new OxalateValidationException(AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_BULK_FAIL, HttpStatus.OK,
                         ActionResponse.builder()
                                       .status(UpdateStatusEnum.FAIL)
-                                      .message("No recipients specified and sendAll is not set")
+                                      .message(messageSource.getMessage("notification.bulk.no-recipients", null, locale))
                                       .build());
             }
 
             return ResponseEntity.ok(ActionResponse.builder()
                                                    .status(UpdateStatusEnum.OK)
-                                                   .message("Notification sent to " + recipientCount + " users")
+                                                   .message(messageSource.getMessage("notification.bulk.sent", new Object[]{recipientCount}, locale))
                                                    .build());
         } catch (OxalateValidationException e) {
             throw e;
         } catch (Exception e) {
             log.error("Failed to create bulk notifications", e);
-            throw new OxalateValidationException(io.oxalate.backend.api.AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_BULK_FAIL, HttpStatus.OK,
+            throw new OxalateValidationException(AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_BULK_FAIL, HttpStatus.OK,
                     ActionResponse.builder()
                                   .status(UpdateStatusEnum.FAIL)
                                   .message("Failed to create notifications: " + e.getMessage())

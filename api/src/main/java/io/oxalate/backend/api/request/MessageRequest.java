@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@Schema(description = "Login request")
+@Schema(description = "Message request")
 @Data
 @SuperBuilder
 @NoArgsConstructor
@@ -23,4 +23,8 @@ public class MessageRequest extends AbstractMessage {
     @Schema(description = "Alternative toggle to send everyone the message", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("sendAll")
     private Boolean sendAll;
+
+    @Schema(description = "ID of the dive event that the message relates to, used to generate a direct link in the notification email", example = "42", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @JsonProperty("eventId")
+    private Long eventId;
 }

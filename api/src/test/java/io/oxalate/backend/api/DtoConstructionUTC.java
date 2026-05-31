@@ -57,18 +57,21 @@ class DtoConstructionUTC {
                                 .creator(2L)
                                 .recipients(List.of(3L, 4L))
                                 .sendAll(false)
+                                .eventId(99L)
                                 .build();
 
         assertEquals("title", dto.getTitle());
         assertEquals(List.of(3L, 4L), dto.getRecipients());
         assertEquals(false, dto.getSendAll());
+        assertEquals(99L, dto.getEventId());
     }
 
     @Test
     void MessageRequestConstructorOk() {
-        var dto = new MessageRequest(List.of(5L), true);
+        var dto = new MessageRequest(List.of(5L), true, 42L);
         assertEquals(List.of(5L), dto.getRecipients());
         assertEquals(true, dto.getSendAll());
+        assertEquals(42L, dto.getEventId());
         assertNotNull(new MessageRequest());
     }
 
