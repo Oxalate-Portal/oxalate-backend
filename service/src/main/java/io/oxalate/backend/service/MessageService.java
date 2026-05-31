@@ -76,6 +76,8 @@ public class MessageService {
 
         for (Long userId : userIds) {
             messageRepository.addMessageReceiver(messageResponse.getId(), userId);
+            // Explicit (long) cast routes to the custom UserRepository.findById(long) overload
+            // rather than the inherited Spring Data findById(Long) overload.
             var userOptional = userRepository.findById((long) userId);
             userOptional.ifPresent(user -> emailService.sendBulkNotificationEmail(user, messageRequest.getTitle(), messageRequest.getMessage(), messageRequest.getEventId()));
         }
