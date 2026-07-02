@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>oxalate-service-api</artifactId>
-    <version>1.0-SNAPSHOT</version>
     <name>oxalate-service-api</name>
     <description>Oxalate backend server API</description>
 
