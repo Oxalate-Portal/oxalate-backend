@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Nachricht vom Veranstaltungsorganisator</title>
+</head>
+<body>
+    <p>Sehr geehrter Mitglied,</p>
+    <p><strong th:text="${notificationTitle}"></strong></p>
+    <p th:text="${notificationMessage}"></p>
+    <p th:if="${eventLink != null}">Weitere Informationen zur Veranstaltung: <a th:href="${eventLink}" th:text="${eventLink}"></a></p>
+    <p>Mit freundlichen Grüßen,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>

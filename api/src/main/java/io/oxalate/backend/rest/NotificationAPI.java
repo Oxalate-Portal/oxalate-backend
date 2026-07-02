@@ -55,12 +55,12 @@ public interface NotificationAPI {
     @PostMapping(value = BASE_PATH + "/create", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<MessageResponse> createNotification(@RequestBody MessageRequest messageRequest);
 
-    @Operation(description = "Create new notifications for a list of users or all active users", tags = "NotificationAPI")
+    @Operation(description = "Create new notifications for a list of users (ORGANIZER or ADMIN) or all active users (ADMIN only)", tags = "NotificationAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "MessageRequest containing the notification details and recipient list or sendAll flag", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Notifications created successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - Admin role required"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Organizer or Admin role required; Organizers cannot use sendAll"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)

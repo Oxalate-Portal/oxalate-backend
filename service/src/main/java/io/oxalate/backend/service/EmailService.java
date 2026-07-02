@@ -158,6 +158,29 @@ public class EmailService {
         }
     }
 
+    public void sendBulkNotificationEmail(User user, String notificationTitle, String notificationMessage, Long eventId) {
+        var userLanguage = user.getLanguage() != null ? user.getLanguage() : portalConfigurationService.getStringConfiguration(GENERAL.group, DEFAULT_LANGUAGE.key);
+        var locale = Locale.forLanguageTag(userLanguage);
+        var subject = messageSource.getMessage("email.notification.bulk.subject", null, locale);
+        var templateName = "bulkNotificationTemplate_" + locale.getLanguage();
+
+        String eventLink = eventId != null ? frontendUrl + "/events/" + eventId : null;
+
+        Context context = new Context(locale);
+        context.setVariable("orgName", portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key));
+        context.setVariable("notificationTitle", notificationTitle);
+        context.setVariable("notificationMessage", notificationMessage);
+        context.setVariable("eventLink", eventLink);
+
+        String body = templateEngine.process(templateName, context);
+
+        try {
+            sendHtmlMail(portalConfigurationService.getStringConfiguration(EMAIL.group, SYSTEM_EMAIL.key), user.getUsername(), subject, body);
+        } catch (MailException e) {
+            log.error("Sending bulk notification email to {} failed: ", user.getUsername(), e);
+        }
+    }
+
     public void sendPageNotificationEmail(String emailAddress, String language, EmailNotificationDetailEnum detail, PageVersion pageVersion) {
         var locale = Locale.forLanguageTag(language);
         var subject = messageSource.getMessage("email.notification." + detail.name().toLowerCase() + "-page.subject", null, locale);
