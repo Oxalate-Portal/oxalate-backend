@@ -64,6 +64,29 @@ public class MessageService {
     }
 
     /**
+     * Creates a localized comment notification for a single user.
+     *
+     * @param messageRequest The localized message request
+     * @param userId         The ID of the user to receive the notification
+     * @return The created message response
+     */
+    @Transactional
+    public MessageResponse createEventCommentNotificationForUser(MessageRequest messageRequest, long userId) {
+        var messageResponse = save(messageRequest);
+        messageRepository.addMessageReceiver(messageResponse.getId(), userId);
+        log.debug("Created event comment notification with ID {} for user ID {}", messageResponse.getId(), userId);
+
+        var userOptional = userRepository.findById(userId);
+        userOptional.ifPresent(user -> emailService.sendEventCommentNotificationEmail(
+                user,
+                messageRequest.getTitle(),
+                messageRequest.getMessage(),
+                messageRequest.getEventId()));
+
+        return messageResponse;
+    }
+
+    /**
      * Creates a new notification for a list of users.
      *
      * @param messageRequest The message request containing notification details

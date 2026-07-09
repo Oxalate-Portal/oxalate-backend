@@ -19,6 +19,7 @@ import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
+import io.oxalate.backend.api.request.MessageRequest;
 import io.oxalate.backend.api.request.commenting.CommentFilterRequest;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
 import io.oxalate.backend.api.request.commenting.ReportRequest;
@@ -31,10 +32,12 @@ import io.oxalate.backend.model.commenting.CommentReport;
 import io.oxalate.backend.model.commenting.EventComment;
 import io.oxalate.backend.model.commenting.ForumTopic;
 import io.oxalate.backend.model.commenting.PageComment;
+import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.commenting.CommentReportRepository;
 import io.oxalate.backend.repository.commenting.CommentRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
 import io.oxalate.backend.repository.filetransfer.AvatarFileRepository;
+import io.oxalate.backend.service.MessageService;
 import io.oxalate.backend.service.PortalConfigurationService;
 import io.oxalate.backend.service.UserService;
 import io.oxalate.backend.tools.AuthTools;
@@ -45,9 +48,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,10 +69,13 @@ public class CommentService {
     private final CommentReportRepository commentReportRepository;
     private final AvatarFileRepository avatarFileRepository;
     private final PortalConfigurationService portalConfigurationService;
+    private final EventRepository eventRepository;
+    private final MessageService messageService;
+    private final MessageSource messageSource;
 
     @Transactional
     public CommentResponse createComment(long userId, CommentRequest commentRequest) {
-        log.info("Creating comment: {}", commentRequest);
+        log.debug("Creating comment: {}", commentRequest);
 
         var user = userService.findUserEntityById(userId);
 
@@ -98,14 +107,19 @@ public class CommentService {
 
         var commentResponse = newComment.toResponse();
         populateUserInformation(newComment.getUserId(), commentResponse);
-        var childCount = commentRepository.countChildren(comment.getId());
+        var childCount = commentRepository.countChildren(newComment.getId());
         commentResponse.setChildCount(childCount);
+
+        var eventId = findEventIdForComment(newComment.getId());
+        if (eventId != null) {
+            notifyEventCommentRecipients(eventId, newComment, user);
+        }
 
         return commentResponse;
     }
 
     public CommentResponse getComment(Long commentId) {
-        log.info("Fetching comment with ID: {}", commentId);
+        log.debug("Fetching comment with ID: {}", commentId);
 
         var optionalComment = commentRepository.findById(commentId);
 
@@ -124,7 +138,7 @@ public class CommentService {
     }
 
     public CommentResponse getCommentThread(long parentId, long depth, long userId) {
-        log.info("Fetching comment thread for parent ID: {}", parentId);
+        log.debug("Fetching comment thread for parent ID: {}", parentId);
 
         // If the start depth is 0, then set it to max long value
         if (depth == 0L) {
@@ -148,20 +162,20 @@ public class CommentService {
         var parentCommentResponse = parentComment.toResponse();
 
         // Recursively fetch the child comments and build the tree
-        log.info("Fetching comments recursively for parent ID: {} to depth: {}", parentId, depth);
+        log.debug("Fetching comments recursively for parent ID: {} to depth: {}", parentId, depth);
         parentCommentResponse.setChildComments(fetchCommentsRecursively(parentId, depth, userId));
         parentCommentResponse.setUserHasReported(hasUserReportedComment(userId, parentId));
 
         // Set username from userService
         populateUserInformation(parentComment.getUserId(), parentCommentResponse);
 
-        log.info("Returning comment thread for parent ID: {}: {}", parentId, parentCommentResponse);
+        log.debug("Returning comment thread for parent ID: {}: {}", parentId, parentCommentResponse);
         return parentCommentResponse;
     }
 
     @Transactional
     public CommentResponse updateComment(Long userId, CommentRequest commentRequest) {
-        log.info("Updating comment with ID: {}", commentRequest.getId());
+        log.debug("Updating comment with ID: {}", commentRequest.getId());
 
         var originalOptionalComment = commentRepository.findById(commentRequest.getId());
 
@@ -217,7 +231,7 @@ public class CommentService {
     }
 
     public List<CommentResponse> getCommentsByUserId(long userId) {
-        log.info("Fetching comments for user ID: {}", userId);
+        log.debug("Fetching comments for user ID: {}", userId);
         var comments = commentRepository.findAllByUserId(userId);
         var commentResponseList = new ArrayList<CommentResponse>();
 
@@ -234,7 +248,7 @@ public class CommentService {
     @Transactional
     public CommentResponse createEventTopicComment(long eventId, long userId) {
         // Get id for the root of all event comments
-        log.info("Creating event comment for event ID: {} linked to event root comment ID: {} by user ID: {}", eventId, ROOT_EVENT_COMMENT_ID, userId);
+        log.debug("Creating event comment for event ID: {} linked to event root comment ID: {} by user ID: {}", eventId, ROOT_EVENT_COMMENT_ID, userId);
 
         var comment = Comment.builder()
                              .userId(userId)
@@ -498,6 +512,72 @@ public class CommentService {
                 default -> cb.conjunction();
             };
         };
+    }
+
+    private Long findEventIdForComment(long commentId) {
+        var currentCommentId = commentId;
+
+        while (true) {
+            var eventComment = eventCommentRepository.findByComment_Id(currentCommentId);
+            if (eventComment.isPresent()) {
+                return eventComment.get()
+                                   .getEventId();
+            }
+
+            var currentComment = commentRepository.findById(currentCommentId);
+            if (currentComment.isEmpty()) {
+                return null;
+            }
+
+            var parentCommentId = currentComment.get()
+                                                .getParentCommentId();
+            if (parentCommentId == null) {
+                return null;
+            }
+
+            currentCommentId = parentCommentId;
+        }
+    }
+
+    private void notifyEventCommentRecipients(long eventId, Comment comment, io.oxalate.backend.model.User author) {
+        var event = eventRepository.findById(eventId)
+                                   .orElse(null);
+        if (event == null) {
+            log.warn("Event {} not found while sending comment notifications", eventId);
+            return;
+        }
+
+        var recipients = new ArrayList<io.oxalate.backend.model.User>();
+        recipients.addAll(userService.findEventParticipants(eventId));
+        var organizer = userService.findUserEntityById(event.getOrganizerId());
+        if (organizer != null) {
+            recipients.add(organizer);
+        }
+
+        var sentRecipientIds = new HashSet<Long>();
+        for (var recipient : recipients) {
+            if (recipient == null || recipient.getId() == null || !sentRecipientIds.add(recipient.getId())) {
+                continue;
+            }
+
+            var language = recipient.getLanguage() != null ? recipient.getLanguage() : "en";
+            var locale = Locale.forLanguageTag(language);
+            var notificationTitle = messageSource.getMessage("notification.event-comment.title", new Object[] { event.getTitle() }, locale);
+            var notificationMessage = messageSource.getMessage(
+                    "notification.event-comment.message",
+                    new Object[] { author.getLastName() + " " + author.getFirstName(), event.getTitle(), comment.getTitle() },
+                    locale);
+
+            var messageRequest = MessageRequest.builder()
+                                               .title(notificationTitle)
+                                               .message(notificationMessage)
+                                               .description("Event comment notification")
+                                               .creator(author.getId())
+                                               .eventId(eventId)
+                                               .build();
+
+            messageService.createEventCommentNotificationForUser(messageRequest, recipient.getId());
+        }
     }
 
     // Start specification methods
