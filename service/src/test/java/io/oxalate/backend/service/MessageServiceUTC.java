@@ -124,6 +124,21 @@ class MessageServiceUTC {
         verify(emailService).sendBulkNotificationEmail(user, "Hei", "Viesti", null);
     }
 
+    @Test
+    void createEventCommentNotificationForUserSendsLocalizedEmailOk() {
+        var user = buildUser(10L, "de");
+        var request = buildRequest("Neuer Kommentar", "Ein neuer Kommentar wurde erstellt", 55L);
+        var savedMessage = buildSavedMessage(400L);
+
+        when(messageRepository.save(any())).thenReturn(savedMessage);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(user));
+
+        messageService.createEventCommentNotificationForUser(request, 10L);
+
+        verify(messageRepository).addMessageReceiver(400L, 10L);
+        verify(emailService).sendEventCommentNotificationEmail(user, "Neuer Kommentar", "Ein neuer Kommentar wurde erstellt", 55L);
+    }
+
     // ------------------------------------------------------------------
     // createNotificationForUsers
     // ------------------------------------------------------------------

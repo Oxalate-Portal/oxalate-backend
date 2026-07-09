@@ -71,7 +71,7 @@ public class WebSecurityConfig {
                             .permitAll()
                             .requestMatchers(HttpMethod.GET, DIVE_PLANS_URL + "/**")
                             .permitAll()
-                            .requestMatchers(HttpMethod.GET, "/api/configurations/frontend") // Allow fetching of frontend configurations
+                            .requestMatchers(HttpMethod.GET, API + "/configurations/frontend") // Allow fetching of frontend configurations
                             .permitAll()
                             .requestMatchers("/actuator/**")
                             .permitAll()
