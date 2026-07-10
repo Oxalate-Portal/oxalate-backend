@@ -25,6 +25,7 @@ import static io.oxalate.backend.events.AppAuditMessages.NOTIFICATIONS_MARK_READ
 import io.oxalate.backend.exception.OxalateValidationException;
 import io.oxalate.backend.rest.NotificationAPI;
 import io.oxalate.backend.service.MessageService;
+import io.oxalate.backend.service.NotificationGroupResolverService;
 import io.oxalate.backend.tools.AuthTools;
 import java.util.List;
 import java.util.Locale;
@@ -43,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController implements NotificationAPI {
 
     private final MessageService messageService;
+    private final NotificationGroupResolverService notificationGroupResolverService;
     private final MessageSource messageSource;
 
     @Override
@@ -133,8 +135,21 @@ public class NotificationController implements NotificationAPI {
                 recipientCount = messageRequest.getRecipients()
                                                .size();
                 log.info("Created notification for {} specified users", recipientCount);
+            } else if (messageRequest.getNotificationGroup() != null) {
+                // Organizers can only use specific groups (not sendAll)
+                if (!AuthTools.currentUserHasRole(RoleEnum.ROLE_ADMIN)) {
+                    log.warn("Organizer user ID {} attempted to use notification groups", creatorId);
+                    throw new OxalateValidationException(AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_BULK_FAIL, HttpStatus.FORBIDDEN,
+                            ActionResponse.builder()
+                                          .status(UpdateStatusEnum.FAIL)
+                                          .message(messageSource.getMessage("notification.bulk.organizer-groups-forbidden", null, locale))
+                                          .build());
+                }
+
+                recipientCount = messageService.createNotificationForGroup(messageRequest, notificationGroupResolverService);
+                log.info("Created notification for {} users in group {}", recipientCount, messageRequest.getNotificationGroup());
             } else {
-                log.warn("No recipients specified and sendAll is not set for bulk notification creation");
+                log.warn("No recipients specified, sendAll not set, and no notification group for bulk notification creation");
                 throw new OxalateValidationException(AuditLevelEnum.WARN, NOTIFICATIONS_CREATE_BULK_FAIL, HttpStatus.OK,
                         ActionResponse.builder()
                                       .status(UpdateStatusEnum.FAIL)

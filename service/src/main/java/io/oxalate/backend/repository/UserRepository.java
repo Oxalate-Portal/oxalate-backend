@@ -1,6 +1,7 @@
 package io.oxalate.backend.repository;
 
 import io.oxalate.backend.model.User;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Modifying;
@@ -44,4 +45,17 @@ public interface UserRepository extends ListCrudRepository<User, Long>, CrudRepo
 
     @Query(nativeQuery = true, value = "SELECT * FROM users u WHERE u.status NOT IN ('ANONYMIZED', 'LOCKED')")
     List<User> findAllActiveUsers();
+
+    @Query(nativeQuery = true, value = """
+            SELECT * FROM users u
+            WHERE u.status NOT IN ('ANONYMIZED', 'LOCKED')
+              AND (u.last_seen IS NULL OR u.last_seen < :cutoffTime)
+            """)
+    List<User> findUsersInactiveSince(@Param("cutoffTime") Instant cutoffTime);
+
+    @Query(nativeQuery = true, value = "SELECT * FROM users u WHERE u.status = 'LOCKED'")
+    List<User> findLockedUsers();
+
+    @Query(nativeQuery = true, value = "SELECT u.id FROM users u WHERE u.status NOT IN ('ANONYMIZED', 'LOCKED')")
+    List<Long> findAllActiveUserIds();
 }

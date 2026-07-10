@@ -31,4 +31,23 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
             ORDER BY m.startDate DESC
             """)
     List<Membership> findAllCurrentAndFutureActiveByUserId(long userId);
+
+    @Query("""
+            SELECT DISTINCT m.userId
+            FROM Membership m
+            WHERE m.status = 'ACTIVE'
+              AND (m.endDate >= CURRENT_TIMESTAMP
+                   OR m.endDate IS NULL)
+            """)
+    List<Long> findUserIdsWithActiveMembership();
+
+    @Query("""
+            SELECT DISTINCT u.id
+            FROM User u
+            WHERE u.status NOT IN ('ANONYMIZED', 'LOCKED')
+              AND NOT EXISTS (
+                  SELECT 1 FROM Membership m WHERE m.userId = u.id
+              )
+            """)
+    List<Long> findUserIdsWhoNeverHadMembership();
 }
