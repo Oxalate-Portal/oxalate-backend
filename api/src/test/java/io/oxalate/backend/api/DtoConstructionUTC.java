@@ -68,7 +68,11 @@ class DtoConstructionUTC {
 
     @Test
     void MessageRequestConstructorOk() {
-        var dto = new MessageRequest(List.of(5L), true, 42L);
+        var dto = MessageRequest.builder()
+                                .recipients(List.of(5L))
+                                .sendAll(true)
+                                .eventId(42L)
+                                .build();
         assertEquals(List.of(5L), dto.getRecipients());
         assertEquals(true, dto.getSendAll());
         assertEquals(42L, dto.getEventId());

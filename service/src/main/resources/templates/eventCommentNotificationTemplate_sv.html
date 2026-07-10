@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Notis om eventkommentar</title>
+</head>
+<body>
+<p>Kära medlem,</p>
+<p><strong th:text="${notificationTitle}"></strong></p>
+<p th:text="${notificationMessage}"></p>
+<p th:if="${eventLink != null}">För mer information om evenemanget, besök: <a th:href="${eventLink}" th:text="${eventLink}"></a></p>
+<p>Vänliga hälsningar,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>

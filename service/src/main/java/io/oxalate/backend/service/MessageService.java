@@ -238,6 +238,40 @@ public class MessageService {
         log.debug("Created simple notification with ID {} for user ID {}", message.getId(), userId);
     }
 
+    /**
+     * Creates a new notification for a group of users (based on NotificationGroupEnum).
+     *
+     * @param messageRequest The message request containing notification details and group info
+     * @param groupResolver  The service for resolving notification groups
+     * @return The number of users who received the notification
+     */
+    @Transactional
+    public int createNotificationForGroup(MessageRequest messageRequest, NotificationGroupResolverService groupResolver) {
+        if (messageRequest.getNotificationGroup() == null) {
+            log.warn("Notification group is null");
+            return 0;
+        }
+
+        var userIds = groupResolver.resolveGroupUsers(messageRequest.getNotificationGroup(), messageRequest.getInactiveDays());
+
+        if (userIds.isEmpty()) {
+            log.info("No users resolved for notification group {}", messageRequest.getNotificationGroup());
+            return 0;
+        }
+
+        var messageResponse = save(messageRequest);
+
+        for (Long userId : userIds) {
+            messageRepository.addMessageReceiver(messageResponse.getId(), userId);
+            var userOptional = userRepository.findById(userId);
+            userOptional.ifPresent(
+                    user -> emailService.sendBulkNotificationEmail(user, messageRequest.getTitle(), messageRequest.getMessage(), messageRequest.getEventId()));
+        }
+
+        log.debug("Created notification with ID {} for {} users in group {}", messageResponse.getId(), userIds.size(), messageRequest.getNotificationGroup());
+        return userIds.size();
+    }
+
     // Legacy method - keeping for backwards compatibility
     @Deprecated(since = "1.0", forRemoval = true)
     public List<MessageResponse> unreadUserMessages(long userId) {

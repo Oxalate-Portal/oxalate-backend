@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>New event comment notification</title>
+</head>
+<body>
+<p>Dear member,</p>
+<p><strong th:text="${notificationTitle}"></strong></p>
+<p th:text="${notificationMessage}"></p>
+<p th:if="${eventLink != null}">For more details about the event, visit: <a th:href="${eventLink}" th:text="${eventLink}"></a></p>
+<p>Best regards,<br/> <strong th:text="${orgName}"></strong></p>
+</body>
+</html>
