@@ -56,6 +56,10 @@ Spring Boot 4.0.6 / Java 25, Maven multi-module backend (`api` + `service`) for 
 - `*ITC`: integration tests with Spring Boot + Testcontainers; extend `AbstractIntegrationTest` (`postgres:18-alpine`).
 - `*RTC`: REST tests with MockMvc + Spring Security against containerized DB.
 - Test method naming pattern: `methodScenarioOk/Fail` (camelCase).
+- Every new REST endpoint must add or update a contract test (the API module's
+  `RestContractTC` is the baseline contract gate). Contract tests must verify
+  the mapping, response type, OpenAPI metadata, and security declaration/public
+  route classification.
 
 ## Database and migrations
 
@@ -71,4 +75,3 @@ Spring Boot 4.0.6 / Java 25, Maven multi-module backend (`api` + `service`) for 
 - `service/src/main/java/io/oxalate/backend/service/PageService.java`
 - `service/src/main/java/io/oxalate/backend/repository/PageRepository.java`
 - `service/src/test/java/io/oxalate/backend/AbstractIntegrationTest.java`
-
