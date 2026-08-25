@@ -28,8 +28,17 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
-      - name: Build with Maven
+      - name: Build with Maven and run tests
         run: ./mvnw clean verify package
+      - name: Upload JaCoCo reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-reports
+          path: |
+            **/target/site/jacoco/**
+            **/target/surefire-reports/**
+          if-no-files-found: warn
   build-docker:
     name: Build and push Docker image
     needs: test
