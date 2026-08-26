@@ -18,10 +18,14 @@ import io.oxalate.backend.rest.PortalConfigurationAPI;
 import io.oxalate.backend.rest.StatsAPI;
 import io.oxalate.backend.rest.TagAPI;
 import io.oxalate.backend.rest.TestAPI;
+import io.oxalate.backend.rest.ThirdPartyAPI;
+import io.oxalate.backend.rest.TokenAPI;
 import io.oxalate.backend.rest.UserAPI;
 import java.lang.reflect.Method;
 import java.util.HashSet;
-import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,10 +34,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Provider-neutral contract checks for the public REST API. These checks run in
@@ -46,7 +46,8 @@ class RestContractTC {
             CommentAPI.class, DataDownloadAPI.class, EmailNotificationSubscriptionAPI.class,
             EventAPI.class, FileTransferAPI.class, MembershipAPI.class, NotificationAPI.class,
             PageAPI.class, PageManagementAPI.class, PaymentAPI.class,
-            PortalConfigurationAPI.class, StatsAPI.class, TagAPI.class, TestAPI.class, UserAPI.class
+            PortalConfigurationAPI.class, StatsAPI.class, TagAPI.class, TestAPI.class, UserAPI.class,
+            TokenAPI.class, ThirdPartyAPI.class
     };
 
     @Test
@@ -89,6 +90,7 @@ class RestContractTC {
                         || endpointPath.startsWith("/api/documents/")
                         || endpointPath.startsWith("/api/dive-plans/")
                         || endpointPath.startsWith("/api/test/")
+                        || endpointPath.equals("/api/third-party/events")
                         || endpointPath.equals("/api/configurations/frontend");
                 if (explicitlyPublic) {
                     publicEndpointCount++;

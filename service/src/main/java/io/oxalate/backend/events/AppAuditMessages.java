@@ -1,6 +1,16 @@
 package io.oxalate.backend.events;
 
 public class AppAuditMessages {
+    public static final String THIRD_PARTY_TOKEN_CREATE_START = "Creating third-party token";
+    public static final String THIRD_PARTY_TOKEN_CREATE_OK = "Third-party token created";
+    public static final String THIRD_PARTY_TOKEN_REFRESH_START = "Refreshing third-party token";
+    public static final String THIRD_PARTY_TOKEN_REFRESH_OK = "Third-party token refreshed";
+    public static final String THIRD_PARTY_TOKEN_INVALIDATE_START = "Invalidating third-party token";
+    public static final String THIRD_PARTY_TOKEN_INVALIDATE_OK = "Third-party token invalidated";
+    public static final String THIRD_PARTY_TOKEN_LIST_START = "Listing third-party tokens";
+    public static final String THIRD_PARTY_TOKEN_LIST_OK = "Third-party tokens listed";
+    public static final String THIRD_PARTY_EVENTS_START = "Fetching events with third-party token";
+    public static final String THIRD_PARTY_EVENTS_OK = "Third-party events fetched";
     // AuthController
     public static final String AUTH_AUTHENTICATION_FAIL = "User attempted to log in but the authentication failed: ";
     public static final String AUTH_AUTHENTICATION_START = "User attempted to log in: ";
