@@ -63,6 +63,8 @@ public class WebSecurityConfig {
                     auth
                             .requestMatchers(API + "/auth/**")
                             .permitAll()
+                            .requestMatchers(HttpMethod.GET, API + "/third-party/*")
+                            .permitAll()
                             .requestMatchers(PAGES_URL + "/**") // We check the permissions in the calls as some pages may not require authentication
                             .permitAll()
                             .requestMatchers(HttpMethod.GET, FILES_URL + "/**")
