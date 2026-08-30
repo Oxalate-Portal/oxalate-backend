@@ -55,7 +55,7 @@ public class CertificateController implements CertificateAPI {
     private final CertificateService certificateService;
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = CERTIFICATES_GET_ALL_START, okMessage = CERTIFICATES_GET_ALL_OK)
     public ResponseEntity<List<CertificateResponse>> getAllCertificates() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
@@ -206,18 +206,16 @@ public class CertificateController implements CertificateAPI {
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_START, okMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK)
     public ResponseEntity<List<String>> findCertificateNames(String searchTerm) {
-        requireAdmin();
         return ResponseEntity.ok(certificateService.findCertificateNames(searchTerm));
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_START, okMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK)
     public ResponseEntity<List<String>> findOrganizations(String searchTerm) {
-        requireAdmin();
         return ResponseEntity.ok(certificateService.findOrganizations(searchTerm));
     }
 

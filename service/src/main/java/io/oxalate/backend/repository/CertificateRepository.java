@@ -13,7 +13,14 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CertificateRepository extends CrudRepository<Certificate, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = { "classification", "classification.translations" })
+    List<Certificate> findAll();
+
+    @EntityGraph(attributePaths = { "classification", "classification.translations" })
     Optional<Certificate> findByUserIdAndOrganizationAndAndCertificateName(long userId, String organization, String certificateName);
+
+    @EntityGraph(attributePaths = { "classification", "classification.translations" })
     List<Certificate> findByUserIdOrderByCertificationDateAsc(long userId);
 
     @EntityGraph(attributePaths = { "classification", "classification.translations" })
