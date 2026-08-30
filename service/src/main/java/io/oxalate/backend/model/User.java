@@ -214,6 +214,7 @@ public class User {
                                .payments(paymentResponses)
                                .membershipActive(activeMembership)
                                .tags(tagResponses)
+                               .certificateClassificationTitle(this.certificateClassificationTitle)
                                .build();
     }
 

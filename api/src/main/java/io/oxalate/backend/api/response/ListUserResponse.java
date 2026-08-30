@@ -50,6 +50,10 @@ public class ListUserResponse {
     @JsonProperty("userType")
     protected UserTypeEnum userType;
 
+    @Schema(description = "Most advanced certificate classification of the user")
+    @JsonProperty("certificateClassificationTitle")
+    protected String certificateClassificationTitle;
+
     @Schema(description = "List of tags associated with the user")
     @JsonProperty("tags")
     private Set<TagResponse> tags;
