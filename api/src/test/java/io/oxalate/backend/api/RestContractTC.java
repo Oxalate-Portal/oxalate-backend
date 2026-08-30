@@ -22,6 +22,7 @@ import io.oxalate.backend.rest.TestAPI;
 import io.oxalate.backend.rest.ThirdPartyAPI;
 import io.oxalate.backend.rest.TokenAPI;
 import io.oxalate.backend.rest.UserAPI;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -99,6 +100,24 @@ class RestContractTC {
             }
         }
         assertTrue(publicEndpointCount > 0, "The contract must contain at least one public endpoint");
+    }
+
+    @Test
+    void certificateSearchEndpointsAreAuthenticated() {
+        var paths = CertificateAPI.class.getDeclaredMethods();
+        var searchEndpoints = java.util.Arrays.stream(paths)
+                                              .filter(method -> method.isAnnotationPresent(GetMapping.class))
+                                              .filter(method -> path(method.getAnnotation(GetMapping.class)).contains("/management/"))
+                                              .toList();
+
+        assertTrue(searchEndpoints.stream()
+                                  .anyMatch(method -> path(method.getAnnotation(GetMapping.class))
+                                          .endsWith("/certificate-names")));
+        assertTrue(searchEndpoints.stream()
+                                  .anyMatch(method -> path(method.getAnnotation(GetMapping.class))
+                                          .endsWith("/organizations")));
+        searchEndpoints.forEach(method -> assertTrue(method.isAnnotationPresent(SecurityRequirement.class),
+                () -> method.getName() + " must declare authentication"));
     }
 
     private static Object mapping(Method method) {

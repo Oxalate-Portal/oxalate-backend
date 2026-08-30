@@ -205,6 +205,22 @@ public class CertificateController implements CertificateAPI {
         }
     }
 
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    @Audited(startMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_START, okMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK)
+    public ResponseEntity<List<String>> findCertificateNames(String searchTerm) {
+        requireAdmin();
+        return ResponseEntity.ok(certificateService.findCertificateNames(searchTerm));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    @Audited(startMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_START, okMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK)
+    public ResponseEntity<List<String>> findOrganizations(String searchTerm) {
+        requireAdmin();
+        return ResponseEntity.ok(certificateService.findOrganizations(searchTerm));
+    }
+
     private void requireAdmin() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
             throw new OxalateUnauthorizedException("User is not authorized to manage certificates", HttpStatus.UNAUTHORIZED);

@@ -53,6 +53,22 @@ public class CertificateService {
         return certificateResponses;
     }
 
+    @Transactional(readOnly = true)
+    public List<String> findCertificateNames(String searchTerm) {
+        var normalizedSearchTerm = normalizeSearchTerm(searchTerm);
+        return normalizedSearchTerm.isEmpty()
+                ? List.of()
+                : certificateRepository.findDistinctCertificateNamesMatching(normalizedSearchTerm);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> findOrganizations(String searchTerm) {
+        var normalizedSearchTerm = normalizeSearchTerm(searchTerm);
+        return normalizedSearchTerm.isEmpty()
+                ? List.of()
+                : certificateRepository.findDistinctOrganizationsMatching(normalizedSearchTerm);
+    }
+
     public List<CertificateResponse> findByUserId(long userId) {
         var certificates = certificateRepository.findByUserIdOrderByCertificationDateAsc(userId);
         var certificateResponses = new ArrayList<CertificateResponse>();
@@ -296,6 +312,11 @@ public class CertificateService {
                                                            .isBlank()) {
             throw new IllegalArgumentException("Existing values and new value are required");
         }
+
+    }
+
+    private String normalizeSearchTerm(String searchTerm) {
+        return searchTerm == null ? "" : searchTerm.trim();
     }
 
     private void attachCertificateUrl(long certificateId, CertificateResponse certificateResponse) {

@@ -15,6 +15,22 @@ public interface CertificateRepository extends CrudRepository<Certificate, Long>
     Optional<Certificate> findByUserIdAndOrganizationAndAndCertificateName(long userId, String organization, String certificateName);
     List<Certificate> findByUserIdOrderByCertificationDateAsc(long userId);
 
+    @Query("""
+            select distinct c.certificateName
+            from Certificate c
+            where lower(c.certificateName) like lower(concat('%', :searchTerm, '%'))
+            order by c.certificateName
+            """)
+    List<String> findDistinctCertificateNamesMatching(@Param("searchTerm") String searchTerm);
+
+    @Query("""
+            select distinct c.organization
+            from Certificate c
+            where lower(c.organization) like lower(concat('%', :searchTerm, '%'))
+            order by c.organization
+            """)
+    List<String> findDistinctOrganizationsMatching(@Param("searchTerm") String searchTerm);
+
     @Modifying
     @Query(value = "UPDATE certificates SET classification_id = :classificationId WHERE id = :certificateId", nativeQuery = true)
     int updateClassification(@Param("certificateId") long certificateId, @Param("classificationId") Long classificationId);
