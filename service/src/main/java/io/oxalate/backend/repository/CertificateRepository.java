@@ -3,6 +3,7 @@ package io.oxalate.backend.repository;
 import io.oxalate.backend.model.Certificate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -14,6 +15,9 @@ public interface CertificateRepository extends CrudRepository<Certificate, Long>
 
     Optional<Certificate> findByUserIdAndOrganizationAndAndCertificateName(long userId, String organization, String certificateName);
     List<Certificate> findByUserIdOrderByCertificationDateAsc(long userId);
+
+    @EntityGraph(attributePaths = { "classification", "classification.translations" })
+    List<Certificate> findByUserId(long userId);
 
     @Query("""
             select distinct c.certificateName
@@ -36,8 +40,8 @@ public interface CertificateRepository extends CrudRepository<Certificate, Long>
     int updateClassification(@Param("certificateId") long certificateId, @Param("classificationId") Long classificationId);
 
     @Modifying
-    @Query(value = "UPDATE certificates SET classification_id = :classificationId WHERE certificate_name = :certificateName", nativeQuery = true)
-    int updateClassificationByName(@Param("certificateName") String certificateName, @Param("classificationId") Long classificationId);
+    @Query(value = "UPDATE certificates SET classification_id = :classificationId WHERE certificate_name IN (:certificateNames)", nativeQuery = true)
+    int updateClassificationByNames(@Param("certificateNames") List<String> certificateNames, @Param("classificationId") Long classificationId);
 
     @Modifying
     @Query("update Certificate c set c.organization = :newValue where c.organization in :existingValues")

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CertificateClassificationRepository extends JpaRepository<CertificateClassification, Long> {
     @EntityGraph(attributePaths = "translations")
-    List<CertificateClassification> findAll();
+    List<CertificateClassification> findAllByOrderByOrderDescIdAsc();
 
     @EntityGraph(attributePaths = "translations")
     Optional<CertificateClassification> findById(Long id);

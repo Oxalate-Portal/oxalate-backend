@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,9 @@ public class CertificateClassification {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "classification_order", nullable = false)
+    private Integer order;
+
     @Builder.Default
     @OneToMany(mappedBy = "classification", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<CertificateClassificationTranslation> translations = new HashSet<>();
@@ -41,11 +45,30 @@ public class CertificateClassification {
         return CertificateClassificationResponse.builder()
                                                 .id(id)
                                                 .description(description)
+                                                .order(order)
                                                 .titles(translations.stream()
                                                                     .collect(Collectors.toMap(
                                                                             CertificateClassificationTranslation::getLanguage,
                                                                             CertificateClassificationTranslation::getTitle,
                                                                             (first, duplicate) -> first)))
                                                 .build();
+    }
+
+    public String getTitleInLanguage(String language) {
+        if (translations == null || translations.isEmpty())
+            return null;
+        var requested = language == null ? null : language.toLowerCase(Locale.ROOT);
+        return translations.stream()
+                           .filter(t -> requested != null && requested.equals(t.getLanguage()
+                                                                               .toLowerCase(Locale.ROOT)))
+                           .map(CertificateClassificationTranslation::getTitle)
+                           .findFirst()
+                           .orElseGet(() -> translations.stream()
+                                                        .filter(t -> "en".equalsIgnoreCase(t.getLanguage()))
+                                                        .map(CertificateClassificationTranslation::getTitle)
+                                                        .findFirst()
+                                                        .orElse(translations.iterator()
+                                                                            .next()
+                                                                            .getTitle()));
     }
 }

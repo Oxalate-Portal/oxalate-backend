@@ -11,6 +11,7 @@ import io.oxalate.backend.model.CertificateClassification;
 import io.oxalate.backend.repository.CertificateClassificationRepository;
 import io.oxalate.backend.repository.CertificateRepository;
 import io.oxalate.backend.repository.filetransfer.CertificateDocumentRepository;
+import io.oxalate.backend.tools.AuthTools;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class CertificateService {
 
         for (var certificate : certificates) {
             var userId = certificate.getUserId();
-            var certificateResponse = certificate.toCertificateResponse();
+            var certificateResponse = certificate.toCertificateResponse(AuthTools.getLanguage());
             attachCertificateUrl(certificate.getId(), certificateResponse);
             certificateResponses.add(certificateResponse);
         }
@@ -74,7 +75,7 @@ public class CertificateService {
         var certificateResponses = new ArrayList<CertificateResponse>();
 
         for (Certificate certificate : certificates) {
-            var certificateResponse = certificate.toCertificateResponse();
+            var certificateResponse = certificate.toCertificateResponse(AuthTools.getLanguage());
             attachCertificateUrl(certificate.getId(), certificateResponse);
             certificateResponses.add(certificateResponse);
         }
@@ -118,7 +119,7 @@ public class CertificateService {
 
         var savedCertificate = certificateRepository.save(certificate);
 
-        return savedCertificate.toCertificateResponse();
+        return savedCertificate.toCertificateResponse(AuthTools.getLanguage());
     }
 
     public CertificateResponse updateCertificate(long userId, CertificateRequest certificateRequest) {
@@ -154,7 +155,7 @@ public class CertificateService {
 
         var savedCertificate = certificateRepository.save(certificate);
 
-        return savedCertificate.toCertificateResponse();
+        return savedCertificate.toCertificateResponse(AuthTools.getLanguage());
     }
 
     @Transactional
@@ -173,13 +174,15 @@ public class CertificateService {
     public CertificateResponse findById(long certificateId) {
         var optionalCertificate = certificateRepository.findById(certificateId);
 
-        return optionalCertificate.map(Certificate::toCertificateResponse).orElse(null);
+        return optionalCertificate.map(c -> c.toCertificateResponse(AuthTools.getLanguage()))
+                                  .orElse(null);
     }
 
 
     public CertificateResponse findCertificateByUserOrgAndCertification(Long userId, String organization, String certificateName) {
         var optionalCertificate = certificateRepository.findByUserIdAndOrganizationAndAndCertificateName(userId, organization, certificateName);
-        return optionalCertificate.map(Certificate::toCertificateResponse).orElse(null);
+        return optionalCertificate.map(c -> c.toCertificateResponse(AuthTools.getLanguage()))
+                                  .orElse(null);
     }
 
     @Transactional
@@ -223,7 +226,7 @@ public class CertificateService {
 
     @Transactional(readOnly = true)
     public List<io.oxalate.backend.api.response.CertificateClassificationResponse> findAllClassifications() {
-        return classificationRepository.findAll()
+        return classificationRepository.findAllByOrderByOrderDescIdAsc()
                                        .stream()
                                        .map(CertificateClassification::toResponse)
                                        .toList();
@@ -255,6 +258,17 @@ public class CertificateService {
             return null;
         }
         entity.setDescription(request.getDescription());
+        entity.setOrder(request.getOrder() == null
+                ?
+                classificationRepository.findAll()
+                                        .stream()
+                                        .map(CertificateClassification::getOrder)
+                                        .filter(java.util.Objects::nonNull)
+                                        .max(Integer::compareTo)
+                                        .map(order -> order + 1)
+                                        .orElse(1)
+                :
+                request.getOrder());
         entity.getTranslations()
               .clear();
         request.getTitles()
@@ -268,6 +282,20 @@ public class CertificateService {
                });
         return classificationRepository.save(entity)
                                        .toResponse();
+    }
+
+    @Transactional
+    public void reorderClassifications(List<io.oxalate.backend.api.request.CertificateClassificationRequest> requests) {
+        if (requests == null || requests.stream()
+                                        .anyMatch(r -> r.getId() == null || r.getOrder() == null)) {
+            throw new IllegalArgumentException("Classification IDs and order are required");
+        }
+        for (var request : requests) {
+            var classification = classificationRepository.findById(request.getId())
+                                                         .orElseThrow(() -> new IllegalArgumentException("Certificate classification not found"));
+            classification.setOrder(request.getOrder());
+            classificationRepository.save(classification);
+        }
     }
 
     @Transactional
@@ -286,11 +314,14 @@ public class CertificateService {
         if (request.getCertificateId() != null) {
             return certificateRepository.updateClassification(request.getCertificateId(), request.getClassificationId());
         }
-        if (request.getCertificateName() == null || request.getCertificateName()
-                                                           .isBlank()) {
-            throw new IllegalArgumentException("Certificate ID or certificate name is required");
+        if (request.getCertificateNames() == null || request.getCertificateNames()
+                                                            .isEmpty()
+                || request.getCertificateNames()
+                          .stream()
+                          .anyMatch(name -> name == null || name.isBlank())) {
+            throw new IllegalArgumentException("Certificate ID or certificate names are required");
         }
-        return certificateRepository.updateClassificationByName(request.getCertificateName(), request.getClassificationId());
+        return certificateRepository.updateClassificationByNames(request.getCertificateNames(), request.getClassificationId());
     }
 
     @Transactional

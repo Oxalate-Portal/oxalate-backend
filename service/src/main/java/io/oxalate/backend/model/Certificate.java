@@ -54,6 +54,10 @@ public class Certificate {
     private CertificateClassification classification;
 
     public CertificateResponse toCertificateResponse() {
+        return toCertificateResponse(null);
+    }
+
+    public CertificateResponse toCertificateResponse(String language) {
         return CertificateResponse.builder()
                                   .id(this.id)
                                   .userId(this.userId)
@@ -63,6 +67,7 @@ public class Certificate {
                                   .diverId(this.diverId)
                                   .certificationDate(this.certificationDate)
                                   .classificationId(this.classification == null ? null : this.classification.getId())
+                                  .classificationTitle(this.classification == null ? null : this.classification.getTitleInLanguage(language))
                                   .build();
     }
 

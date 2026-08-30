@@ -46,6 +46,12 @@ public interface CertificateClassificationAPI {
     @PutMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<CertificateClassificationResponse> update(@RequestBody CertificateClassificationRequest request);
 
+    @Operation(description = "Save the order of dive certificate classifications")
+    @ApiResponse(responseCode = "200", description = "Classification order saved successfully")
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(value = BASE_PATH + "/order", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> reorder(@RequestBody List<CertificateClassificationRequest> requests);
+
     @Operation(description = "Delete a dive certificate classification")
     @ApiResponse(responseCode = "200", description = "Classification deleted successfully")
     @SecurityRequirement(name = JWT_COOKIE)

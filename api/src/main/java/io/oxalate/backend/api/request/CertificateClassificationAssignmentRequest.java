@@ -1,6 +1,7 @@
 package io.oxalate.backend.api.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,8 +10,8 @@ import lombok.NoArgsConstructor;
 public class CertificateClassificationAssignmentRequest {
     @JsonProperty("certificateId")
     private Long certificateId;
-    @JsonProperty("certificateName")
-    private String certificateName;
+    @JsonProperty("certificateNames")
+    private List<String> certificateNames;
     @JsonProperty("classificationId")
     private Long classificationId;
 }

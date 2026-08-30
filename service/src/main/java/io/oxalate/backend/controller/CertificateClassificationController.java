@@ -9,6 +9,7 @@ import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATE_CLASSIFICAT
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATE_CLASSIFICATION_MANAGEMENT_START;
 import io.oxalate.backend.exception.OxalateNotFoundException;
 import io.oxalate.backend.exception.OxalateUnauthorizedException;
+import io.oxalate.backend.exception.OxalateValidationException;
 import io.oxalate.backend.rest.CertificateClassificationAPI;
 import io.oxalate.backend.service.CertificateService;
 import io.oxalate.backend.tools.AuthTools;
@@ -71,6 +72,20 @@ public class CertificateClassificationController implements CertificateClassific
         if (response == null)
             throw new OxalateNotFoundException("Certificate classification not found: " + request.getId());
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    @Audited(startMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_START, okMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK)
+    public ResponseEntity<Void> reorder(List<CertificateClassificationRequest> requests) {
+        verifyAdmin();
+        try {
+            certificateService.reorderClassifications(requests);
+            return ResponseEntity.ok()
+                                 .build();
+        } catch (IllegalArgumentException e) {
+            throw new OxalateValidationException(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @Override

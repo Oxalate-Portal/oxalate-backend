@@ -134,6 +134,9 @@ public class User {
     private String avatarUrl;
 
     @Transient
+    private String certificateClassificationTitle;
+
+    @Transient
     private List<Payment> payments;
 
     @Transient
@@ -240,6 +243,7 @@ public class User {
                            .language(this.language)
                            .primaryUserType(this.primaryUserType)
                            .tags(tagResponses)
+                           .certificateClassificationTitle(this.certificateClassificationTitle)
                            .build();
     }
 
@@ -288,6 +292,7 @@ public class User {
                                 .lastSeen(this.lastSeen)
                                 .primaryUserType(this.primaryUserType)
                                 .tags(tagResponses)
+                                .certificateClassificationTitle(this.certificateClassificationTitle)
                                 .build();
     }
 }

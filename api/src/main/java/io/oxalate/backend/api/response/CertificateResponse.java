@@ -32,4 +32,6 @@ public class CertificateResponse {
     private String certificatePhotoUrl;
     @JsonProperty("classificationId")
     private Long classificationId;
+    @JsonProperty("classificationTitle")
+    private String classificationTitle;
 }

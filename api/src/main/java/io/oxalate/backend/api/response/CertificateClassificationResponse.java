@@ -18,4 +18,6 @@ public class CertificateClassificationResponse {
     private Map<String, String> titles;
     @JsonProperty("description")
     private String description;
+    @JsonProperty("order")
+    private Integer order;
 }

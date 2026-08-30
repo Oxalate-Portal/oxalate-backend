@@ -91,7 +91,7 @@ public interface CertificateAPI {
     @DeleteMapping(value = BASE_PATH + "/{certificateId}")
     ResponseEntity<Void> deleteCertificate(@PathVariable("certificateId") long certificateId);
 
-    @Operation(description = "Assign a classification to one certificate or all certificates with a name", tags = "CertificateAPI")
+    @Operation(description = "Assign a classification to one certificate or all certificates with selected names", tags = "CertificateAPI")
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/classification", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> updateClassification(@RequestBody CertificateClassificationAssignmentRequest request);
