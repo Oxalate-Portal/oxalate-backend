@@ -2,7 +2,9 @@ package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
+import io.oxalate.backend.api.request.CertificateClassificationAssignmentRequest;
 import io.oxalate.backend.api.request.CertificateRequest;
+import io.oxalate.backend.api.request.CertificateValueReplacementRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -87,4 +89,19 @@ public interface CertificateAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(value = BASE_PATH + "/{certificateId}")
     ResponseEntity<Void> deleteCertificate(@PathVariable("certificateId") long certificateId);
+
+    @Operation(description = "Assign a classification to one certificate or all certificates with a name", tags = "CertificateAPI")
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(value = BASE_PATH + "/classification", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> updateClassification(@RequestBody CertificateClassificationAssignmentRequest request);
+
+    @Operation(description = "Replace exact matching organization values", tags = "CertificateAPI")
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(value = BASE_PATH + "/management/organization", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> replaceOrganizations(@RequestBody CertificateValueReplacementRequest request);
+
+    @Operation(description = "Replace exact matching certificate name values", tags = "CertificateAPI")
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(value = BASE_PATH + "/management/certificate-name", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> replaceCertificateNames(@RequestBody CertificateValueReplacementRequest request);
 }

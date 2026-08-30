@@ -2,7 +2,9 @@ package io.oxalate.backend.controller;
 
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
+import io.oxalate.backend.api.request.CertificateClassificationAssignmentRequest;
 import io.oxalate.backend.api.request.CertificateRequest;
+import io.oxalate.backend.api.request.CertificateValueReplacementRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
 import io.oxalate.backend.audit.AuditSource;
 import io.oxalate.backend.audit.Audited;
@@ -28,6 +30,8 @@ import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_UPDATE_NOT
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_UPDATE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_UPDATE_START;
 import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATES_UPDATE_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK;
+import static io.oxalate.backend.events.AppAuditMessages.CERTIFICATE_CLASSIFICATION_MANAGEMENT_START;
 import io.oxalate.backend.exception.OxalateNotFoundException;
 import io.oxalate.backend.exception.OxalateUnauthorizedException;
 import io.oxalate.backend.exception.OxalateValidationException;
@@ -156,5 +160,54 @@ public class CertificateController implements CertificateAPI {
 
         return ResponseEntity.status(HttpStatus.OK)
                              .body(null);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    @Audited(startMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_START, okMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK)
+    public ResponseEntity<Void> updateClassification(CertificateClassificationAssignmentRequest request) {
+        requireAdmin();
+        try {
+            if (certificateService.updateClassification(request) == 0)
+                throw new OxalateNotFoundException("No matching certificate found");
+            return ResponseEntity.ok()
+                                 .build();
+        } catch (IllegalArgumentException e) {
+            throw new OxalateValidationException(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    @Audited(startMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_START, okMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK)
+    public ResponseEntity<Void> replaceOrganizations(CertificateValueReplacementRequest request) {
+        requireAdmin();
+        try {
+            certificateService.replaceOrganizations(request);
+            return ResponseEntity.ok()
+                                 .build();
+        } catch (IllegalArgumentException e) {
+            throw new OxalateValidationException(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    @Audited(startMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_START, okMessage = CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK)
+    public ResponseEntity<Void> replaceCertificateNames(CertificateValueReplacementRequest request) {
+        requireAdmin();
+        try {
+            certificateService.replaceCertificateNames(request);
+            return ResponseEntity.ok()
+                                 .build();
+        } catch (IllegalArgumentException e) {
+            throw new OxalateValidationException(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void requireAdmin() {
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {
+            throw new OxalateUnauthorizedException("User is not authorized to manage certificates", HttpStatus.UNAUTHORIZED);
+        }
     }
 }

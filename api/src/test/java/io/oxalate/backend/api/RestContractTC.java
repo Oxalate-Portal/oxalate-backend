@@ -4,6 +4,7 @@ import io.oxalate.backend.rest.AuditAPI;
 import io.oxalate.backend.rest.AuthAPI;
 import io.oxalate.backend.rest.BlockedDateAPI;
 import io.oxalate.backend.rest.CertificateAPI;
+import io.oxalate.backend.rest.CertificateClassificationAPI;
 import io.oxalate.backend.rest.CommentAPI;
 import io.oxalate.backend.rest.DataDownloadAPI;
 import io.oxalate.backend.rest.EmailNotificationSubscriptionAPI;
@@ -42,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 class RestContractTC {
 
     private static final Class<?>[] API_INTERFACES = {
-            AuditAPI.class, AuthAPI.class, BlockedDateAPI.class, CertificateAPI.class,
+            AuditAPI.class, AuthAPI.class, BlockedDateAPI.class, CertificateAPI.class, CertificateClassificationAPI.class,
             CommentAPI.class, DataDownloadAPI.class, EmailNotificationSubscriptionAPI.class,
             EventAPI.class, FileTransferAPI.class, MembershipAPI.class, NotificationAPI.class,
             PageAPI.class, PageManagementAPI.class, PaymentAPI.class,

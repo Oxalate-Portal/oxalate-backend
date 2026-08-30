@@ -43,4 +43,7 @@ public class CertificateRequest {
     @JsonProperty("certificationDate")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate certificationDate;
+
+    @JsonProperty("classificationId")
+    private Long classificationId;
 }

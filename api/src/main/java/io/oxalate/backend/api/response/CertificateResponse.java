@@ -30,4 +30,6 @@ public class CertificateResponse {
     private LocalDate certificationDate;
     @JsonProperty("certificatePhotoUrl")
     private String certificatePhotoUrl;
+    @JsonProperty("classificationId")
+    private Long classificationId;
 }

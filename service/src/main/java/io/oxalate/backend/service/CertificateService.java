@@ -7,6 +7,8 @@ import static io.oxalate.backend.api.UrlConstants.FILES_URL;
 import io.oxalate.backend.api.request.CertificateRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
 import io.oxalate.backend.model.Certificate;
+import io.oxalate.backend.model.CertificateClassification;
+import io.oxalate.backend.repository.CertificateClassificationRepository;
 import io.oxalate.backend.repository.CertificateRepository;
 import io.oxalate.backend.repository.filetransfer.CertificateDocumentRepository;
 import java.nio.file.Paths;
@@ -30,6 +32,7 @@ public class CertificateService {
     private final CertificateRepository certificateRepository;
     private final CertificateDocumentRepository certificateDocumentRepository;
     private final PortalConfigurationService portalConfigurationService;
+    private final CertificateClassificationRepository classificationRepository;
 
     @Value("${oxalate.app.backend-url}")
     private String backendUrl;
@@ -79,6 +82,14 @@ public class CertificateService {
             return null;
         }
 
+        CertificateClassification classification;
+        try {
+            classification = resolveClassification(certificateRequest.getClassificationId());
+        } catch (IllegalArgumentException e) {
+            log.warn("Certificate classification is invalid: {}", e.getMessage());
+            return null;
+        }
+
         var certificate = Certificate.builder()
                 .userId(userId)
                 .organization(certificateRequest.getOrganization())
@@ -86,6 +97,7 @@ public class CertificateService {
                 .certificateId(certificateRequest.getCertificateId())
                 .diverId(certificateRequest.getDiverId())
                 .certificationDate(certificateRequest.getCertificationDate())
+                                     .classification(classification)
                 .build();
 
         var savedCertificate = certificateRepository.save(certificate);
@@ -98,6 +110,14 @@ public class CertificateService {
             verifyCertificateRequest(certificateRequest);
         } catch (IllegalArgumentException e) {
             log.warn("Certificate request is invalid: {}", e.getMessage());
+            return null;
+        }
+
+        CertificateClassification classification;
+        try {
+            classification = resolveClassification(certificateRequest.getClassificationId());
+        } catch (IllegalArgumentException e) {
+            log.warn("Certificate classification is invalid: {}", e.getMessage());
             return null;
         }
 
@@ -114,6 +134,7 @@ public class CertificateService {
         certificate.setOrganization(certificateRequest.getOrganization());
         certificate.setCertificateName(certificateRequest.getCertificateName());
         certificate.setCertificationDate(certificateRequest.getCertificationDate());
+        certificate.setClassification(classification);
 
         var savedCertificate = certificateRepository.save(certificate);
 
@@ -176,6 +197,104 @@ public class CertificateService {
 
         if (certificateRequest.getCertificationDate() == null) {
             throw new IllegalArgumentException("Certification date cannot be empty");
+        }
+    }
+
+    private CertificateClassification resolveClassification(Long id) {
+        return id == null ? null : classificationRepository.findById(id)
+                                                           .orElseThrow(() -> new IllegalArgumentException("Certificate classification not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<io.oxalate.backend.api.response.CertificateClassificationResponse> findAllClassifications() {
+        return classificationRepository.findAll()
+                                       .stream()
+                                       .map(CertificateClassification::toResponse)
+                                       .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public io.oxalate.backend.api.response.CertificateClassificationResponse findClassification(long id) {
+        return classificationRepository.findById(id)
+                                       .map(CertificateClassification::toResponse)
+                                       .orElse(null);
+    }
+
+    @Transactional
+    public io.oxalate.backend.api.response.CertificateClassificationResponse saveClassification(
+            io.oxalate.backend.api.request.CertificateClassificationRequest request) {
+        var entity = request.getId() == null || request.getId() <= 0 ? new CertificateClassification() :
+                classificationRepository.findById(request.getId())
+                                        .orElse(null);
+        if (entity == null || request.getTitles() == null || request.getTitles()
+                                                                    .isEmpty()
+                || request.getTitles()
+                          .entrySet()
+                          .stream()
+                          .anyMatch(entry ->
+                                  entry.getKey() == null || entry.getKey()
+                                                                 .length() != 2
+                                          || entry.getValue() == null || entry.getValue()
+                                                                              .isBlank())) {
+            return null;
+        }
+        entity.setDescription(request.getDescription());
+        entity.getTranslations()
+              .clear();
+        request.getTitles()
+               .forEach((language, title) -> {
+                   var translation = new io.oxalate.backend.model.CertificateClassificationTranslation();
+                   translation.setClassification(entity);
+                   translation.setLanguage(language);
+                   translation.setTitle(title);
+                   entity.getTranslations()
+                         .add(translation);
+               });
+        return classificationRepository.save(entity)
+                                       .toResponse();
+    }
+
+    @Transactional
+    public boolean deleteClassification(long id) {
+        if (!classificationRepository.existsById(id))
+            return false;
+        classificationRepository.deleteById(id);
+        return true;
+    }
+
+    @Transactional
+    public int updateClassification(io.oxalate.backend.api.request.CertificateClassificationAssignmentRequest request) {
+        if (request.getClassificationId() != null && !classificationRepository.existsById(request.getClassificationId())) {
+            throw new IllegalArgumentException("Certificate classification not found");
+        }
+        if (request.getCertificateId() != null) {
+            return certificateRepository.updateClassification(request.getCertificateId(), request.getClassificationId());
+        }
+        if (request.getCertificateName() == null || request.getCertificateName()
+                                                           .isBlank()) {
+            throw new IllegalArgumentException("Certificate ID or certificate name is required");
+        }
+        return certificateRepository.updateClassificationByName(request.getCertificateName(), request.getClassificationId());
+    }
+
+    @Transactional
+    public int replaceOrganizations(io.oxalate.backend.api.request.CertificateValueReplacementRequest request) {
+        validateReplacement(request);
+        return certificateRepository.replaceOrganizations(request.getExistingValues(), request.getNewValue());
+    }
+
+    @Transactional
+    public int replaceCertificateNames(io.oxalate.backend.api.request.CertificateValueReplacementRequest request) {
+        validateReplacement(request);
+        return certificateRepository.replaceCertificateNames(request.getExistingValues(), request.getNewValue());
+    }
+
+    private void validateReplacement(io.oxalate.backend.api.request.CertificateValueReplacementRequest request) {
+        if (request.getExistingValues() == null || request.getExistingValues()
+                                                          .isEmpty()
+                || request.getNewValue() == null || request.getNewValue()
+                                                           .isBlank()) {
+            throw new IllegalArgumentException("Existing values and new value are required");
         }
     }
 
