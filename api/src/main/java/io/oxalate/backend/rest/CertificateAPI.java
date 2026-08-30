@@ -2,7 +2,9 @@ package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
+import io.oxalate.backend.api.request.CertificateClassificationAssignmentRequest;
 import io.oxalate.backend.api.request.CertificateRequest;
+import io.oxalate.backend.api.request.CertificateValueReplacementRequest;
 import io.oxalate.backend.api.response.CertificateResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "CertificateAPI", description = "Dive certificate REST endpoints")
 public interface CertificateAPI {
@@ -87,4 +90,41 @@ public interface CertificateAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(value = BASE_PATH + "/{certificateId}")
     ResponseEntity<Void> deleteCertificate(@PathVariable("certificateId") long certificateId);
+
+    @Operation(description = "Assign a classification to one certificate or all certificates with selected names", tags = "CertificateAPI")
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(value = BASE_PATH + "/classification", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> updateClassification(@RequestBody CertificateClassificationAssignmentRequest request);
+
+    @Operation(description = "Replace exact matching organization values", tags = "CertificateAPI")
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(value = BASE_PATH + "/management/organization", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> replaceOrganizations(@RequestBody CertificateValueReplacementRequest request);
+
+    @Operation(description = "Replace exact matching certificate name values", tags = "CertificateAPI")
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(value = BASE_PATH + "/management/certificate-name", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> replaceCertificateNames(@RequestBody CertificateValueReplacementRequest request);
+
+    @Operation(description = "Find distinct certificate names matching a search term", tags = "CertificateAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Matching certificate names retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @GetMapping(value = BASE_PATH + "/management/certificate-names", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<String>> findCertificateNames(
+            @Parameter(description = "Case-insensitive search term", required = true, example = "open")
+            @RequestParam(name = "searchTerm") String searchTerm);
+
+    @Operation(description = "Find distinct organizations matching a search term", tags = "CertificateAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Matching organizations retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @GetMapping(value = BASE_PATH + "/management/organizations", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<String>> findOrganizations(
+            @Parameter(description = "Case-insensitive search term", required = true, example = "PADI")
+            @RequestParam(name = "searchTerm") String searchTerm);
 }

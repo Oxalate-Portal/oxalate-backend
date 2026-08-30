@@ -11,11 +11,13 @@ import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.model.Role;
 import io.oxalate.backend.model.Tag;
 import io.oxalate.backend.model.User;
+import io.oxalate.backend.repository.CertificateRepository;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.MembershipRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.service.filetransfer.AvatarFileTransferService;
+import io.oxalate.backend.tools.AuthTools;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import java.time.Instant;
@@ -41,6 +43,7 @@ public class UserService {
     private final PaymentService paymentService;
     private final MembershipRepository membershipRepository;
     private final AvatarFileTransferService avatarFileTransferService;
+    private final CertificateRepository certificateRepository;
 
     private static List<AdminUserResponse> getAdminUserResponseList(List<User> users) {
         var adminUserResponses = new ArrayList<AdminUserResponse>();
@@ -169,6 +172,17 @@ public class UserService {
         user.setPayments(paymentService.findAllByUserId(user.getId()));
         user.setDiveCount(eventRepository.countDivesByUserId(user.getId()));
         user.setAvatarUrl(avatarFileTransferService.getAvatarUrlByUserId(user.getId()));
+        if (certificateRepository != null) {
+            user.setCertificateClassificationTitle(certificateRepository.findByUserId(user.getId())
+                                                                        .stream()
+                                                                        .filter(c -> c.getClassification() != null)
+                                                                        .max(java.util.Comparator.comparing(c -> c.getClassification()
+                                                                                                                  .getOrder(),
+                                                                                java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
+                                                                        .map(c -> c.getClassification()
+                                                                                   .getTitleInLanguage(AuthTools.getLanguage()))
+                                                                        .orElse(null));
+        }
     }
 
     @Transactional

@@ -84,4 +84,8 @@ public abstract class AbstractUser {
     @Schema(description = "Primary user type", example = "FREE_DIVER", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("primaryUserType")
     private UserTypeEnum primaryUserType;
+
+    @Schema(description = "Most advanced certificate classification title in the requester's language")
+    @JsonProperty("certificateClassificationTitle")
+    private String certificateClassificationTitle;
 }

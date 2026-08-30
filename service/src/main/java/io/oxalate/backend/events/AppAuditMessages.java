@@ -111,6 +111,8 @@ public class AppAuditMessages {
     public static final String CERTIFICATES_DELETE_FAIL = "Failed to delete certificate: ";
     public static final String CERTIFICATES_DELETE_UNAUTHORIZED = "User was not authorized to delete certificate ID: ";
     public static final String CERTIFICATES_DELETE_OK = "Certificate deleted: ";
+    public static final String CERTIFICATE_CLASSIFICATION_MANAGEMENT_START = "Managing certificate classification";
+    public static final String CERTIFICATE_CLASSIFICATION_MANAGEMENT_OK = "Certificate classification management completed";
 
     // DataDownloadController
     public static final String DATA_DOWNLOAD_CERTIFICATES_START = "Downloading all certificates";
