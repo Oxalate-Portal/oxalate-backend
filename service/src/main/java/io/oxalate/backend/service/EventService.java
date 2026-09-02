@@ -227,29 +227,33 @@ public class EventService {
         var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(user.getId());
 
         if (optionalPaymentTypeEnum.isEmpty()) {
-            log.error("Failed to get payment type for user {}, will not add user to event", user.getId());
+            log.warn("User {} cannot join event {} because no valid payment is available", user.getId(), eventId);
             return null;
         }
 
         var paymentTypeEnum = optionalPaymentTypeEnum.get();
 
         if (waitingListEntry.isPresent()) {
-            eventParticipantsRepository.promoteWaitingListUser(eventId, user.getId(), paymentTypeEnum.name());
-
             if (paymentTypeEnum.equals(ONE_TIME)) {
-                paymentService.decreaseOneTimePayment(user.getId());
+                if (paymentService.decreaseOneTimePayment(user.getId()) == null) {
+                    log.warn("User {} cannot join event {} because the one-time payment has no remaining uses", user.getId(), eventId);
+                    return null;
+                }
             }
 
+            eventParticipantsRepository.promoteWaitingListUser(eventId, user.getId(), paymentTypeEnum.name());
             return getRefreshedEventResponse(eventId).orElse(null);
+        }
+
+        if (paymentTypeEnum.equals(ONE_TIME)
+                && paymentService.decreaseOneTimePayment(user.getId()) == null) {
+            log.warn("User {} cannot join event {} because the one-time payment has no remaining uses", user.getId(), eventId);
+            return null;
         }
 
         eventRepository.addParticipantToEvent(user.getId(), eventId, ParticipantTypeEnum.USER.name(), paymentTypeEnum.name(), Instant.now(),
                 eventSubscribeRequest.getUserType()
                                      .name());
-
-        if (paymentTypeEnum.equals(ONE_TIME)) {
-            paymentService.decreaseOneTimePayment(user.getId());
-        }
 
         return getRefreshedEventResponse(eventId).orElse(null);
     }

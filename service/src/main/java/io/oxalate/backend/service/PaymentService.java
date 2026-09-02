@@ -114,26 +114,20 @@ public class PaymentService {
     }
 
     public Optional<PaymentTypeEnum> getBestAvailablePaymentType(long userId) {
-        // Check whether the user has a period payment, if not, mark up as a one time participation
+        // Check whether the user has a period payment, if not, use a one-time payment with remaining uses.
         var payments = getActivePaymentsByUser(userId);
 
-        if (!payments.isEmpty()) {
-            for (var payment : payments) {
-                if (payment.getPaymentType()
-                           .equals(PaymentTypeEnum.PERIODICAL)) {
-                    return Optional.of(PERIODICAL);
-                }
+        for (var payment : payments) {
+            if (payment.getPaymentType()
+                       .equals(PaymentTypeEnum.PERIODICAL)) {
+                return Optional.of(PERIODICAL);
             }
 
-            // No period was found, the entry has to be a one-time payment which has a count > 0
-            return Optional.of(ONE_TIME);
-        }
-
-        // This gets interesting, because what remains is the possibility that the user has a one-time payment with a count of 0 but which is still active
-        var emptyActiveOneTimePayment = paymentRepository.findActiveOneTimeByUserId(userId);
-
-        if (!emptyActiveOneTimePayment.isEmpty()) {
-            return Optional.of(ONE_TIME);
+            if (payment.getPaymentType()
+                       .equals(ONE_TIME)
+                    && payment.getPaymentCount() > 0) {
+                return Optional.of(ONE_TIME);
+            }
         }
 
         return Optional.empty();

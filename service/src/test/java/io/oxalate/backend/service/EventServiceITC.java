@@ -11,6 +11,7 @@ import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIODICAL;
 import io.oxalate.backend.api.PeriodicPaymentTypeEnum;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.EVENT_REQUIRE_PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.ONE_TIME_PAYMENT_EXPIRATION_TYPE;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PERIODICAL_PAYMENT_METHOD_TYPE;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.SINGLE_PAYMENT_ENABLED;
@@ -21,6 +22,7 @@ import io.oxalate.backend.api.UserStatusEnum;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EventRequest;
+import io.oxalate.backend.api.request.EventSubscribeRequest;
 import io.oxalate.backend.api.request.PaymentRequest;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.User;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -230,6 +233,91 @@ class EventServiceITC extends AbstractIntegrationTest {
         // The diver should not be a participant because he had an expired payment
         assertTrue(eventResponse.getParticipants()
                                 .isEmpty());
+    }
+
+    @Test
+    void registerUserInFifthEventWithExhaustedOneTimePaymentFails() {
+        portalConfigurationService.setRuntimeValue(PAYMENT.group, EVENT_REQUIRE_PAYMENT.key, "true");
+        portalConfigurationService.reloadPortalConfigurations();
+
+        paymentService.savePayment(PaymentRequest.builder()
+                                                 .userId(diver.getId())
+                                                 .paymentCount(4)
+                                                 .paymentType(ONE_TIME)
+                                                 .build());
+
+        var events = java.util.stream.IntStream.range(0, 5)
+                                               .mapToObj(index -> generateEvent(Instant.now()
+                                                                                       .plus(index + 1L, ChronoUnit.DAYS),
+                                                       CAVE, organizer.getId(), PUBLISHED))
+                                               .toList();
+
+        for (var index = 0; index < events.size(); index++) {
+            var createdEvent = events.get(index);
+            var response = eventService.addUserToEvent(diver, EventSubscribeRequest.builder()
+                                                                                   .diveEventId(createdEvent.getId())
+                                                                                   .userType(UserTypeEnum.SCUBA_DIVER)
+                                                                                   .build());
+            if (index < 4) {
+                assertNotNull(response);
+                assertEquals(1, response.getParticipants()
+                                        .size());
+            } else {
+                assertNull(response);
+                assertTrue(eventParticipantsRepository.findAllByEventId(createdEvent.getId())
+                                                      .isEmpty());
+            }
+
+            if (index == 3) {
+                assertEquals(0, paymentService.getActivePaymentsByUser(diver.getId())
+                                              .getFirst()
+                                              .getPaymentCount());
+            }
+        }
+
+        assertEquals(0, paymentService.getActivePaymentsByUser(diver.getId())
+                                      .getFirst()
+                                      .getPaymentCount());
+        assertEquals(4, events.stream()
+                              .mapToLong(createdEvent -> eventParticipantsRepository.findAllByEventId(createdEvent.getId())
+                                                                                    .size())
+                              .sum());
+    }
+
+    @Test
+    void fifthRegistrationExplicitlyFailsWhenOneTimePaymentIsExhausted() {
+        portalConfigurationService.setRuntimeValue(PAYMENT.group, EVENT_REQUIRE_PAYMENT.key, "true");
+        portalConfigurationService.reloadPortalConfigurations();
+
+        paymentService.savePayment(PaymentRequest.builder()
+                                                 .userId(diver.getId())
+                                                 .paymentCount(4)
+                                                 .paymentType(ONE_TIME)
+                                                 .build());
+
+        var events = java.util.stream.IntStream.range(0, 5)
+                                               .mapToObj(index -> generateEvent(Instant.now()
+                                                                                       .plus(index + 1L, ChronoUnit.DAYS),
+                                                       CAVE, organizer.getId(), PUBLISHED))
+                                               .toList();
+        for (var index = 0; index < 4; index++) {
+            assertNotNull(eventService.addUserToEvent(diver, EventSubscribeRequest.builder()
+                                                                                  .diveEventId(events.get(index)
+                                                                                                     .getId())
+                                                                                  .userType(UserTypeEnum.SCUBA_DIVER)
+                                                                                  .build()));
+        }
+
+        var fifthResponse = eventService.addUserToEvent(diver, EventSubscribeRequest.builder()
+                                                                                    .diveEventId(events.get(4)
+                                                                                                       .getId())
+                                                                                    .userType(UserTypeEnum.SCUBA_DIVER)
+                                                                                    .build());
+
+        assertNull(fifthResponse);
+        assertTrue(eventParticipantsRepository.findAllByEventId(events.get(4)
+                                                                      .getId())
+                                              .isEmpty());
     }
 
     @Test

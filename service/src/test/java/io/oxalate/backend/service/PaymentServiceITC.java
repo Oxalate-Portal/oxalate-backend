@@ -355,7 +355,8 @@ class PaymentServiceITC extends AbstractIntegrationTest {
         createPayment(futureOneTimeUser.getId(), ONE_TIME, 0, LocalDate.now()
                                                                        .plusDays(2), LocalDate.now()
                                                                                               .plusDays(30));
-        assertEquals(Optional.of(ONE_TIME), paymentService.getBestAvailablePaymentType(futureOneTimeUser.getId()));
+        assertTrue(paymentService.getBestAvailablePaymentType(futureOneTimeUser.getId())
+                                 .isEmpty());
 
         var noPaymentUser = generateUser(ACTIVE, ROLE_USER);
         assertTrue(paymentService.getBestAvailablePaymentType(noPaymentUser.getId())
