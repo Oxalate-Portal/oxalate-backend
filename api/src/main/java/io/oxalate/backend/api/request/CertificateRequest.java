@@ -19,10 +19,6 @@ public class CertificateRequest {
     @JsonProperty("id")
     private long id;
 
-    @Schema(description = "User ID of the certificate entity", example = "123", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    @JsonProperty("userId")
-    private Long userId;
-
     @Schema(description = "Name of the diving organization", example = "IANTD", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("organization")
     private String organization;

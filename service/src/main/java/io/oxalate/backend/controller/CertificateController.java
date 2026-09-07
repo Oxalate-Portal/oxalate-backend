@@ -128,11 +128,11 @@ public class CertificateController implements CertificateAPI {
         log.info("User {} is updating certificate with request: {}", userId, certificateRequest);
 
         if (userId != certificate.getUserId()) {
-            log.warn("User {} is not allowed to update certificates belonging to user {}", userId, certificateRequest.getUserId());
+            log.warn("User {} is not allowed to update certificate {} belonging to user {}", userId, certificateRequest.getId(), certificate.getUserId());
             throw new OxalateUnauthorizedException(CERTIFICATES_UPDATE_UNAUTHORIZED + certificateRequest.getId(), HttpStatus.BAD_REQUEST);
         }
 
-        var certificateResponse = certificateService.updateCertificate(certificateRequest.getUserId(), certificateRequest);
+        var certificateResponse = certificateService.updateCertificate(userId, certificateRequest);
 
         if (certificateResponse == null) {
             throw new OxalateValidationException(CERTIFICATES_UPDATE_FAIL + certificateRequest.getId(), HttpStatus.BAD_REQUEST);
