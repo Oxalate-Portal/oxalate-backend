@@ -19,11 +19,11 @@
         <java.version>25</java.version>
         <spring.boot.version>4.1.1</spring.boot.version> <!-- Keep this in sync with the parent version -->
         <jjwt.version>0.13.0</jjwt.version>
-        <swagger.version>2.2.54</swagger.version>
+        <swagger.version>2.2.55</swagger.version>
         <testcontainers.version>2.0.5</testcontainers.version>
-        <apache-maven.version>3.5.6</apache-maven.version>
+        <apache-maven.version>3.6.0</apache-maven.version>
         <jboss-logging.component.version>3.0.4.Final</jboss-logging.component.version>
-        <lombok.version>1.18.46</lombok.version>
+        <lombok.version>1.18.48</lombok.version>
     </properties>
 
     <build>
@@ -123,7 +123,7 @@
             <dependency>
                 <groupId>org.checkerframework</groupId>
                 <artifactId>checker-qual</artifactId>
-                <version>4.2.2</version>
+                <version>4.2.3</version>
             </dependency>
             <dependency>
                 <groupId>io.swagger.core.v3</groupId>
