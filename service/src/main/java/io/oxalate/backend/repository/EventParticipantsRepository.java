@@ -47,6 +47,38 @@ public interface EventParticipantsRepository extends CrudRepository<EventsPartic
     List<EventsParticipant> findAllByEventId(long eventId);
 
     @Query(nativeQuery = true, value = """
+            SELECT * FROM event_participants ep
+            WHERE ep.dive_group_id = :diveGroupId
+            ORDER BY ep.dive_group_joined_at ASC, ep.user_id ASC
+            """)
+    List<EventsParticipant> findAllByDiveGroupId(@Param("diveGroupId") long diveGroupId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(nativeQuery = true, value = """
+            UPDATE event_participants
+            SET dive_group_id = :diveGroupId, dive_group_joined_at = :joinedAt
+            WHERE event_id = :eventId AND user_id = :userId
+            """)
+    void assignDiveGroup(@Param("eventId") long eventId, @Param("userId") long userId, @Param("diveGroupId") Long diveGroupId,
+            @Param("joinedAt") Instant joinedAt);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(nativeQuery = true, value = """
+            UPDATE event_participants
+            SET dive_group_id = NULL, dive_group_joined_at = NULL
+            WHERE event_id = :eventId AND user_id = :userId
+            """)
+    void clearDiveGroupForUser(@Param("eventId") long eventId, @Param("userId") long userId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(nativeQuery = true, value = """
+            UPDATE event_participants
+            SET dive_group_id = NULL, dive_group_joined_at = NULL
+            WHERE dive_group_id = :diveGroupId
+            """)
+    void clearDiveGroupMembers(@Param("diveGroupId") long diveGroupId);
+
+    @Query(nativeQuery = true, value = """
             SELECT DISTINCT ep.event_id
             FROM event_participants ep, events e\s
             WHERE ep.user_id = 100

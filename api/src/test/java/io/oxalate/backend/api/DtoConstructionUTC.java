@@ -1,15 +1,21 @@
 package io.oxalate.backend.api;
 
 import io.oxalate.backend.api.request.ConfirmationRequest;
+import io.oxalate.backend.api.request.DiveGroupRequest;
+import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
 import io.oxalate.backend.api.request.EventSubscribeRequest;
 import io.oxalate.backend.api.request.MessageRequest;
 import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
+import io.oxalate.backend.api.response.DiveGroupMemberResponse;
+import io.oxalate.backend.api.response.DiveGroupResponse;
 import io.oxalate.backend.api.response.UserUpdateStatus;
 import io.oxalate.backend.api.response.commenting.CommentReportResponse;
+import java.time.Instant;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
@@ -168,5 +174,108 @@ class DtoConstructionUTC {
         assertEquals(ReportStatusEnum.APPROVED, dto.getStatus());
         assertNotNull(new CommentReportResponse());
     }
-}
 
+    @Test
+    void DiveGroupRequestBuilderOk() {
+        var dto = DiveGroupRequest.builder()
+                                  .eventId(42L)
+                                  .name("Team Sidemount")
+                                  .ownerId(7L)
+                                  .build();
+
+        assertEquals(42L, dto.getEventId());
+        assertEquals("Team Sidemount", dto.getName());
+        assertEquals(7L, dto.getOwnerId());
+    }
+
+    @Test
+    void DiveGroupRequestConstructorOk() {
+        var dto = new DiveGroupRequest(42L, "Team Sidemount", null);
+        assertEquals(42L, dto.getEventId());
+        assertNull(dto.getOwnerId());
+
+        var empty = new DiveGroupRequest();
+        empty.setName("Renamed");
+        assertEquals("Renamed", empty.getName());
+    }
+
+    @Test
+    void DiveGroupUpdateRequestBuilderOk() {
+        var dto = DiveGroupUpdateRequest.builder()
+                                        .name("Renamed group")
+                                        .ownerId(9L)
+                                        .build();
+
+        assertEquals("Renamed group", dto.getName());
+        assertEquals(9L, dto.getOwnerId());
+    }
+
+    @Test
+    void DiveGroupUpdateRequestConstructorOk() {
+        var dto = new DiveGroupUpdateRequest("Renamed group", null);
+        assertEquals("Renamed group", dto.getName());
+        assertNull(dto.getOwnerId());
+        assertNotNull(new DiveGroupUpdateRequest());
+    }
+
+    @Test
+    void DiveGroupMemberResponseBuilderOk() {
+        var joinedAt = Instant.parse("2024-01-01T10:00:00Z");
+        var dto = DiveGroupMemberResponse.builder()
+                                         .userId(3L)
+                                         .name("John Doe")
+                                         .userType(UserTypeEnum.SCUBA_DIVER)
+                                         .owner(true)
+                                         .joinedAt(joinedAt)
+                                         .build();
+
+        assertEquals(3L, dto.getUserId());
+        assertEquals("John Doe", dto.getName());
+        assertEquals(UserTypeEnum.SCUBA_DIVER, dto.getUserType());
+        assertTrue(dto.isOwner());
+        assertEquals(joinedAt, dto.getJoinedAt());
+    }
+
+    @Test
+    void DiveGroupMemberResponseConstructorOk() {
+        var dto = new DiveGroupMemberResponse(3L, "John Doe", UserTypeEnum.FREE_DIVER, false, null);
+        assertEquals(UserTypeEnum.FREE_DIVER, dto.getUserType());
+        assertNotNull(new DiveGroupMemberResponse());
+    }
+
+    @Test
+    void DiveGroupResponseBuilderOk() {
+        var createdAt = Instant.parse("2024-01-01T10:00:00Z");
+        var member = DiveGroupMemberResponse.builder()
+                                            .userId(3L)
+                                            .name("John Doe")
+                                            .owner(true)
+                                            .build();
+        var dto = DiveGroupResponse.builder()
+                                   .id(1L)
+                                   .eventId(42L)
+                                   .name("Team Sidemount")
+                                   .ownerId(3L)
+                                   .ownerName("John Doe")
+                                   .createdAt(createdAt)
+                                   .updatedAt(null)
+                                   .members(List.of(member))
+                                   .build();
+
+        assertEquals(1L, dto.getId());
+        assertEquals(42L, dto.getEventId());
+        assertEquals("John Doe", dto.getOwnerName());
+        assertEquals(createdAt, dto.getCreatedAt());
+        assertNull(dto.getUpdatedAt());
+        assertEquals(1, dto.getMembers()
+                           .size());
+    }
+
+    @Test
+    void DiveGroupResponseConstructorOk() {
+        var dto = new DiveGroupResponse(1L, 42L, "Team", 3L, "John Doe", Instant.EPOCH, Instant.EPOCH, List.of());
+        assertEquals("Team", dto.getName());
+        assertEquals(3L, dto.getOwnerId());
+        assertNotNull(new DiveGroupResponse());
+    }
+}
