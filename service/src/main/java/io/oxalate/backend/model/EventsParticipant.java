@@ -54,6 +54,12 @@ public class EventsParticipant {
     @Column(name = "event_user_type", nullable = false)
     private UserTypeEnum eventUserType;
 
+    @Column(name = "dive_group_id")
+    private Long diveGroupId;
+
+    @Column(name = "dive_group_joined_at")
+    private Instant diveGroupJoinedAt;
+
     public EventDiveResponse toEventDiveResponse(String name) {
         return EventDiveResponse.builder()
                 .userId(userId)

@@ -7,6 +7,7 @@ import io.oxalate.backend.rest.CertificateAPI;
 import io.oxalate.backend.rest.CertificateClassificationAPI;
 import io.oxalate.backend.rest.CommentAPI;
 import io.oxalate.backend.rest.DataDownloadAPI;
+import io.oxalate.backend.rest.DiveGroupAPI;
 import io.oxalate.backend.rest.EmailNotificationSubscriptionAPI;
 import io.oxalate.backend.rest.EventAPI;
 import io.oxalate.backend.rest.FileTransferAPI;
@@ -25,6 +26,7 @@ import io.oxalate.backend.rest.UserAPI;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.lang.reflect.Method;
 import java.util.HashSet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,7 +47,7 @@ class RestContractTC {
 
     private static final Class<?>[] API_INTERFACES = {
             AuditAPI.class, AuthAPI.class, BlockedDateAPI.class, CertificateAPI.class, CertificateClassificationAPI.class,
-            CommentAPI.class, DataDownloadAPI.class, EmailNotificationSubscriptionAPI.class,
+            CommentAPI.class, DataDownloadAPI.class, DiveGroupAPI.class, EmailNotificationSubscriptionAPI.class,
             EventAPI.class, FileTransferAPI.class, MembershipAPI.class, NotificationAPI.class,
             PageAPI.class, PageManagementAPI.class, PaymentAPI.class,
             PortalConfigurationAPI.class, StatsAPI.class, TagAPI.class, TestAPI.class, UserAPI.class,
@@ -120,8 +122,67 @@ class RestContractTC {
                 () -> method.getName() + " must declare authentication"));
     }
 
+    @Test
+    void diveGroupEndpointsAreAuthenticatedAndComplete() {
+        var methods = DiveGroupAPI.class.getDeclaredMethods();
+
+        assertEquals(9, java.util.Arrays.stream(methods)
+                                        .filter(method -> mapping(method) != null)
+                                        .count(), "DiveGroupAPI must declare all nine dive group endpoints");
+
+        for (var method : methods) {
+            var mapping = mapping(method);
+            if (mapping == null) {
+                continue;
+            }
+
+            var endpointPath = path(mapping);
+            assertTrue(endpointPath.startsWith("/api/dive-groups"),
+                    () -> method.getName() + " must be mapped below /api/dive-groups, was: " + endpointPath);
+            assertTrue(method.isAnnotationPresent(SecurityRequirement.class),
+                    () -> method.getName() + " must declare authentication");
+            assertNotNull(method.getAnnotation(io.swagger.v3.oas.annotations.Operation.class),
+                    () -> method.getName() + " is missing OpenAPI @Operation");
+            assertNotNull(method.getAnnotation(io.swagger.v3.oas.annotations.responses.ApiResponses.class),
+                    () -> method.getName() + " is missing OpenAPI @ApiResponses");
+            assertTrue(ResponseEntity.class.isAssignableFrom(method.getReturnType()),
+                    () -> method.getName() + " must return ResponseEntity");
+            assertFalse(endpointPath.startsWith("/api/auth/")
+                            || endpointPath.startsWith("/api/pages/")
+                            || endpointPath.startsWith("/api/files/")
+                            || endpointPath.startsWith("/api/documents/")
+                            || endpointPath.startsWith("/api/dive-plans/")
+                            || endpointPath.startsWith("/api/test/"),
+                    () -> method.getName() + " must not be classified as a public route");
+        }
+    }
+
+    @Test
+    void diveGroupEndpointsUseTheExpectedHttpMethods() {
+        assertEquals("/api/dive-groups", mappedPath(PostMapping.class, "createDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(PutMapping.class, "updateDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(DeleteMapping.class, "deleteDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(GetMapping.class, "getDiveGroupById"));
+        assertEquals("/api/dive-groups/events/{eventId}", mappedPath(GetMapping.class, "getDiveGroupsByEventId"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath(PostMapping.class, "joinDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath(DeleteMapping.class, "leaveDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath(PostMapping.class, "addMemberToDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath(DeleteMapping.class, "removeMemberFromDiveGroup"));
+    }
+
+    private static String mappedPath(Class<? extends java.lang.annotation.Annotation> annotation, String methodName) {
+        return java.util.Arrays.stream(DiveGroupAPI.class.getDeclaredMethods())
+                               .filter(method -> method.getName()
+                                                       .equals(methodName))
+                               .filter(method -> method.isAnnotationPresent(annotation))
+                               .map(method -> path(method.getAnnotation(annotation)))
+                               .findFirst()
+                               .orElseThrow(() -> new AssertionError(methodName + " is not mapped with " + annotation.getSimpleName()));
+    }
+
     private static Object mapping(Method method) {
-        if (method.isAnnotationPresent(GetMapping.class)) return method.getAnnotation(GetMapping.class);
+        if (method.isAnnotationPresent(GetMapping.class))
+            return method.getAnnotation(GetMapping.class);
         if (method.isAnnotationPresent(PostMapping.class)) return method.getAnnotation(PostMapping.class);
         if (method.isAnnotationPresent(PutMapping.class)) return method.getAnnotation(PutMapping.class);
         if (method.isAnnotationPresent(DeleteMapping.class)) return method.getAnnotation(DeleteMapping.class);

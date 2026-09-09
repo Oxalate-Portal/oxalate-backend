@@ -630,6 +630,56 @@ public class AppAuditMessages {
     public static final String COMMENTS_FILTER_START = "Filtering comments";
     public static final String COMMENTS_FILTER_OK = "Return filtered comments";
 
+    // DiveGroupController
+    public static final String DIVE_GROUPS_GET_BY_EVENT_START = "Fetching dive groups of event with ID: ";
+    public static final String DIVE_GROUPS_GET_BY_EVENT_OK = "Dive groups of event fetched with ID: ";
+    public static final String DIVE_GROUPS_GET_BY_EVENT_FAIL = "Failed to fetch dive groups of event with ID: ";
+
+    public static final String DIVE_GROUPS_GET_SINGLE_START = "Fetching dive group with ID: ";
+    public static final String DIVE_GROUPS_GET_SINGLE_OK = "Dive group fetched with ID: ";
+    public static final String DIVE_GROUPS_GET_SINGLE_FAIL = "Failed to fetch dive group with ID: ";
+
+    public static final String DIVE_GROUPS_CREATE_START = "Creating new dive group";
+    public static final String DIVE_GROUPS_CREATE_OK = "New dive group created";
+    public static final String DIVE_GROUPS_CREATE_FAIL = "Failed to create new dive group";
+
+    public static final String DIVE_GROUPS_UPDATE_START = "Updating dive group with ID: ";
+    public static final String DIVE_GROUPS_UPDATE_OK = "Dive group updated with ID: ";
+    public static final String DIVE_GROUPS_UPDATE_FAIL = "Failed to update dive group with ID: ";
+
+    public static final String DIVE_GROUPS_DELETE_START = "Deleting dive group with ID: ";
+    public static final String DIVE_GROUPS_DELETE_OK = "Dive group deleted with ID: ";
+    public static final String DIVE_GROUPS_DELETE_FAIL = "Failed to delete dive group with ID: ";
+
+    public static final String DIVE_GROUPS_JOIN_START = "Joining dive group with ID: ";
+    public static final String DIVE_GROUPS_JOIN_OK = "Dive group joined with ID: ";
+    public static final String DIVE_GROUPS_JOIN_FAIL = "Failed to join dive group with ID: ";
+
+    public static final String DIVE_GROUPS_LEAVE_START = "Leaving dive group with ID: ";
+    public static final String DIVE_GROUPS_LEAVE_OK = "Dive group left with ID: ";
+    public static final String DIVE_GROUPS_LEAVE_FAIL = "Failed to leave dive group with ID: ";
+
+    public static final String DIVE_GROUPS_ADD_MEMBER_START = "Adding member to dive group with ID: ";
+    public static final String DIVE_GROUPS_ADD_MEMBER_OK = "Member added to dive group with ID: ";
+    public static final String DIVE_GROUPS_ADD_MEMBER_FAIL = "Failed to add member to dive group with ID: ";
+
+    public static final String DIVE_GROUPS_REMOVE_MEMBER_START = "Removing member from dive group with ID: ";
+    public static final String DIVE_GROUPS_REMOVE_MEMBER_OK = "Member removed from dive group with ID: ";
+    public static final String DIVE_GROUPS_REMOVE_MEMBER_FAIL = "Failed to remove member from dive group with ID: ";
+
+    public static final String DIVE_GROUPS_EVENT_NOT_FOUND = "Dive event not found with ID: ";
+    public static final String DIVE_GROUPS_NOT_FOUND = "Dive group not found with ID: ";
+    public static final String DIVE_GROUPS_EVENT_ENDED = "Dive event can no longer be modified, ID: ";
+    public static final String DIVE_GROUPS_EVENT_STARTED = "Dive event has already started, ID: ";
+    public static final String DIVE_GROUPS_INVALID_NAME = "Dive group name is invalid";
+    public static final String DIVE_GROUPS_NOT_PARTICIPANT = "User is not a participant of the dive event, user ID: ";
+    public static final String DIVE_GROUPS_ALREADY_OWNER = "User already owns a dive group for the dive event, user ID: ";
+    public static final String DIVE_GROUPS_ALREADY_IN_GROUP = "User already belongs to a dive group of the dive event, user ID: ";
+    public static final String DIVE_GROUPS_NOT_MEMBER = "User is not a member of the dive group, user ID: ";
+    public static final String DIVE_GROUPS_UNAUTHORIZED = "User is not allowed to manage the dive group with ID: ";
+    public static final String DIVE_GROUPS_OWNER_ASSIGNMENT_UNAUTHORIZED = "User is not allowed to assign another owner to the dive group";
+    public static final String DIVE_GROUPS_ADD_MEMBER_UNAUTHORIZED = "User is not allowed to add other members to the dive group with ID: ";
+
     private AppAuditMessages() {
     }
 }
