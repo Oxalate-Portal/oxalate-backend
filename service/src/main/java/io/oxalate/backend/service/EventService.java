@@ -49,6 +49,7 @@ public class EventService {
     private final CommentService commentService;
     private final EventCommentRepository eventCommentRepository;
     private final MessageService messageService;
+    private final DiveGroupService diveGroupService;
 
     @Transactional(readOnly = true)
     public EventResponse findById(Long eventId) {
@@ -404,6 +405,11 @@ public class EventService {
         if (!participantIds.contains(user.getId())) {
             log.warn("User {} has not been subscribed to event {}", user.getId(), eventId);
             return null;
+        }
+
+        var participant = eventParticipantsRepository.findByEventIdAndUserId(eventId, user.getId());
+        if (participant != null && participant.getDiveGroupId() != null) {
+            diveGroupService.leaveDiveGroup(participant.getDiveGroupId(), user.getId());
         }
 
         eventRepository.removeParticipantFromEvent(user.getId(), eventId);
