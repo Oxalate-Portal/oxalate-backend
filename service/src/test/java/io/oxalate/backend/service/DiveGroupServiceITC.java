@@ -44,6 +44,8 @@ class DiveGroupServiceITC extends AbstractIntegrationTest {
     @Autowired
     private DiveGroupService diveGroupService;
     @Autowired
+    private EventService eventService;
+    @Autowired
     private DiveGroupRepository diveGroupRepository;
     @Autowired
     private EventRepository eventRepository;
@@ -328,6 +330,31 @@ class DiveGroupServiceITC extends AbstractIntegrationTest {
         assertTrue(diveGroupRepository.findById(groupId)
                                       .isEmpty());
         assertNull(groupIdOf(firstUser));
+    }
+
+    @Test
+    void unsubscribeFromEventAsGroupOwnerRemovesLastMemberGroupOk() {
+        var groupId = createGroupFor(firstUser);
+
+        eventService.removeUserFromEvent(firstUser, event.getId());
+
+        assertTrue(diveGroupRepository.findById(groupId)
+                                      .isEmpty());
+        assertNull(eventParticipantsRepository.findByEventIdAndUserId(event.getId(), firstUser.getId()));
+    }
+
+    @Test
+    void unsubscribeFromEventAsGroupOwnerTransfersOwnershipToOldestMemberOk() {
+        var groupId = createGroupFor(firstUser);
+        diveGroupService.joinDiveGroup(groupId, thirdUser.getId());
+        diveGroupService.joinDiveGroup(groupId, secondUser.getId());
+
+        eventService.removeUserFromEvent(firstUser, event.getId());
+
+        assertEquals(secondUser.getId(), diveGroupRepository.findById(groupId)
+                                                            .orElseThrow()
+                                                            .getOwnerId());
+        assertNull(eventParticipantsRepository.findByEventIdAndUserId(event.getId(), firstUser.getId()));
     }
 
     @Test

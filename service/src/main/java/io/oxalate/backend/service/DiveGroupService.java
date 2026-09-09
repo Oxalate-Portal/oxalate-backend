@@ -318,7 +318,7 @@ public class DiveGroupService {
         var remainingMembers = eventParticipantsRepository.findAllByDiveGroupId(diveGroup.getId())
                                                           .stream()
                                                           .filter(member -> member.getUserId() != userId)
-                                                          .sorted(Comparator.comparing(EventsParticipant::getDiveGroupJoinedAt,
+                                                          .sorted(Comparator.comparing(EventsParticipant::getCreatedAt,
                                                                   Comparator.nullsLast(Comparator.naturalOrder())))
                                                           .toList();
 
