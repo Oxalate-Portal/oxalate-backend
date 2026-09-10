@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableConfigurationProperties(CaptchaProperties.class)
 public class OxalateBackendApp {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(OxalateBackendApp.class, args);
     }
 }

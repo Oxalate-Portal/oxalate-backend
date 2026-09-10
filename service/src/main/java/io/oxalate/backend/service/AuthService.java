@@ -65,6 +65,7 @@ import static io.oxalate.backend.model.TokenType.PASSWORD_RESET;
 import static io.oxalate.backend.model.TokenType.REGISTRATION;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.security.LoginAttemptService;
+import io.oxalate.backend.security.WebSecurityConfig;
 import io.oxalate.backend.security.jwt.JwtUtils;
 import io.oxalate.backend.security.service.UserDetailsImpl;
 import jakarta.servlet.http.HttpServletRequest;
@@ -485,7 +486,7 @@ public class AuthService {
             return null;
         }
 
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(WebSecurityConfig.BCRYPT_STRENGTH);
         return passwordEncoder.encode(password);
     }
 

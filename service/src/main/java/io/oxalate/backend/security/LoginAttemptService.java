@@ -5,8 +5,8 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import static io.oxalate.backend.tools.HttpTools.getRemoteIp;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,12 +23,14 @@ public class LoginAttemptService {
 
     public LoginAttemptService() {
         super();
-        attemptsCache = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.DAYS).build(new CacheLoader<>() {
-            @Override
-            public Integer load(final String key) {
-                return 0;
-            }
-        });
+        attemptsCache = CacheBuilder.newBuilder()
+                                    .expireAfterWrite(Duration.ofDays(1))
+                                    .build(new CacheLoader<>() {
+                                        @Override
+                                        public Integer load(final String key) {
+                                            return 0;
+                                        }
+                                    });
     }
 
     public void loginFailed(final String key) {

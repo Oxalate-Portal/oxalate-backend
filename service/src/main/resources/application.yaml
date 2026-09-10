@@ -84,6 +84,10 @@ oxalate:
     jwt-expiration: override-me
     jwt-secure: true
     jwt-same-site: Strict
+    # OWASP A07:2025 - iss/aud claims are required when validating tokens, so a token minted for another
+    # deployment cannot be replayed here.
+    jwt-issuer: oxalate-portal
+    jwt-audience: oxalate-portal-frontend
   cors:
     allowed-origins: ${oxalate.app.frontend-url},http://localhost:8081
     cors-pattern: '/**'

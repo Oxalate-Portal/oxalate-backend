@@ -18,6 +18,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class RecaptchaFilter extends OncePerRequestFilter {
 
     private static final String AUDIT_NAME = "RecaptchaFilter";
+
+    /**
+     * OWASP A07:2025 - every unauthenticated POST endpoint that can be abused for credential stuffing, account
+     * enumeration or mail bombing must be captcha protected, not just the login endpoint.
+     */
+    static final Set<String> PROTECTED_PATHS = Set.of(
+            API + "/auth/login",
+            API + "/auth/register",
+            API + "/auth/lost-password",
+            API + "/auth/reset-password",
+            API + "/auth/registrations/resend-confirmation"
+    );
+
     private final RecaptchaService recaptchaService;
     private final AppEventPublisher appEventPublisher;
 
@@ -36,9 +50,7 @@ public class RecaptchaFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        if (request.getMethod()
-                   .equals("POST") && request.getRequestURI()
-                                             .equals(API + "/auth/login")) {
+        if (requiresCaptcha(request)) {
             var traceId = UUID.randomUUID();
             AuditContext.setTraceId(traceId);
 
@@ -75,9 +87,22 @@ public class RecaptchaFilter extends OncePerRequestFilter {
                 AuditContext.clear();
             }
         } else {
-            log.debug("RecaptchaFilter.doFilterInternal: Not a login attempt");
+            log.debug("RecaptchaFilter.doFilterInternal: Not a captcha protected endpoint");
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * @param request the incoming request
+     * @return {@code true} when the request targets an unauthenticated endpoint that requires a captcha
+     */
+    private boolean requiresCaptcha(HttpServletRequest request) {
+        if (!recaptchaService.isCaptchaEnabled()) {
+            // Captcha is switched off for this deployment, so demanding a token would only break the flow
+            return false;
+        }
+
+        return "POST".equals(request.getMethod()) && PROTECTED_PATHS.contains(request.getRequestURI());
     }
 }

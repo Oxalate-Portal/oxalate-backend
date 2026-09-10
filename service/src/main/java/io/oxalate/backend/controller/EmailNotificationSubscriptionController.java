@@ -38,6 +38,7 @@ public class EmailNotificationSubscriptionController implements EmailNotificatio
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = EMAIL_SUBSCRIPTION_SAVE_START, okMessage = EMAIL_SUBSCRIPTION_SAVE_OK)
     public ResponseEntity<List<EmailNotificationSubscriptionResponse>> subscribeToEmailNotifications(
             EmailNotificationSubscriptionRequest subscriptions) {

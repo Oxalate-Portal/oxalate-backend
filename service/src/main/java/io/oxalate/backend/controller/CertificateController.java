@@ -86,13 +86,15 @@ public class CertificateController implements CertificateAPI {
     public ResponseEntity<CertificateResponse> getCertificate(long certificateId) {
         var certificateResponse = certificateService.findById(certificateId);
 
+        // OWASP A10:2025 - existence must be checked before the response is dereferenced, otherwise an
+        // unknown certificate ID produces a NullPointerException and a 500 instead of a handled error.
+        if (certificateResponse == null) {
+            throw new OxalateNotFoundException(CERTIFICATES_GET_NOT_FOUND + certificateId, HttpStatus.BAD_REQUEST);
+        }
+
         if (!AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) && !AuthTools.isUserIdCurrentUser(certificateResponse.getUserId())) {
             log.warn("User {} is not allowed to see user {}'s certificate ID {}", AuthTools.getCurrentUserId(), certificateResponse.getUserId(), certificateId);
             throw new OxalateUnauthorizedException(CERTIFICATES_GET_UNAUTHORIZED + certificateResponse.getUserId(), HttpStatus.BAD_REQUEST);
-        }
-
-        if (certificateResponse == null) {
-            throw new OxalateNotFoundException(CERTIFICATES_GET_NOT_FOUND + certificateId, HttpStatus.BAD_REQUEST);
         }
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -148,6 +150,11 @@ public class CertificateController implements CertificateAPI {
     public ResponseEntity<Void> deleteCertificate(long certificateId) {
         var userId = AuthTools.getCurrentUserId();
         var certificate = certificateService.findById(certificateId);
+
+        // OWASP A10:2025 - a missing certificate must not become a NullPointerException.
+        if (certificate == null) {
+            throw new OxalateNotFoundException(CERTIFICATES_GET_NOT_FOUND + certificateId, HttpStatus.BAD_REQUEST);
+        }
 
         if (certificate.getUserId() != userId) {
             log.warn("User {} is not allowed to delete user {}'s certificates", AuthTools.getCurrentUserId(), userId);

@@ -578,6 +578,7 @@ public class AppAuditMessages {
 
     public static final String MEMBERSHIP_GET_FOR_USER_START = "Getting memberships for user ID: ";
     public static final String MEMBERSHIP_GET_FOR_USER_OK = "Return memberships for user";
+    public static final String MEMBERSHIP_GET_FOR_USER_UNAUTHORIZED = "Unauthorized attempt to read memberships of user ID: ";
 
     public static final String MEMBERSHIP_CREATE_START = "Creating new membership";
     public static final String MEMBERSHIP_CREATE_OK = "Membership created";

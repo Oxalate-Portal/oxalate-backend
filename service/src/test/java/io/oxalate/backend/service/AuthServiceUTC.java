@@ -283,10 +283,10 @@ class AuthServiceUTC {
         assertEquals(1, result.getMemberships()
                               .size());
         assertEquals(MembershipTypeEnum.PERIODICAL, result.getMemberships()
-                                                          .get(0)
+                                                          .getFirst()
                                                           .getType());
         assertEquals(MembershipStatusEnum.ACTIVE, result.getMemberships()
-                                                        .get(0)
+                                                        .getFirst()
                                                         .getStatus());
     }
 

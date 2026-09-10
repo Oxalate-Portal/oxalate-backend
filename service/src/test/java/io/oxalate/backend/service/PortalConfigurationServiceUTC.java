@@ -58,7 +58,7 @@ class PortalConfigurationServiceUTC {
         var value = portalConfigurationService.getArrayConfiguration("group-1", "key-array");
         assertNotNull(value);
         assertEquals(3, value.size());
-        assertEquals("one", value.get(0));
+        assertEquals("one", value.getFirst());
     }
 
     @Test

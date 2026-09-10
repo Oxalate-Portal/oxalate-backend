@@ -59,6 +59,7 @@ public class Membership {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @ToString.Exclude
     private User user;
 
     public MembershipResponse toResponse() {

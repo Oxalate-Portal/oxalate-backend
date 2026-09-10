@@ -48,6 +48,7 @@ public class DataDownloadController implements DataDownloadAPI {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     @Audited(startMessage = DATA_DOWNLOAD_DIVES_START, okMessage = DATA_DOWNLOAD_DIVES_OK)
     public ResponseEntity<List<DownloadDiveResponse>> downloadDives() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN)) {

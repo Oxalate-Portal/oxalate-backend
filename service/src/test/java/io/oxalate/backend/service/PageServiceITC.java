@@ -101,9 +101,9 @@ class PageServiceITC extends AbstractIntegrationTest {
         assertEquals(10, result.getSize());
         assertFalse(result.isEmpty());
         assertEquals("Test Blog Article", result.getContent()
-                                                .get(0)
+                                                .getFirst()
                                                 .getPageVersions()
-                                                .get(0)
+                                                .getFirst()
                                                 .getTitle());
     }
 
@@ -146,9 +146,9 @@ class PageServiceITC extends AbstractIntegrationTest {
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         assertEquals("Special Article", result.getContent()
-                                              .get(0)
+                                              .getFirst()
                                               .getPageVersions()
-                                              .get(0)
+                                              .getFirst()
                                               .getTitle());
     }
 
@@ -173,9 +173,9 @@ class PageServiceITC extends AbstractIntegrationTest {
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         assertEquals("Special Article", result.getContent()
-                                              .get(0)
+                                              .getFirst()
                                               .getPageVersions()
-                                              .get(0)
+                                              .getFirst()
                                               .getTitle());
     }
 
@@ -246,9 +246,9 @@ class PageServiceITC extends AbstractIntegrationTest {
         assertEquals(2, result.getTotalElements());
         // The second article should come first (DESC order)
         assertEquals("Second Article", result.getContent()
-                                             .get(0)
+                                             .getFirst()
                                              .getPageVersions()
-                                             .get(0)
+                                             .getFirst()
                                              .getTitle());
     }
 
@@ -274,9 +274,9 @@ class PageServiceITC extends AbstractIntegrationTest {
         assertEquals(2, result.getTotalElements());
         // The first article should come first (ASC order)
         assertEquals("First Article", result.getContent()
-                                            .get(0)
+                                            .getFirst()
                                             .getPageVersions()
-                                            .get(0)
+                                            .getFirst()
                                             .getTitle());
     }
 
@@ -301,9 +301,9 @@ class PageServiceITC extends AbstractIntegrationTest {
         assertNotNull(result);
         assertEquals(2, result.getTotalElements());
         assertEquals("Alpha Article", result.getContent()
-                                            .get(0)
+                                            .getFirst()
                                             .getPageVersions()
-                                            .get(0)
+                                            .getFirst()
                                             .getTitle());
     }
 
@@ -328,9 +328,9 @@ class PageServiceITC extends AbstractIntegrationTest {
         assertNotNull(result);
         assertEquals(2, result.getTotalElements());
         assertEquals("Zebra Article", result.getContent()
-                                            .get(0)
+                                            .getFirst()
                                             .getPageVersions()
-                                            .get(0)
+                                            .getFirst()
                                             .getTitle());
     }
 
@@ -431,9 +431,9 @@ class PageServiceITC extends AbstractIntegrationTest {
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         assertEquals("English Article", result.getContent()
-                                              .get(0)
+                                              .getFirst()
                                               .getPageVersions()
-                                              .get(0)
+                                              .getFirst()
                                               .getTitle());
     }
 

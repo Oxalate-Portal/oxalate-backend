@@ -102,6 +102,7 @@ public class StatsController implements StatsAPI {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @Audited(startMessage = STATS_GET_YEARLY_AGGREGATE_START, okMessage = STATS_GET_YEARLY_AGGREGATE_OK)
     public ResponseEntity<AggregateResponse> getAggregateStats() {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {

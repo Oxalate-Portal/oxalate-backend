@@ -90,7 +90,7 @@ class AvatarFileTransferServiceUTC {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        var url = result.get(0)
+        var url = result.getFirst()
                         .getUrl();
         assertNotNull(url, "URL must not be null");
         assertTrue(url.contains("/api/files/avatars/"), "URL must contain '/api/files/avatars/' path segment");
@@ -102,7 +102,7 @@ class AvatarFileTransferServiceUTC {
 
         var result = avatarFileTransferService.findAllAvatarFiles();
 
-        var url = result.get(0)
+        var url = result.getFirst()
                         .getUrl();
         // Avatar DB id is 42, physical filename is "100.jpg"
         assertTrue(url.endsWith("/42"), "URL must end with the avatar DB id (42), not with the physical filename");
@@ -115,7 +115,7 @@ class AvatarFileTransferServiceUTC {
 
         var result = avatarFileTransferService.findAllAvatarFiles();
 
-        var url = result.get(0)
+        var url = result.getFirst()
                         .getUrl();
         assertEquals("http://localhost:8080/api/files/avatars/42", url,
                 "URL must have a '/' separator between host and path - was missing before the fix");
@@ -128,7 +128,7 @@ class AvatarFileTransferServiceUTC {
 
         var result = avatarFileTransferService.findAllAvatarFiles();
 
-        var url = result.get(0)
+        var url = result.getFirst()
                         .getUrl();
         assertFalse(url.contains("//api"), "URL must not contain a double-slash before the API path");
         assertEquals("http://localhost:8080/api/files/avatars/42", url);

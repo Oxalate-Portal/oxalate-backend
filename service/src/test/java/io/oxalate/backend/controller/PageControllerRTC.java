@@ -468,10 +468,7 @@ class PageControllerRTC extends AbstractIntegrationTest {
 
         var newUser = userRepository.save(user);
         var optionalRole = roleRepository.findByName(RoleEnum.ROLE_USER);
-        if (optionalRole.isPresent()) {
-            var role = optionalRole.get();
-            roleRepository.addUserRole(newUser.getId(), role.getId());
-        }
+        optionalRole.ifPresent(role -> roleRepository.addUserRole(newUser.getId(), role.getId()));
         return newUser;
     }
 

@@ -24,6 +24,7 @@
         <apache-maven.version>3.6.0</apache-maven.version>
         <jboss-logging.component.version>3.0.4.Final</jboss-logging.component.version>
         <lombok.version>1.18.48</lombok.version>
+        <jspecify.version>1.0.1</jspecify.version>
     </properties>
 
     <build>

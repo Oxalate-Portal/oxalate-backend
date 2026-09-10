@@ -3,7 +3,6 @@ package io.oxalate.backend.tools;
 import io.oxalate.backend.api.RoleEnum;
 import io.oxalate.backend.security.service.UserDetailsImpl;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -14,14 +13,26 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @Slf4j
 public class AuthTools {
 
-    public static boolean isUserIdCurrentUser(long userId) {
-        var authentication = getAuthentication();
+    private AuthTools() {
+        // Utility class
+    }
 
-        if (authentication == null) {
+    /**
+     * OWASP A01:2025 - ownership check used by every "self or elevated role" endpoint.
+     * <p>
+     * The principal is only a {@code UserDetailsImpl} for authenticated users; for anonymous requests it is
+     * the string {@code "anonymousUser"}. Casting unconditionally threw a {@link ClassCastException}, which
+     * surfaced as a 500 instead of a denial. The check now fails closed.
+     *
+     * @param userId the user id the caller wants to act on
+     * @return {@code true} only when the authenticated caller is that user
+     */
+    public static boolean isUserIdCurrentUser(long userId) {
+        var userDetails = getCurrentUserDetails();
+
+        if (userDetails == null) {
             return false;
         }
-
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
         return userDetails.getId() == userId;
     }
@@ -57,49 +68,47 @@ public class AuthTools {
     }
 
     public static boolean currentUserHasNotAcceptedTerms() {
-        var authentication = getAuthentication();
+        var userDetails = getCurrentUserDetails();
 
-        if (authentication == null) {
+        if (userDetails == null) {
             return true;
         }
 
-        return !((UserDetailsImpl) Objects.requireNonNull(authentication.getPrincipal())).isApprovedTerms();
+        return !userDetails.isApprovedTerms();
     }
 
     public static boolean currentUserHasNotAcceptedHealthStatement() {
-        var authentication = getAuthentication();
+        var userDetails = getCurrentUserDetails();
 
-        if (authentication == null) {
+        if (userDetails == null) {
             log.debug("Authentication is null, treating as user that has not accepted health statement");
             return true;
         }
 
-        var healthStatementId = ((UserDetailsImpl) Objects.requireNonNull(authentication.getPrincipal())).getHealthStatementId();
+        var healthStatementId = userDetails.getHealthStatementId();
         log.debug("The retrieved health statement ID is: {}", healthStatementId);
 
         return (healthStatementId == null);
     }
 
     public static long getCurrentUserId() {
-        var authentication = getAuthentication();
+        var userDetails = getCurrentUserDetails();
 
-        if (authentication == null ||
-                authentication.getPrincipal() instanceof String) {
+        if (userDetails == null) {
             return -1;
         }
 
-        return ((UserDetailsImpl) authentication.getPrincipal()).getId();
+        return userDetails.getId();
     }
 
     public static String getLanguage() {
-        var authentication = getAuthentication();
+        var userDetails = getCurrentUserDetails();
 
-        if (authentication == null ||
-                authentication.getPrincipal() instanceof String) {
+        if (userDetails == null) {
             return "fi";
         }
 
-        return ((UserDetailsImpl) authentication.getPrincipal()).getLanguage();
+        return userDetails.getLanguage();
     }
 
     public static Set<RoleEnum> getUserRoles() {
@@ -125,5 +134,23 @@ public class AuthTools {
         }
 
         return context.getAuthentication();
+    }
+
+    /**
+     * @return the authenticated principal, or {@code null} when the request is anonymous or the principal is
+     * not an Oxalate user
+     */
+    private static UserDetailsImpl getCurrentUserDetails() {
+        var authentication = getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        if (authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+            return userDetails;
+        }
+
+        return null;
     }
 }

@@ -33,10 +33,11 @@ oxalate:
     backend-url: http://localhost:8080
     frontend-url: http://localhost:3000
     # Base64 encoded 512-bit key for HS512 algorithm (64 bytes = 512 bits)
+    # OWASP A02:2025 - test profile only. SecurityPreflight rejects this key outside local/test.
     jwt-secret: YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
     jwt-expiration: 86400
     jwt-secure: false
-    jwt-same-site: None
+    jwt-same-site: Strict
   captcha:
     enabled: false
     site-key: test-site-key

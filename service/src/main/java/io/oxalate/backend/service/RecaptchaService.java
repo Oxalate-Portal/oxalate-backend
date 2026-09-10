@@ -22,9 +22,9 @@ public class RecaptchaService {
 
     private final RestTemplate restTemplate;
 
+    @Getter
     @Value("${oxalate.captcha.enabled}")
     private boolean captchaEnabled;
-
     @Value("${oxalate.captcha.verification-url}")
     private String captchaVerificationUrl;
 

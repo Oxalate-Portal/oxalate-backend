@@ -129,6 +129,13 @@
             <version>33.7.1-jre</version>
         </dependency>
 
+        <!-- Nullability annotations, used directly in place of the deprecated org.springframework.lang.* ones -->
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>${jspecify.version}</version>
+        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

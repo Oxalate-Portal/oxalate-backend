@@ -11,6 +11,7 @@ import io.oxalate.backend.api.response.MembershipResponse;
 import io.oxalate.backend.api.response.PaymentResponse;
 import io.oxalate.backend.api.response.TagResponse;
 import io.oxalate.backend.api.response.UserResponse;
+import io.oxalate.backend.security.WebSecurityConfig;
 import static io.oxalate.backend.tools.TagTools.collectTagResponses;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
@@ -67,6 +68,7 @@ public class User {
     @NotBlank
     @Size(max = 120)
     @Column(name = "password", nullable = false)
+    @ToString.Exclude
     private String password;
 
     @NotBlank
@@ -86,6 +88,7 @@ public class User {
 
     @NotNull
     @Column(name = "phone_number", nullable = false)
+    @ToString.Exclude
     private String phoneNumber;
 
     @NotNull
@@ -93,6 +96,7 @@ public class User {
     private boolean privacy;
 
     @Column(name = "next_of_kin")
+    @ToString.Exclude
     private String nextOfKin;
 
     @NotNull
@@ -152,7 +156,7 @@ public class User {
     private Set<Tag> tags = new HashSet<>();
 
     public User(SignupRequest signupRequest) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(WebSecurityConfig.BCRYPT_STRENGTH);
         this.username = signupRequest.getUsername();
         this.password = passwordEncoder.encode(signupRequest.getPassword());
         this.firstName = signupRequest.getFirstName();

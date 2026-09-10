@@ -158,9 +158,9 @@ public class StatsService {
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> dateResult = query.getResultList();
 
-        if (!dateResult.isEmpty() && dateResult.get(0) != null && dateResult.get(0)[0] != null) {
-            BigDecimal startYear = (BigDecimal) dateResult.get(0)[0];
-            BigDecimal startMonth = (BigDecimal) dateResult.get(0)[1];
+        if (!dateResult.isEmpty() && dateResult.getFirst() != null && dateResult.getFirst()[0] != null) {
+            BigDecimal startYear = (BigDecimal) dateResult.getFirst()[0];
+            BigDecimal startMonth = (BigDecimal) dateResult.getFirst()[1];
 
             var yearHalf = 1;
             var currentYear = Year.now()
@@ -406,32 +406,17 @@ public class StatsService {
     }
 
     private Instant mapToInstant(Object value) {
-        if (value == null) {
-            return null;
-        }
+        return switch (value) {
+            case null -> null;
+            case Instant instant -> instant;
+            case java.sql.Timestamp timestamp -> timestamp.toInstant();
+            case LocalDateTime localDateTime -> localDateTime.atZone(ZoneId.systemDefault())
+                                                             .toInstant();
+            case OffsetDateTime offsetDateTime -> offsetDateTime.toInstant();
+            case java.util.Date date -> date.toInstant();
+            default -> null;
+        };
 
-        if (value instanceof Instant instant) {
-            return instant;
-        }
-
-        if (value instanceof java.sql.Timestamp timestamp) {
-            return timestamp.toInstant();
-        }
-
-        if (value instanceof LocalDateTime localDateTime) {
-            return localDateTime.atZone(ZoneId.systemDefault())
-                                .toInstant();
-        }
-
-        if (value instanceof OffsetDateTime offsetDateTime) {
-            return offsetDateTime.toInstant();
-        }
-
-        if (value instanceof java.util.Date date) {
-            return date.toInstant();
-        }
-
-        return null;
     }
 
     /**

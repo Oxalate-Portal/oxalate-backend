@@ -9,16 +9,16 @@ import lombok.Getter;
 public class MemberDiveCount {
     @Id
     @Column(name = "user_id")
-    private long userId;
+    private final long userId;
 
     @Column(name = "first_name")
-    private String firstName;
+    private final String firstName;
 
     @Column(name = "last_name")
-    private String lastName;
+    private final String lastName;
 
     @Column(name = "dive_count")
-    private int diveCount;
+    private final int diveCount;
 
     public MemberDiveCount(long userId, String firstName, String lastName, int diveCount) {
         this.userId = userId;

@@ -153,6 +153,7 @@ public class TagController implements TagAPI {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @Audited(startMessage = TAGS_GROUP_GET_BY_TYPE_START, okMessage = TAGS_GROUP_GET_BY_TYPE_OK)
     public ResponseEntity<List<TagGroupResponse>> getTagGroupsByType(TagGroupEnum type) {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
@@ -246,6 +247,7 @@ public class TagController implements TagAPI {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @Audited(startMessage = TAGS_GET_BY_GROUP_TYPE_START, okMessage = TAGS_GET_BY_GROUP_TYPE_OK)
     public ResponseEntity<List<TagResponse>> getTagsByGroupType(TagGroupEnum type) {
         if (!AuthTools.currentUserHasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER)) {
