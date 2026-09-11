@@ -44,6 +44,12 @@ public class DiveGroup {
     @Column(name = "owner_id", nullable = false)
     private long ownerId;
 
+    /**
+     * Position of the group within the dive event, starting from 1. The default order is the order of creation.
+     */
+    @Column(name = "group_order", nullable = false)
+    private int groupOrder;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -64,6 +70,7 @@ public class DiveGroup {
                                 .name(this.name)
                                 .ownerId(this.ownerId)
                                 .ownerName(ownerName)
+                                .groupOrder(this.groupOrder)
                                 .createdAt(this.createdAt)
                                 .updatedAt(this.updatedAt)
                                 .members(members)

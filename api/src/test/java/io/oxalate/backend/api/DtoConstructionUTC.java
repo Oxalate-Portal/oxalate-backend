@@ -1,6 +1,7 @@
 package io.oxalate.backend.api;
 
 import io.oxalate.backend.api.request.ConfirmationRequest;
+import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
 import io.oxalate.backend.api.request.EventSubscribeRequest;
@@ -257,6 +258,7 @@ class DtoConstructionUTC {
                                    .name("Team Sidemount")
                                    .ownerId(3L)
                                    .ownerName("John Doe")
+                                   .groupOrder(2)
                                    .createdAt(createdAt)
                                    .updatedAt(null)
                                    .members(List.of(member))
@@ -265,6 +267,7 @@ class DtoConstructionUTC {
         assertEquals(1L, dto.getId());
         assertEquals(42L, dto.getEventId());
         assertEquals("John Doe", dto.getOwnerName());
+        assertEquals(2, dto.getGroupOrder());
         assertEquals(createdAt, dto.getCreatedAt());
         assertNull(dto.getUpdatedAt());
         assertEquals(1, dto.getMembers()
@@ -273,9 +276,21 @@ class DtoConstructionUTC {
 
     @Test
     void DiveGroupResponseConstructorOk() {
-        var dto = new DiveGroupResponse(1L, 42L, "Team", 3L, "John Doe", Instant.EPOCH, Instant.EPOCH, List.of());
+        var dto = new DiveGroupResponse(1L, 42L, "Team", 3L, "John Doe", 1, Instant.EPOCH, Instant.EPOCH, List.of());
         assertEquals("Team", dto.getName());
         assertEquals(3L, dto.getOwnerId());
+        assertEquals(1, dto.getGroupOrder());
         assertNotNull(new DiveGroupResponse());
+    }
+
+    @Test
+    void DiveGroupOrderRequestConstructorOk() {
+        var dto = new DiveGroupOrderRequest(List.of(3L, 1L, 2L));
+        assertEquals(List.of(3L, 1L, 2L), dto.getDiveGroupIds());
+        assertEquals(List.of(1L, 2L), DiveGroupOrderRequest.builder()
+                                                           .diveGroupIds(List.of(1L, 2L))
+                                                           .build()
+                                                           .getDiveGroupIds());
+        assertNotNull(new DiveGroupOrderRequest());
     }
 }

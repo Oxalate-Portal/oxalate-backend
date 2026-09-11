@@ -126,9 +126,9 @@ class RestContractTC {
     void diveGroupEndpointsAreAuthenticatedAndComplete() {
         var methods = DiveGroupAPI.class.getDeclaredMethods();
 
-        assertEquals(9, java.util.Arrays.stream(methods)
-                                        .filter(method -> mapping(method) != null)
-                                        .count(), "DiveGroupAPI must declare all nine dive group endpoints");
+        assertEquals(10, java.util.Arrays.stream(methods)
+                                         .filter(method -> mapping(method) != null)
+                                         .count(), "DiveGroupAPI must declare all ten dive group endpoints");
 
         for (var method : methods) {
             var mapping = mapping(method);
@@ -164,6 +164,7 @@ class RestContractTC {
         assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(DeleteMapping.class, "deleteDiveGroup"));
         assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(GetMapping.class, "getDiveGroupById"));
         assertEquals("/api/dive-groups/events/{eventId}", mappedPath(GetMapping.class, "getDiveGroupsByEventId"));
+        assertEquals("/api/dive-groups/events/{eventId}/order", mappedPath(PutMapping.class, "reorderDiveGroups"));
         assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath(PostMapping.class, "joinDiveGroup"));
         assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath(DeleteMapping.class, "leaveDiveGroup"));
         assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath(PostMapping.class, "addMemberToDiveGroup"));

@@ -652,6 +652,10 @@ public class AppAuditMessages {
     public static final String DIVE_GROUPS_DELETE_OK = "Dive group deleted with ID: ";
     public static final String DIVE_GROUPS_DELETE_FAIL = "Failed to delete dive group with ID: ";
 
+    public static final String DIVE_GROUPS_REORDER_START = "Setting dive group order of event with ID: ";
+    public static final String DIVE_GROUPS_REORDER_OK = "Dive group order set for event with ID: ";
+    public static final String DIVE_GROUPS_REORDER_FAIL = "Failed to set dive group order of event with ID: ";
+
     public static final String DIVE_GROUPS_JOIN_START = "Joining dive group with ID: ";
     public static final String DIVE_GROUPS_JOIN_OK = "Dive group joined with ID: ";
     public static final String DIVE_GROUPS_JOIN_FAIL = "Failed to join dive group with ID: ";
@@ -680,6 +684,8 @@ public class AppAuditMessages {
     public static final String DIVE_GROUPS_UNAUTHORIZED = "User is not allowed to manage the dive group with ID: ";
     public static final String DIVE_GROUPS_OWNER_ASSIGNMENT_UNAUTHORIZED = "User is not allowed to assign another owner to the dive group";
     public static final String DIVE_GROUPS_ADD_MEMBER_UNAUTHORIZED = "User is not allowed to add other members to the dive group with ID: ";
+    public static final String DIVE_GROUPS_REORDER_UNAUTHORIZED = "User is not allowed to set the dive group order of the dive event with ID: ";
+    public static final String DIVE_GROUPS_INVALID_ORDER = "The given dive group order does not match the dive groups of the dive event with ID: ";
 
     private AppAuditMessages() {
     }
