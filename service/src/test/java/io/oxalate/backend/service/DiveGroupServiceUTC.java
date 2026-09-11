@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.nullable;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,9 +69,29 @@ class DiveGroupServiceUTC {
     private UserRepository userRepository;
     @Mock
     private MessageService messageService;
+    @Mock
+    private NotificationLocalizationService notificationLocalizationService;
 
     @InjectMocks
     private DiveGroupService diveGroupService;
+
+    @BeforeEach
+    void setUp() {
+        when(notificationLocalizationService.getMessage(nullable(User.class), anyString()))
+                .thenAnswer(invocation -> {
+                    var user = invocation.getArgument(0, User.class);
+                    var key = invocation.getArgument(1, String.class);
+                    if (user != null && "de".equals(user.getLanguage()) && "notification.dive-group.title".equals(key)) {
+                        return "Tauchgruppen-Aktualisierung";
+                    }
+                    if (user != null && "fi".equals(user.getLanguage()) && "notification.dive-group.title".equals(key)) {
+                        return "Sukellusryhmän päivitys";
+                    }
+                    return "localized";
+                });
+        when(notificationLocalizationService.getMessage(nullable(User.class), anyString(), any()))
+                .thenReturn("localized");
+    }
 
     // ------------------------------------------------------------------
     // Helpers
@@ -117,11 +139,16 @@ class DiveGroupServiceUTC {
     }
 
     private User user(long id) {
+        return user(id, null);
+    }
+
+    private User user(long id, String language) {
         return User.builder()
                    .id(id)
                    .username("user" + id + "@test.tld")
                    .firstName("First" + id)
                    .lastName("Last" + id)
+                   .language(language)
                    .build();
     }
 
@@ -249,6 +276,34 @@ class DiveGroupServiceUTC {
 
         assertEquals(OWNER_ID, response.getOwnerId());
         verify(messageService).createSimpleNotification(eq(OWNER_ID), eq(ORGANIZER_ID), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void createDiveGroupNotificationUsesGermanTitleOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(participant(OWNER_ID, null, null));
+        when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, OWNER_ID)).thenReturn(Optional.empty());
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenReturn(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(user(OWNER_ID, "de")));
+        diveGroupService.createDiveGroup(createRequest(OWNER_ID), ORGANIZER_ID, false, true);
+
+        verify(messageService).createSimpleNotification(
+                eq(OWNER_ID), eq(ORGANIZER_ID), eq("Tauchgruppen-Aktualisierung"), eq("Tauchgruppen-Aktualisierung"), anyString());
+    }
+
+    @Test
+    void createDiveGroupNotificationUsesFinnishTitleOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(participant(OWNER_ID, null, null));
+        when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, OWNER_ID)).thenReturn(Optional.empty());
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenReturn(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(user(OWNER_ID, "fi")));
+        diveGroupService.createDiveGroup(createRequest(OWNER_ID), ORGANIZER_ID, false, true);
+
+        verify(messageService).createSimpleNotification(
+                eq(OWNER_ID), eq(ORGANIZER_ID), eq("Sukellusryhmän päivitys"), eq("Sukellusryhmän päivitys"), anyString());
     }
 
     @Test

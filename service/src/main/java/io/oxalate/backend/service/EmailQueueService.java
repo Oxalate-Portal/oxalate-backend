@@ -19,6 +19,7 @@ import io.oxalate.backend.repository.PageVersionRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ public class EmailQueueService {
     final private RoleRepository roleRepository;
     final private PortalConfigurationService portalConfigurationService;
     final private MessageService messageService;
+    final private NotificationLocalizationService notificationLocalizationService;
 
     @Transactional
     public void addNotification(EmailNotificationTypeEnum emailType, EmailNotificationDetailEnum detail, long typeId) {
@@ -96,12 +98,20 @@ public class EmailQueueService {
      * @param detail    The detail/reason for the email
      */
     private void createEmailNotificationForUser(Long userId, EmailNotificationTypeEnum emailType, EmailNotificationDetailEnum detail) {
-        String title = "New email notification";
-        String description = "Email notification";
-        String messageContent = switch (emailType) {
-            case EVENT -> "You have a new email notification about an event: " + detail.name();
-            case PAGE -> "You have a new email notification about a page update: " + detail.name();
-        };
+        var user = userService.findUserEntityById(userId);
+        if (user == null) {
+            log.warn("Could not create email notification for missing user ID {}", userId);
+            return;
+        }
+
+        var title = notificationLocalizationService.getMessage(user, "notification.email.title");
+        var description = notificationLocalizationService.getMessage(user, "notification.email.description");
+        var localizedDetail = notificationLocalizationService.getMessage(
+                user, "notification.email.detail." + detail.name()
+                                                           .toLowerCase(Locale.ROOT));
+        var messageContent = notificationLocalizationService.getMessage(
+                user, "notification.email." + emailType.name()
+                                                       .toLowerCase(Locale.ROOT), new Object[] { localizedDetail });
 
         messageService.createSimpleNotification(userId, SYSTEM_USER_ID, title, description, messageContent);
         log.debug("Created in-app notification for user ID {} about {} email", userId, emailType);
