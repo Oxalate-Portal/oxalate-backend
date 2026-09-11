@@ -7,6 +7,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import io.oxalate.backend.api.UserTypeEnum;
+import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
 import io.oxalate.backend.model.Event;
@@ -80,12 +81,14 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
     private MockMvc mockMvc;
 
     private User organizer;
+    private User otherOrganizer;
     private User firstUser;
     private User secondUser;
     private User outsider;
     private Event event;
 
     private String organizerToken;
+    private String otherOrganizerToken;
     private String firstUserToken;
     private String secondUserToken;
     private String outsiderToken;
@@ -97,11 +100,13 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                  .build();
 
         organizer = createUser(RoleEnum.ROLE_ORGANIZER);
+        otherOrganizer = createUser(RoleEnum.ROLE_ORGANIZER);
         firstUser = createUser(RoleEnum.ROLE_USER);
         secondUser = createUser(RoleEnum.ROLE_USER);
         outsider = createUser(RoleEnum.ROLE_USER);
 
         organizerToken = tokenFor(organizer, RoleEnum.ROLE_ORGANIZER);
+        otherOrganizerToken = tokenFor(otherOrganizer, RoleEnum.ROLE_ORGANIZER);
         firstUserToken = tokenFor(firstUser, RoleEnum.ROLE_USER);
         secondUserToken = tokenFor(secondUser, RoleEnum.ROLE_USER);
         outsiderToken = tokenFor(outsider, RoleEnum.ROLE_USER);
@@ -134,7 +139,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
         messageRepository.deleteAll();
         eventRepository.deleteAll();
 
-        for (var user : List.of(organizer, firstUser, secondUser, outsider)) {
+        for (var user : List.of(organizer, otherOrganizer, firstUser, secondUser, outsider)) {
             roleRepository.deleteAllUserRolesByUserId(user.getId());
             userRepository.deleteById(user.getId());
         }
@@ -193,6 +198,12 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                                                 .name("Group of " + user.getId())
                                                                 .build(), user.getId(), false, false)
                                .getId();
+    }
+
+    private String orderJson(Long... diveGroupIds) throws Exception {
+        return json(DiveGroupOrderRequest.builder()
+                                         .diveGroupIds(List.of(diveGroupIds))
+                                         .build());
     }
 
     private String json(Object object) throws Exception {
@@ -579,5 +590,182 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
         mockMvc.perform(post(BASE_PATH + "/{diveGroupId}/members", groupId)
                        .cookie(new Cookie(JWT_TOKEN, secondUserToken)))
                .andExpect(status().isBadRequest());
+    }
+
+    // ------------------------------------------------------------------
+    // Dive group order
+    // ------------------------------------------------------------------
+
+    @Test
+    void createdDiveGroupsGetTheCreationOrderOk() throws Exception {
+        createGroupFor(firstUser);
+        createGroupFor(secondUser);
+        createGroupFor(organizer);
+
+        mockMvc.perform(get(BASE_PATH + "/events/{eventId}", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].groupOrder").value(1))
+               .andExpect(jsonPath("$[1].groupOrder").value(2))
+               .andExpect(jsonPath("$[2].groupOrder").value(3))
+               .andExpect(jsonPath("$[0].ownerId").value(firstUser.getId()))
+               .andExpect(jsonPath("$[2].ownerId").value(organizer.getId()));
+    }
+
+    @Test
+    void reorderDiveGroupsAsEventOrganizerOk() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+        var secondGroupId = createGroupFor(secondUser);
+        var thirdGroupId = createGroupFor(organizer);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(thirdGroupId, firstGroupId, secondGroupId)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.length()").value(3))
+               .andExpect(jsonPath("$[0].id").value(thirdGroupId))
+               .andExpect(jsonPath("$[0].groupOrder").value(1))
+               .andExpect(jsonPath("$[1].id").value(firstGroupId))
+               .andExpect(jsonPath("$[1].groupOrder").value(2))
+               .andExpect(jsonPath("$[2].id").value(secondGroupId))
+               .andExpect(jsonPath("$[2].groupOrder").value(3));
+
+        mockMvc.perform(get(BASE_PATH + "/events/{eventId}", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].id").value(thirdGroupId))
+               .andExpect(jsonPath("$[1].id").value(firstGroupId))
+               .andExpect(jsonPath("$[2].id").value(secondGroupId));
+    }
+
+    @Test
+    void reorderDiveGroupsWithoutAuthenticationFail() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(firstGroupId)))
+               .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void reorderDiveGroupsAsUserFail() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+        var secondGroupId = createGroupFor(secondUser);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(secondGroupId, firstGroupId)))
+               .andExpect(status().isForbidden());
+    }
+
+    /**
+     * The organizer role alone is not enough: only the organizer of this particular dive event may set the order.
+     */
+    @Test
+    void reorderDiveGroupsAsOrganizerOfAnotherEventFail() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+        var secondGroupId = createGroupFor(secondUser);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, otherOrganizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(secondGroupId, firstGroupId)))
+               .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void reorderDiveGroupsOfUnknownEventFail() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", 999_999L)
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(firstGroupId)))
+               .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void reorderDiveGroupsWithIncompleteListFail() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+        createGroupFor(secondUser);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(firstGroupId)))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void reorderDiveGroupsWithUnknownGroupIdFail() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+        createGroupFor(secondUser);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(firstGroupId, 999_999L)))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void reorderDiveGroupsWithDuplicateGroupIdFail() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+        createGroupFor(secondUser);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(firstGroupId, firstGroupId)))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void reorderDiveGroupsWithEmptyListFail() throws Exception {
+        createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson()))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void reorderDiveGroupsAfterEventEndedFail() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+        var secondGroupId = createGroupFor(secondUser);
+        jdbcTemplate.update("UPDATE events SET start_time = ? WHERE id = ?",
+                LocalDateTime.ofInstant(Instant.now()
+                                               .minus(10, ChronoUnit.HOURS), ZoneOffset.UTC), event.getId());
+
+        mockMvc.perform(put(BASE_PATH + "/events/{eventId}/order", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(orderJson(secondGroupId, firstGroupId)))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteDiveGroupResequencesTheRemainingGroupsOk() throws Exception {
+        var firstGroupId = createGroupFor(firstUser);
+        var secondGroupId = createGroupFor(secondUser);
+        var thirdGroupId = createGroupFor(organizer);
+
+        mockMvc.perform(delete(BASE_PATH + "/{diveGroupId}", firstGroupId)
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken)))
+               .andExpect(status().isOk());
+
+        mockMvc.perform(get(BASE_PATH + "/events/{eventId}", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, secondUserToken)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.length()").value(2))
+               .andExpect(jsonPath("$[0].id").value(secondGroupId))
+               .andExpect(jsonPath("$[0].groupOrder").value(1))
+               .andExpect(jsonPath("$[1].id").value(thirdGroupId))
+               .andExpect(jsonPath("$[1].groupOrder").value(2));
     }
 }

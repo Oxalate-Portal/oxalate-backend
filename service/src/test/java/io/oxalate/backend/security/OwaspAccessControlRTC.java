@@ -58,6 +58,7 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
     private static final String STATS = "/api/stats";
     private static final String DATA_DOWNLOAD = "/api/data-download";
     private static final String TAG_GROUPS = "/api/tag-groups";
+    private static final String DIVE_GROUPS = "/api/dive-groups";
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -260,6 +261,27 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
                .andExpect(status().isForbidden());
     }
 
+    /**
+     * Setting the dive group order is an organizer operation. A plain member must be rejected by the role rule
+     * before the request ever reaches the service.
+     */
+    @Test
+    void reorderDiveGroupsAsMemberFail() throws Exception {
+        mockMvc.perform(put(DIVE_GROUPS + "/events/1/order")
+                       .cookie(new Cookie(JWT_TOKEN, memberToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(diveGroupOrderJson()))
+               .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void reorderDiveGroupsAnonymouslyFail() throws Exception {
+        mockMvc.perform(put(DIVE_GROUPS + "/events/1/order")
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(diveGroupOrderJson()))
+               .andExpect(status().isForbidden());
+    }
+
     // ------------------------------------------------------------------
     // Token handling
     // ------------------------------------------------------------------
@@ -309,6 +331,12 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
         return """
                 {"id": 0, "userId": %d, "status": "ACTIVE", "type": "PERIODICAL", "startDate": "2024-01-01", "endDate": "2024-12-31"}
                 """.formatted(userId);
+    }
+
+    private String diveGroupOrderJson() {
+        return """
+                {"diveGroupIds": [2, 1]}
+                """;
     }
 
     private User createUser(RoleEnum roleEnum) {

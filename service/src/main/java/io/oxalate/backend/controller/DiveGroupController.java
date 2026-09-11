@@ -2,6 +2,7 @@ package io.oxalate.backend.controller;
 
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
+import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
 import io.oxalate.backend.api.response.ActionResponse;
@@ -32,6 +33,9 @@ import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_LEAVE_START
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REMOVE_MEMBER_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REMOVE_MEMBER_OK;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REMOVE_MEMBER_START;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REORDER_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REORDER_OK;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REORDER_START;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_START;
@@ -100,6 +104,16 @@ public class DiveGroupController implements DiveGroupAPI {
                 AuthTools.currentUserHasRole(ROLE_ORGANIZER));
         return ResponseEntity.status(HttpStatus.OK)
                              .body(actionResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @Audited(startMessage = DIVE_GROUPS_REORDER_START, okMessage = DIVE_GROUPS_REORDER_OK, failMessage = DIVE_GROUPS_REORDER_FAIL)
+    public ResponseEntity<List<DiveGroupResponse>> reorderDiveGroups(long eventId, DiveGroupOrderRequest diveGroupOrderRequest) {
+        var diveGroups = diveGroupService.reorderDiveGroups(eventId, diveGroupOrderRequest, AuthTools.getCurrentUserId(),
+                AuthTools.currentUserHasRole(ROLE_ADMIN), AuthTools.currentUserHasRole(ROLE_ORGANIZER));
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(diveGroups);
     }
 
     @Override

@@ -3,8 +3,10 @@ package io.oxalate.backend.service;
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.PaymentTypeEnum;
 import io.oxalate.backend.api.UserTypeEnum;
+import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
+import io.oxalate.backend.api.response.DiveGroupResponse;
 import io.oxalate.backend.exception.OxalateNotFoundException;
 import io.oxalate.backend.exception.OxalateUnauthorizedException;
 import io.oxalate.backend.exception.OxalateValidationException;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
@@ -136,7 +139,7 @@ class DiveGroupServiceUTC {
     @Test
     void getDiveGroupsByEventIdOk() {
         when(eventRepository.existsById(EVENT_ID)).thenReturn(true);
-        when(diveGroupRepository.findAllByEventIdOrderByCreatedAtAsc(EVENT_ID)).thenReturn(List.of(diveGroup(OWNER_ID)));
+        when(diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(EVENT_ID)).thenReturn(List.of(diveGroup(OWNER_ID)));
         when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of(participant(OWNER_ID, GROUP_ID, Instant.now())));
         when(userRepository.findAllById(any())).thenReturn(List.of(user(OWNER_ID)));
 
@@ -985,5 +988,286 @@ class DiveGroupServiceUTC {
         assertNotNull(diveGroupService.deleteDiveGroup(GROUP_ID, -1L, true, false));
 
         verify(messageService).createSimpleNotification(eq(MEMBER_ID), eq(1L), anyString(), anyString(), anyString());
+    }
+
+    // ------------------------------------------------------------------
+    // reorderDiveGroups
+    // ------------------------------------------------------------------
+
+    private DiveGroup orderedDiveGroup(long id, long ownerId, int groupOrder) {
+        return DiveGroup.builder()
+                        .id(id)
+                        .eventId(EVENT_ID)
+                        .name("Group " + id)
+                        .ownerId(ownerId)
+                        .groupOrder(groupOrder)
+                        .createdAt(Instant.now()
+                                          .minus(groupOrder, ChronoUnit.HOURS))
+                        .build();
+    }
+
+    private DiveGroupOrderRequest orderRequest(Long... diveGroupIds) {
+        return DiveGroupOrderRequest.builder()
+                                    .diveGroupIds(java.util.Arrays.asList(diveGroupIds))
+                                    .build();
+    }
+
+    private void stubThreeGroups() {
+        when(diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(EVENT_ID))
+                .thenReturn(List.of(orderedDiveGroup(1L, OWNER_ID, 1), orderedDiveGroup(2L, MEMBER_ID, 2), orderedDiveGroup(3L, OUTSIDER_ID, 3)));
+        when(eventParticipantsRepository.findAllByDiveGroupId(anyLong())).thenReturn(List.of());
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+    }
+
+    @Test
+    void reorderDiveGroupsAsEventOrganizerOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        stubThreeGroups();
+        when(diveGroupRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var responses = diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(3L, 1L, 2L), ORGANIZER_ID, false, true);
+
+        assertEquals(List.of(3L, 1L, 2L), responses.stream()
+                                                   .map(DiveGroupResponse::getId)
+                                                   .toList());
+        assertEquals(List.of(1, 2, 3), responses.stream()
+                                                .map(DiveGroupResponse::getGroupOrder)
+                                                .toList());
+        verify(diveGroupRepository).saveAll(any());
+    }
+
+    @Test
+    void reorderDiveGroupsAsAdminOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        stubThreeGroups();
+        when(diveGroupRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var responses = diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(2L, 3L, 1L), OUTSIDER_ID, true, false);
+
+        assertEquals(List.of(2L, 3L, 1L), responses.stream()
+                                                   .map(DiveGroupResponse::getId)
+                                                   .toList());
+    }
+
+    @Test
+    void reorderDiveGroupsOnlyUpdatesMovedGroupsOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        stubThreeGroups();
+        when(diveGroupRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var responses = diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L, 3L, 2L), ORGANIZER_ID, false, true);
+
+        // The first group keeps its position and must therefore not be marked as updated
+        assertNull(responses.getFirst()
+                            .getUpdatedAt());
+        assertNotNull(responses.get(1)
+                               .getUpdatedAt());
+        assertNotNull(responses.getLast()
+                               .getUpdatedAt());
+    }
+
+    @Test
+    void reorderDiveGroupsAsPlainUserFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+
+        assertThrows(OxalateUnauthorizedException.class,
+                () -> diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L, 2L, 3L), OWNER_ID, false, false));
+        verify(diveGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void reorderDiveGroupsAsOrganizerOfAnotherEventFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+
+        assertThrows(OxalateUnauthorizedException.class,
+                () -> diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L, 2L, 3L), OUTSIDER_ID, false, true));
+        verify(diveGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void reorderDiveGroupsOfUnknownEventFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.empty());
+
+        assertThrows(OxalateNotFoundException.class,
+                () -> diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L), ORGANIZER_ID, false, true));
+    }
+
+    @Test
+    void reorderDiveGroupsOfEndedEventFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event(Instant.now()
+                                                                                     .minus(2, ChronoUnit.DAYS))));
+
+        assertThrows(OxalateValidationException.class,
+                () -> diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L), ORGANIZER_ID, false, true));
+    }
+
+    @Test
+    void reorderDiveGroupsOfStartedEventAsOrganizerOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event(Instant.now()
+                                                                                     .minus(1, ChronoUnit.HOURS))));
+        stubThreeGroups();
+        when(diveGroupRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertEquals(3, diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(3L, 2L, 1L), ORGANIZER_ID, false, true)
+                                        .size());
+    }
+
+    @Test
+    void reorderDiveGroupsWithNullRequestFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.reorderDiveGroups(EVENT_ID, null, ORGANIZER_ID, false, true));
+    }
+
+    @Test
+    void reorderDiveGroupsWithNullIdListFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.reorderDiveGroups(EVENT_ID, DiveGroupOrderRequest.builder()
+                                                                                                                               .build(), ORGANIZER_ID, false,
+                true));
+    }
+
+    @Test
+    void reorderDiveGroupsWithEmptyIdListFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.reorderDiveGroups(EVENT_ID, DiveGroupOrderRequest.builder()
+                                                                                                                               .diveGroupIds(List.of())
+                                                                                                                               .build(), ORGANIZER_ID, false,
+                true));
+    }
+
+    @Test
+    void reorderDiveGroupsWithNullIdFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+
+        assertThrows(OxalateValidationException.class,
+                () -> diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L, null, 3L), ORGANIZER_ID, false, true));
+        verify(diveGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void reorderDiveGroupsWithDuplicateIdFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+
+        assertThrows(OxalateValidationException.class,
+                () -> diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L, 1L, 3L), ORGANIZER_ID, false, true));
+        verify(diveGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void reorderDiveGroupsWithPartialListFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        stubThreeGroups();
+
+        assertThrows(OxalateValidationException.class,
+                () -> diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L, 2L), ORGANIZER_ID, false, true));
+        verify(diveGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void reorderDiveGroupsWithForeignGroupIdFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        stubThreeGroups();
+
+        assertThrows(OxalateValidationException.class,
+                () -> diveGroupService.reorderDiveGroups(EVENT_ID, orderRequest(1L, 2L, 999L), ORGANIZER_ID, false, true));
+        verify(diveGroupRepository, never()).saveAll(any());
+    }
+
+    // ------------------------------------------------------------------
+    // Group order maintenance
+    // ------------------------------------------------------------------
+
+    @Test
+    void createDiveGroupGetsNextGroupOrderOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(participant(OWNER_ID, null, null));
+        when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, OWNER_ID)).thenReturn(Optional.empty());
+        when(diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(EVENT_ID))
+                .thenReturn(List.of(orderedDiveGroup(1L, MEMBER_ID, 1), orderedDiveGroup(2L, OUTSIDER_ID, 2)));
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenReturn(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+
+        diveGroupService.createDiveGroup(createRequest(null), OWNER_ID, false, false);
+
+        var captor = ArgumentCaptor.forClass(DiveGroup.class);
+        verify(diveGroupRepository).save(captor.capture());
+        assertEquals(3, captor.getValue()
+                              .getGroupOrder());
+    }
+
+    @Test
+    void createFirstDiveGroupGetsGroupOrderOneOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(participant(OWNER_ID, null, null));
+        when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, OWNER_ID)).thenReturn(Optional.empty());
+        when(diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(EVENT_ID)).thenReturn(List.of());
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenReturn(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+
+        diveGroupService.createDiveGroup(createRequest(null), OWNER_ID, false, false);
+
+        var captor = ArgumentCaptor.forClass(DiveGroup.class);
+        verify(diveGroupRepository).save(captor.capture());
+        assertEquals(1, captor.getValue()
+                              .getGroupOrder());
+    }
+
+    @Test
+    void deleteDiveGroupResequencesRemainingGroupsOk() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+        // The deleted group is still reported by the repository, and must be skipped when renumbering
+        when(diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(EVENT_ID))
+                .thenReturn(List.of(orderedDiveGroup(GROUP_ID, OWNER_ID, 1), orderedDiveGroup(2L, MEMBER_ID, 2), orderedDiveGroup(3L, OUTSIDER_ID, 3)));
+
+        diveGroupService.deleteDiveGroup(GROUP_ID, OWNER_ID, false, false);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<DiveGroup>> captor = ArgumentCaptor.forClass(List.class);
+        verify(diveGroupRepository).saveAll(captor.capture());
+        assertEquals(List.of(2L, 3L), captor.getValue()
+                                            .stream()
+                                            .map(DiveGroup::getId)
+                                            .toList());
+        assertEquals(List.of(1, 2), captor.getValue()
+                                          .stream()
+                                          .map(DiveGroup::getGroupOrder)
+                                          .toList());
+    }
+
+    @Test
+    void deleteLastDiveGroupDoesNotResequenceOk() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+        when(diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(EVENT_ID)).thenReturn(List.of());
+
+        diveGroupService.deleteDiveGroup(GROUP_ID, OWNER_ID, false, false);
+
+        verify(diveGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void leavingOwnerOfEmptyGroupResequencesRemainingGroupsOk() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(participant(OWNER_ID, GROUP_ID, Instant.now()));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+        when(diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(EVENT_ID))
+                .thenReturn(List.of(orderedDiveGroup(GROUP_ID, OWNER_ID, 1), orderedDiveGroup(2L, MEMBER_ID, 2)));
+        stubUsers(OWNER_ID);
+
+        diveGroupService.leaveDiveGroup(GROUP_ID, OWNER_ID);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<DiveGroup>> captor = ArgumentCaptor.forClass(List.class);
+        verify(diveGroupRepository).saveAll(captor.capture());
+        assertEquals(1, captor.getValue()
+                              .getFirst()
+                              .getGroupOrder());
     }
 }

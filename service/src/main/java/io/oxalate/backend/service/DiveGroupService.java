@@ -2,6 +2,7 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.AuditLevelEnum;
 import io.oxalate.backend.api.UpdateStatusEnum;
+import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
 import io.oxalate.backend.api.response.ActionResponse;
@@ -14,10 +15,12 @@ import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_EVENT_ENDED
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_EVENT_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_EVENT_STARTED;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_INVALID_NAME;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_INVALID_ORDER;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_NOT_MEMBER;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_NOT_PARTICIPANT;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_OWNER_ASSIGNMENT_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REORDER_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UNAUTHORIZED;
 import io.oxalate.backend.exception.OxalateNotFoundException;
 import io.oxalate.backend.exception.OxalateUnauthorizedException;
@@ -34,6 +37,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,7 +73,7 @@ public class DiveGroupService {
             throw new OxalateNotFoundException(DIVE_GROUPS_EVENT_NOT_FOUND + eventId);
         }
 
-        return diveGroupRepository.findAllByEventIdOrderByCreatedAtAsc(eventId)
+        return diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(eventId)
                                   .stream()
                                   .map(this::toResponse)
                                   .toList();
@@ -118,6 +122,7 @@ public class DiveGroupService {
                                                           .eventId(eventId)
                                                           .name(name)
                                                           .ownerId(ownerId)
+                                                          .groupOrder(nextGroupOrder(eventId))
                                                           .createdAt(Instant.now())
                                                           .build());
 
@@ -198,6 +203,7 @@ public class DiveGroupService {
         var members = eventParticipantsRepository.findAllByDiveGroupId(diveGroupId);
         eventParticipantsRepository.clearDiveGroupMembers(diveGroupId);
         diveGroupRepository.delete(diveGroup);
+        resequenceGroupOrder(diveGroup.getEventId(), diveGroupId);
 
         for (var member : members) {
             if (member.getUserId() != currentUserId) {
@@ -210,6 +216,76 @@ public class DiveGroupService {
                              .status(UpdateStatusEnum.OK)
                              .message("Dive group removed")
                              .build();
+    }
+
+    /**
+     * Sets the order in which the dive groups of a dive event are presented. Only the organizer of the dive event, or
+     * an administrator, may change the order. The request must list every dive group of the dive event exactly once,
+     * which also prevents a caller from reordering, or probing for, dive groups of another dive event.
+     *
+     * @param eventId               ID of the dive event whose dive group order is set
+     * @param diveGroupOrderRequest the dive group IDs in the wanted order
+     * @param currentUserId         ID of the calling user
+     * @param isAdmin               whether the calling user is an administrator
+     * @param isOrganizer           whether the calling user has the organizer role
+     * @return the dive groups of the dive event in the new order
+     */
+    @Transactional
+    public List<DiveGroupResponse> reorderDiveGroups(long eventId, DiveGroupOrderRequest diveGroupOrderRequest, long currentUserId, boolean isAdmin,
+            boolean isOrganizer) {
+        var event = getEvent(eventId);
+
+        if (!mayManageEventGroups(event, currentUserId, isAdmin, isOrganizer)) {
+            throw new OxalateUnauthorizedException(AuditLevelEnum.WARN, DIVE_GROUPS_REORDER_UNAUTHORIZED + eventId, HttpStatus.UNAUTHORIZED);
+        }
+
+        assertEventIsModifiable(event, true);
+
+        if (diveGroupOrderRequest == null || diveGroupOrderRequest.getDiveGroupIds() == null || diveGroupOrderRequest.getDiveGroupIds()
+                                                                                                                     .isEmpty()) {
+            throw new OxalateValidationException(AuditLevelEnum.WARN, DIVE_GROUPS_INVALID_ORDER + eventId, HttpStatus.BAD_REQUEST);
+        }
+
+        var requestedIds = diveGroupOrderRequest.getDiveGroupIds();
+
+        if (requestedIds.contains(null) || new HashSet<>(requestedIds).size() != requestedIds.size()) {
+            throw new OxalateValidationException(AuditLevelEnum.WARN, DIVE_GROUPS_INVALID_ORDER + eventId, HttpStatus.BAD_REQUEST);
+        }
+
+        var diveGroups = diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(eventId);
+        var diveGroupsById = new HashMap<Long, DiveGroup>();
+
+        for (var diveGroup : diveGroups) {
+            diveGroupsById.put(diveGroup.getId(), diveGroup);
+        }
+
+        if (requestedIds.size() != diveGroups.size() || !diveGroupsById.keySet()
+                                                                       .containsAll(requestedIds)) {
+            throw new OxalateValidationException(AuditLevelEnum.WARN, DIVE_GROUPS_INVALID_ORDER + eventId, HttpStatus.BAD_REQUEST);
+        }
+
+        var now = Instant.now();
+        var orderedGroups = new ArrayList<DiveGroup>();
+        var position = 1;
+
+        for (var diveGroupId : requestedIds) {
+            var diveGroup = diveGroupsById.get(diveGroupId);
+
+            if (diveGroup.getGroupOrder() != position) {
+                diveGroup.setGroupOrder(position);
+                diveGroup.setUpdatedAt(now);
+            }
+
+            orderedGroups.add(diveGroup);
+            position++;
+        }
+
+        diveGroupRepository.saveAll(orderedGroups);
+
+        log.debug("Dive group order of event ID {} set by user ID {}", eventId, currentUserId);
+        return orderedGroups.stream()
+                            .map(this::toResponse)
+                            .toList();
     }
 
     @Transactional
@@ -325,6 +401,7 @@ public class DiveGroupService {
         if (diveGroup.getOwnerId() == userId) {
             if (remainingMembers.isEmpty()) {
                 diveGroupRepository.delete(diveGroup);
+                resequenceGroupOrder(diveGroup.getEventId(), diveGroup.getId());
                 log.debug("Dive group ID {} removed because the owner left and no members remain", diveGroup.getId());
 
                 if (notifyRemovedUser && userId != actorUserId) {
@@ -389,6 +466,44 @@ public class DiveGroupService {
 
     private boolean mayManageEventGroups(Event event, long userId, boolean isAdmin, boolean isOrganizer) {
         return isAdmin || (isOrganizer && event.getOrganizerId() == userId);
+    }
+
+    /**
+     * Resolves the order of a newly created dive group, which is the last position of the dive event.
+     */
+    private int nextGroupOrder(long eventId) {
+        return diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(eventId)
+                                  .stream()
+                                  .mapToInt(DiveGroup::getGroupOrder)
+                                  .max()
+                                  .orElse(0) + 1;
+    }
+
+    /**
+     * Renumbers the dive groups of a dive event to a gapless 1..n sequence after a group has been removed. The removed
+     * group is filtered out explicitly because it may still be present in the persistence context.
+     */
+    private void resequenceGroupOrder(long eventId, long removedDiveGroupId) {
+        var remainingGroups = diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(eventId)
+                                                 .stream()
+                                                 .filter(diveGroup -> diveGroup.getId() != removedDiveGroupId)
+                                                 .toList();
+
+        var position = 1;
+        var changedGroups = new ArrayList<DiveGroup>();
+
+        for (var diveGroup : remainingGroups) {
+            if (diveGroup.getGroupOrder() != position) {
+                diveGroup.setGroupOrder(position);
+                changedGroups.add(diveGroup);
+            }
+
+            position++;
+        }
+
+        if (!changedGroups.isEmpty()) {
+            diveGroupRepository.saveAll(changedGroups);
+        }
     }
 
     private String sanitizeName(String name) {

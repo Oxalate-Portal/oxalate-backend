@@ -39,6 +39,10 @@ public class DiveGroupResponse {
     @JsonProperty("ownerName")
     private String ownerName;
 
+    @Schema(description = "Position of the dive group within the dive event, starting from 1", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("groupOrder")
+    private int groupOrder;
+
     @Schema(description = "Timestamp of when the dive group was created", example = "2023-10-05T14:48:00Z", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("createdAt")
     private Instant createdAt;

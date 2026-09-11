@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DiveGroupRepository extends JpaRepository<DiveGroup, Long> {
 
-    List<DiveGroup> findAllByEventIdOrderByCreatedAtAsc(long eventId);
+    List<DiveGroup> findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(long eventId);
 
     Optional<DiveGroup> findByEventIdAndOwnerId(long eventId, long ownerId);
 

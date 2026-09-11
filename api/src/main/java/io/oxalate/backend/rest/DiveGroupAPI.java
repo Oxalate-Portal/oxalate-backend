@@ -2,6 +2,7 @@ package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
+import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
 import io.oxalate.backend.api.response.ActionResponse;
@@ -98,6 +99,22 @@ public interface DiveGroupAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(path = BASE_PATH + "/{diveGroupId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ActionResponse> deleteDiveGroup(@NotNull @PathVariable("diveGroupId") long diveGroupId);
+
+    @Operation(description = "Set the order in which the dive groups of a dive event are presented. Only the organizer of the dive event, or an "
+            + "administrator, may change the order. The request must list every dive group of the dive event exactly once.", tags = "DiveGroupAPI")
+    @Parameter(name = "eventId", description = "ID of the dive event whose dive group order is set", example = "42", required = true)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Dive group IDs in the wanted order", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Dive group order updated successfully"),
+            @ApiResponse(responseCode = "400", description = "The given order does not match the dive groups of the dive event"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Dive event does not exist"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(path = BASE_PATH + "/events/{eventId}/order", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<DiveGroupResponse>> reorderDiveGroups(@NotNull @PathVariable("eventId") long eventId,
+            @RequestBody DiveGroupOrderRequest diveGroupOrderRequest);
 
     @Operation(description = "Join a dive group as the currently authenticated user. The user must be a participant of the dive event.", tags = "DiveGroupAPI")
     @Parameter(name = "diveGroupId", description = "ID of the dive group to join", example = "1", required = true)
