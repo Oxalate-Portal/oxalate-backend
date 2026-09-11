@@ -16,6 +16,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             FROM messages m
             JOIN message_receivers mr ON m.id = mr.message_id
             WHERE mr.user_id = :userId AND mr.read = false
+            ORDER BY m.created_at DESC
             """)
     List<MessageWithReadStatus> findUnreadUserMessages(@Param("userId") long userId);
 

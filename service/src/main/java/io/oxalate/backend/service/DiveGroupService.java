@@ -59,13 +59,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class DiveGroupService {
 
     private static final long SYSTEM_USER_ID = 1L;
-    private static final String NOTIFICATION_TITLE = "Dive group update";
-
     private final DiveGroupRepository diveGroupRepository;
     private final EventRepository eventRepository;
     private final EventParticipantsRepository eventParticipantsRepository;
     private final UserRepository userRepository;
     private final MessageService messageService;
+    private final NotificationLocalizationService notificationLocalizationService;
 
     @Transactional(readOnly = true)
     public List<DiveGroupResponse> getDiveGroupsByEventId(long eventId) {
@@ -129,7 +128,7 @@ public class DiveGroupService {
         eventParticipantsRepository.assignDiveGroup(eventId, ownerId, diveGroup.getId(), Instant.now());
 
         if (ownerId != currentUserId) {
-            notify(ownerId, currentUserId, "You have been assigned as the owner of the dive group '" + diveGroup.getName() + "'");
+            notify(ownerId, currentUserId, "notification.dive-group.assigned-owner", diveGroup.getName());
         }
 
         log.debug("Created dive group ID {} for event ID {} with owner ID {}", diveGroup.getId(), eventId, ownerId);
@@ -174,10 +173,10 @@ public class DiveGroupService {
 
             var previousOwnerId = diveGroup.getOwnerId();
             diveGroup.setOwnerId(newOwnerId);
-            notify(newOwnerId, currentUserId, "You are now the owner of the dive group '" + diveGroup.getName() + "'");
+            notify(newOwnerId, currentUserId, "notification.dive-group.new-owner", diveGroup.getName());
 
             if (previousOwnerId != currentUserId) {
-                notify(previousOwnerId, currentUserId, "You are no longer the owner of the dive group '" + diveGroup.getName() + "'");
+                notify(previousOwnerId, currentUserId, "notification.dive-group.previous-owner", diveGroup.getName());
             }
         }
 
@@ -207,7 +206,7 @@ public class DiveGroupService {
 
         for (var member : members) {
             if (member.getUserId() != currentUserId) {
-                notify(member.getUserId(), currentUserId, "The dive group '" + diveGroup.getName() + "' has been removed");
+                notify(member.getUserId(), currentUserId, "notification.dive-group.removed", diveGroup.getName());
             }
         }
 
@@ -303,7 +302,7 @@ public class DiveGroupService {
 
         eventParticipantsRepository.assignDiveGroup(diveGroup.getEventId(), currentUserId, diveGroupId, Instant.now());
 
-        notify(diveGroup.getOwnerId(), currentUserId, resolveName(currentUserId) + " has joined your dive group '" + diveGroup.getName() + "'");
+        notify(diveGroup.getOwnerId(), currentUserId, "notification.dive-group.member-joined", resolveName(currentUserId), diveGroup.getName());
 
         log.debug("User ID {} joined dive group ID {}", currentUserId, diveGroupId);
         return toResponse(diveGroup);
@@ -316,8 +315,8 @@ public class DiveGroupService {
 
         assertEventIsModifiable(event, false);
 
-        removeMember(diveGroup, currentUserId, currentUserId,
-                resolveName(currentUserId) + " has left your dive group '" + diveGroup.getName() + "'", false);
+        removeMember(diveGroup, currentUserId, currentUserId, "notification.dive-group.member-left",
+                false, resolveName(currentUserId));
 
         log.debug("User ID {} left dive group ID {}", currentUserId, diveGroupId);
         return ActionResponse.builder()
@@ -346,10 +345,11 @@ public class DiveGroupService {
 
         eventParticipantsRepository.assignDiveGroup(diveGroup.getEventId(), userId, diveGroupId, Instant.now());
 
-        notify(userId, currentUserId, "You have been added to the dive group '" + diveGroup.getName() + "'");
+        notify(userId, currentUserId, "notification.dive-group.added", diveGroup.getName());
 
         if (diveGroup.getOwnerId() != userId && diveGroup.getOwnerId() != currentUserId) {
-            notify(diveGroup.getOwnerId(), currentUserId, resolveName(userId) + " has been added to your dive group '" + diveGroup.getName() + "'");
+            notify(diveGroup.getOwnerId(), currentUserId, "notification.dive-group.member-added",
+                    resolveName(userId), diveGroup.getName());
         }
 
         log.debug("User ID {} added to dive group ID {} by user ID {}", userId, diveGroupId, currentUserId);
@@ -368,8 +368,8 @@ public class DiveGroupService {
 
         assertEventIsModifiable(event, privileged);
 
-        removeMember(diveGroup, userId, currentUserId,
-                resolveName(userId) + " has been removed from your dive group '" + diveGroup.getName() + "'", true);
+        removeMember(diveGroup, userId, currentUserId, "notification.dive-group.member-removed",
+                true, resolveName(userId));
 
         log.debug("User ID {} removed from dive group ID {} by user ID {}", userId, diveGroupId, currentUserId);
         return ActionResponse.builder()
@@ -382,7 +382,8 @@ public class DiveGroupService {
      * Removes a member from a dive group. When the removed member is the owner of the group, the ownership is
      * transferred to the next user that joined the group. If no members remain, the group itself is removed.
      */
-    private void removeMember(DiveGroup diveGroup, long userId, long actorUserId, String ownerNotification, boolean notifyRemovedUser) {
+    private void removeMember(DiveGroup diveGroup, long userId, long actorUserId, String ownerNotificationKey,
+            boolean notifyRemovedUser, String memberName) {
         var participant = getParticipant(diveGroup.getEventId(), userId);
 
         if (participant.getDiveGroupId() == null || participant.getDiveGroupId() != diveGroup.getId()) {
@@ -405,7 +406,7 @@ public class DiveGroupService {
                 log.debug("Dive group ID {} removed because the owner left and no members remain", diveGroup.getId());
 
                 if (notifyRemovedUser && userId != actorUserId) {
-                    notify(userId, actorUserId, "You have been removed from the dive group '" + diveGroup.getName() + "'");
+                    notify(userId, actorUserId, "notification.dive-group.removed", diveGroup.getName());
                 }
 
                 return;
@@ -416,13 +417,13 @@ public class DiveGroupService {
             diveGroup.setOwnerId(newOwnerId);
             diveGroup.setUpdatedAt(Instant.now());
             diveGroupRepository.save(diveGroup);
-            notify(newOwnerId, actorUserId, "You are now the owner of the dive group '" + diveGroup.getName() + "'");
+            notify(newOwnerId, actorUserId, "notification.dive-group.new-owner", diveGroup.getName());
         } else if (diveGroup.getOwnerId() != actorUserId) {
-            notify(diveGroup.getOwnerId(), actorUserId, ownerNotification);
+            notify(diveGroup.getOwnerId(), actorUserId, ownerNotificationKey, memberName, diveGroup.getName());
         }
 
         if (notifyRemovedUser && userId != actorUserId) {
-            notify(userId, actorUserId, "You have been removed from the dive group '" + diveGroup.getName() + "'");
+            notify(userId, actorUserId, "notification.dive-group.removed", diveGroup.getName());
         }
     }
 
@@ -520,9 +521,13 @@ public class DiveGroupService {
         return trimmedName;
     }
 
-    private void notify(long userId, long actorUserId, String message) {
+    private void notify(long userId, long actorUserId, String messageKey, Object... arguments) {
         var creatorId = actorUserId > 0 ? actorUserId : SYSTEM_USER_ID;
-        messageService.createSimpleNotification(userId, creatorId, NOTIFICATION_TITLE, NOTIFICATION_TITLE, message);
+        var user = userRepository.findById(userId)
+                                 .orElse(null);
+        var title = notificationLocalizationService.getMessage(user, "notification.dive-group.title");
+        var message = notificationLocalizationService.getMessage(user, messageKey, arguments);
+        messageService.createSimpleNotification(userId, creatorId, title, title, message);
     }
 
     private String resolveName(long userId) {

@@ -50,6 +50,7 @@ public class EventService {
     private final EventCommentRepository eventCommentRepository;
     private final MessageService messageService;
     private final DiveGroupService diveGroupService;
+    private final NotificationLocalizationService notificationLocalizationService;
 
     @Transactional(readOnly = true)
     public EventResponse findById(Long eventId) {
@@ -345,13 +346,11 @@ public class EventService {
             }
 
             emailService.sendEventNotificationEmail(user.getUsername(), user.getLanguage(), EmailNotificationDetailEnum.WAITING_LIST_AVAILABLE, event);
-            messageService.createSimpleNotification(
-                    user.getId(),
-                    SYSTEM_USER_ID,
-                    "Waiting list update",
-                    "Moved to event",
-                    "You have been moved from waiting list to event: " + event.getTitle() + " (/events/" + eventId + ")"
-            );
+            var title = notificationLocalizationService.getMessage(user, "notification.waiting-list.title");
+            var description = notificationLocalizationService.getMessage(user, "notification.waiting-list.description");
+            var message = notificationLocalizationService.getMessage(
+                    user, "notification.waiting-list.message", new Object[] { event.getTitle(), eventId });
+            messageService.createSimpleNotification(user.getId(), SYSTEM_USER_ID, title, description, message);
             return;
         }
     }
