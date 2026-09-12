@@ -320,6 +320,8 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
 
     @Test
     void createDiveGroupWithAssignedOwnerAsOrganizerOk() throws Exception {
+        jdbcTemplate.update("DELETE FROM event_participants WHERE event_id = ? AND user_id = ?", event.getId(), organizer.getId());
+
         mockMvc.perform(post(BASE_PATH)
                        .cookie(new Cookie(JWT_TOKEN, organizerToken))
                        .contentType(MediaType.APPLICATION_JSON)
@@ -330,6 +332,20 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                                      .build())))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.ownerId").value(firstUser.getId()));
+    }
+
+    @Test
+    void createDiveGroupWithOrganizerAsOwnerOk() throws Exception {
+        mockMvc.perform(post(BASE_PATH)
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupRequest.builder()
+                                                     .eventId(event.getId())
+                                                     .name("Organizer owned group")
+                                                     .ownerId(organizer.getId())
+                                                     .build())))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.ownerId").value(organizer.getId()));
     }
 
     @Test

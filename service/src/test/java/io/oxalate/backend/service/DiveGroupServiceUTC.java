@@ -279,6 +279,21 @@ class DiveGroupServiceUTC {
     }
 
     @Test
+    void createDiveGroupByOrganizerForSelfOk() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, ORGANIZER_ID)).thenReturn(participant(ORGANIZER_ID, null, null));
+        when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, ORGANIZER_ID)).thenReturn(Optional.empty());
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenReturn(diveGroup(ORGANIZER_ID));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+
+        var response = diveGroupService.createDiveGroup(createRequest(ORGANIZER_ID), ORGANIZER_ID, false, true);
+
+        assertEquals(ORGANIZER_ID, response.getOwnerId());
+        verify(eventParticipantsRepository).assignDiveGroup(eq(EVENT_ID), eq(ORGANIZER_ID), eq(GROUP_ID), any(Instant.class));
+        verify(messageService, never()).createSimpleNotification(anyLong(), anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
     void createDiveGroupNotificationUsesGermanTitleOk() {
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
         when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(participant(OWNER_ID, null, null));
@@ -411,6 +426,17 @@ class DiveGroupServiceUTC {
         when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, OWNER_ID)).thenReturn(Optional.empty());
 
         assertThrows(OxalateValidationException.class, () -> diveGroupService.createDiveGroup(createRequest(null), OWNER_ID, false, false));
+    }
+
+    @Test
+    void createDiveGroupForGroupedOwnerAsAdminFail() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(participant(OWNER_ID, GROUP_ID, Instant.now()));
+        when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, OWNER_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+
+        assertThrows(OxalateValidationException.class,
+                () -> diveGroupService.createDiveGroup(createRequest(OWNER_ID), OUTSIDER_ID, true, false));
+        verify(diveGroupRepository, never()).save(any(DiveGroup.class));
     }
 
     @Test
