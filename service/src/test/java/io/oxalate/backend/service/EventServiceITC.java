@@ -239,11 +239,15 @@ class EventServiceITC extends AbstractIntegrationTest {
     void registerUserInFifthEventWithExhaustedOneTimePaymentFails() {
         portalConfigurationService.setRuntimeValue(PAYMENT.group, EVENT_REQUIRE_PAYMENT.key, "true");
         portalConfigurationService.reloadPortalConfigurations();
+        var paymentStartDate = LocalDate.now();
+        var paymentEndDate = paymentStartDate.plusDays(10);
 
         paymentService.savePayment(PaymentRequest.builder()
                                                  .userId(diver.getId())
                                                  .paymentCount(4)
                                                  .paymentType(ONE_TIME)
+                                                 .startDate(paymentStartDate)
+                                                 .endDate(paymentEndDate)
                                                  .build());
 
         var events = java.util.stream.IntStream.range(0, 5)
@@ -288,11 +292,15 @@ class EventServiceITC extends AbstractIntegrationTest {
     void fifthRegistrationExplicitlyFailsWhenOneTimePaymentIsExhausted() {
         portalConfigurationService.setRuntimeValue(PAYMENT.group, EVENT_REQUIRE_PAYMENT.key, "true");
         portalConfigurationService.reloadPortalConfigurations();
+        var paymentStartDate = LocalDate.now();
+        var paymentEndDate = paymentStartDate.plusDays(10);
 
         paymentService.savePayment(PaymentRequest.builder()
                                                  .userId(diver.getId())
                                                  .paymentCount(4)
                                                  .paymentType(ONE_TIME)
+                                                 .startDate(paymentStartDate)
+                                                 .endDate(paymentEndDate)
                                                  .build());
 
         var events = java.util.stream.IntStream.range(0, 5)

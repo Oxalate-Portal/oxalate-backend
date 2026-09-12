@@ -1,5 +1,6 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.AuditLevelEnum;
 import io.oxalate.backend.api.EmailNotificationDetailEnum;
 import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.EventStatusEnum;
@@ -8,6 +9,10 @@ import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
 import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
+import static io.oxalate.backend.api.PortalConfigEnum.MEMBERSHIP;
+import static io.oxalate.backend.api.PortalConfigEnum.MembershipConfigEnum.EVENT_REQUIRE_MEMBERSHIP;
+import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
+import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.EVENT_REQUIRE_PAYMENT;
 import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.request.EventSubscribeRequest;
@@ -15,6 +20,7 @@ import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
+import io.oxalate.backend.exception.OxalateValidationException;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.EventsParticipant;
 import io.oxalate.backend.model.User;
@@ -30,6 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +50,7 @@ public class EventService {
     private final EventParticipantsRepository eventParticipantsRepository;
     private final UserService userService;
     private final PaymentService paymentService;
+    private final MembershipService membershipService;
     private final EmailService emailService;
     private final EmailQueueService emailQueueService;
     private final PortalConfigurationService portalConfigurationService;
@@ -226,7 +234,19 @@ public class EventService {
             return null;
         }
 
-        var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentType(user.getId());
+        if (portalConfigurationService.getBooleanConfiguration(PAYMENT.group, EVENT_REQUIRE_PAYMENT.key)
+                && !paymentService.hasPaymentAtDate(user.getId(), eventResponse.getStartTime())) {
+            throw new OxalateValidationException(AuditLevelEnum.WARN,
+                    "User does not have a payment valid when the event takes place", HttpStatus.BAD_REQUEST);
+        }
+
+        if (portalConfigurationService.getBooleanConfiguration(MEMBERSHIP.group, EVENT_REQUIRE_MEMBERSHIP.key)
+                && !membershipService.hasActiveMembershipAtDate(user.getId(), eventResponse.getStartTime())) {
+            throw new OxalateValidationException(AuditLevelEnum.WARN,
+                    "User does not have a membership valid when the event takes place", HttpStatus.BAD_REQUEST);
+        }
+
+        var optionalPaymentTypeEnum = paymentService.getBestAvailablePaymentTypeAtDate(user.getId(), eventResponse.getStartTime());
 
         if (optionalPaymentTypeEnum.isEmpty()) {
             log.warn("User {} cannot join event {} because no valid payment is available", user.getId(), eventId);

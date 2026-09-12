@@ -85,6 +85,18 @@ public class MembershipService {
                           .collect(Collectors.toList());
     }
 
+    public boolean hasActiveMembershipAtDate(long userId, Instant eventTime) {
+        var eventDate = eventTime.atZone(java.time.ZoneId.systemDefault())
+                                 .toLocalDate();
+        return membershipRepository.findByUserId(userId)
+                                   .stream()
+                                   .anyMatch(membership -> membership.getStatus() == MembershipStatusEnum.ACTIVE
+                                           && !membership.getStartDate()
+                                                         .isAfter(eventDate)
+                                           && (membership.getEndDate() == null || !membership.getEndDate()
+                                                                                             .isBefore(eventDate)));
+    }
+
     @Transactional
     public MembershipResponse createMembership(MembershipRequest membershipRequest) {
         var membershipType = getMembershipTypeSetting();

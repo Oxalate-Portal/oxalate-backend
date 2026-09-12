@@ -133,6 +133,33 @@ public class PaymentService {
         return Optional.empty();
     }
 
+    public Optional<PaymentTypeEnum> getBestAvailablePaymentTypeAtDate(long userId, Instant eventTime) {
+        var eventDate = eventTime.atZone(java.time.ZoneId.systemDefault())
+                                 .toLocalDate();
+        var payments = paymentRepository.findAllByUserIdOrderByStartDateDesc(userId);
+
+        for (var payment : payments) {
+            if (!isActiveOnDate(payment, eventDate)) {
+                continue;
+            }
+
+            if (payment.getPaymentType() == PERIODICAL
+                    || payment.getPaymentType() == ONE_TIME && payment.getPaymentCount() > 0) {
+                return Optional.of(payment.getPaymentType());
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    public boolean hasPaymentAtDate(long userId, Instant eventTime) {
+        var eventDate = eventTime.atZone(java.time.ZoneId.systemDefault())
+                                 .toLocalDate();
+        return paymentRepository.findAllByUserIdOrderByStartDateDesc(userId)
+                                .stream()
+                                .anyMatch(payment -> isActiveOnDate(payment, eventDate));
+    }
+
     public List<Payment> getActivePaymentsByUser(long userId) {
         return paymentRepository.findAllCurrentPaymentsByUserId(userId);
     }
