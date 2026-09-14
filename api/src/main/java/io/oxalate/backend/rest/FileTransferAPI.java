@@ -143,7 +143,7 @@ public interface FileTransferAPI {
     ResponseEntity<List<DiveFileResponse>> findAllDiveFiles();
 
     /* Upload */
-    @Operation(description = "Upload a dive plan linked to a dive group, returns the external URL to access the file. Currently only stubs", tags = "FileTransferAPI")
+    @Operation(description = "Upload a dive plan linked to a dive group, returns the external URL to access the file. Only members of the dive group may upload files", tags = "FileTransferAPI")
     @Parameter(name = "uploadFile", description = "File to be uploaded", required = true)
     @Parameter(name = "eventId", description = "Event ID to which the dive file belongs to", required = true, example = "11")
     @Parameter(name = "diveGroupId", description = "Which dive group is this upload for", example = "123", required = true)

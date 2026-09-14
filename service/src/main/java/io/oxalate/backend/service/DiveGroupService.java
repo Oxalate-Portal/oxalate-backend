@@ -1,6 +1,7 @@
 package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.AuditLevelEnum;
+import io.oxalate.backend.api.DiveGroupTypeEnum;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
@@ -32,12 +33,14 @@ import io.oxalate.backend.repository.DiveGroupRepository;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.UserRepository;
+import io.oxalate.backend.service.filetransfer.DiveFileTransferService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,6 +68,7 @@ public class DiveGroupService {
     private final UserRepository userRepository;
     private final MessageService messageService;
     private final NotificationLocalizationService notificationLocalizationService;
+    private final DiveFileTransferService diveFileTransferService;
 
     @Transactional(readOnly = true)
     public List<DiveGroupResponse> getDiveGroupsByEventId(long eventId) {
@@ -121,6 +125,9 @@ public class DiveGroupService {
                                                           .eventId(eventId)
                                                           .name(name)
                                                           .ownerId(ownerId)
+                                                          .groupType(diveGroupRequest.getGroupType() != null
+                                                                  ? diveGroupRequest.getGroupType()
+                                                                  : DiveGroupTypeEnum.NORMAL)
                                                           .groupOrder(nextGroupOrder(eventId))
                                                           .createdAt(Instant.now())
                                                           .build());
@@ -131,8 +138,45 @@ public class DiveGroupService {
             notify(ownerId, currentUserId, "notification.dive-group.assigned-owner", diveGroup.getName());
         }
 
+        addInitialMembers(diveGroup, diveGroupRequest.getMemberIds(), ownerId, currentUserId);
+
         log.debug("Created dive group ID {} for event ID {} with owner ID {}", diveGroup.getId(), eventId, ownerId);
         return toResponse(diveGroup);
+    }
+
+    /**
+     * Adds the requested initial members to a newly created dive group. The group owner is skipped because the owner
+     * is already a member, and duplicate IDs are only processed once. Every member must be a participant of the dive
+     * event and may not already belong to another dive group of the event.
+     */
+    private void addInitialMembers(DiveGroup diveGroup, List<Long> memberIds, long ownerId, long currentUserId) {
+        if (memberIds == null || memberIds.isEmpty()) {
+            return;
+        }
+
+        var uniqueMemberIds = new LinkedHashSet<Long>();
+
+        for (var memberId : memberIds) {
+            if (memberId != null && memberId != ownerId) {
+                uniqueMemberIds.add(memberId);
+            }
+        }
+
+        for (var memberId : uniqueMemberIds) {
+            var memberParticipant = getParticipant(diveGroup.getEventId(), memberId);
+
+            if (memberParticipant.getDiveGroupId() != null) {
+                throw new OxalateValidationException(DIVE_GROUPS_ALREADY_IN_GROUP + memberId);
+            }
+
+            eventParticipantsRepository.assignDiveGroup(diveGroup.getEventId(), memberId, diveGroup.getId(), Instant.now());
+
+            if (memberId != currentUserId) {
+                notify(memberId, currentUserId, "notification.dive-group.added", diveGroup.getName());
+            }
+
+            log.debug("User ID {} added to dive group ID {} at creation by user ID {}", memberId, diveGroup.getId(), currentUserId);
+        }
     }
 
     @Transactional
@@ -153,6 +197,10 @@ public class DiveGroupService {
         }
 
         diveGroup.setName(sanitizeName(diveGroupUpdateRequest.getName()));
+
+        if (diveGroupUpdateRequest.getGroupType() != null) {
+            diveGroup.setGroupType(diveGroupUpdateRequest.getGroupType());
+        }
 
         var newOwnerId = diveGroupUpdateRequest.getOwnerId();
 
@@ -567,6 +615,7 @@ public class DiveGroupService {
         }
 
         return diveGroup.toDiveGroupResponse(Optional.ofNullable(names.get(diveGroup.getOwnerId()))
-                                                     .orElse("Unknown user"), members);
+                                                     .orElse("Unknown user"), members,
+                diveFileTransferService.findDiveFilesByDiveGroupId(diveGroup.getId()));
     }
 }

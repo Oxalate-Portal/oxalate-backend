@@ -1,6 +1,8 @@
 package io.oxalate.backend.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.oxalate.backend.api.DiveGroupTypeEnum;
+import io.oxalate.backend.api.response.filetransfer.DiveFileResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -39,6 +41,10 @@ public class DiveGroupResponse {
     @JsonProperty("ownerName")
     private String ownerName;
 
+    @Schema(description = "Type of the dive group, either a normal dive or a special project dive", example = "NORMAL", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("groupType")
+    private DiveGroupTypeEnum groupType;
+
     @Schema(description = "Position of the dive group within the dive event, starting from 1", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("groupOrder")
     private int groupOrder;
@@ -54,4 +60,8 @@ public class DiveGroupResponse {
     @Schema(description = "Members of the dive group")
     @JsonProperty("members")
     private List<DiveGroupMemberResponse> members;
+
+    @Schema(description = "Dive files uploaded by the members of the dive group")
+    @JsonProperty("diveFiles")
+    private List<DiveFileResponse> diveFiles;
 }

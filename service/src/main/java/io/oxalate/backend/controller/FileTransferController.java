@@ -43,6 +43,9 @@ import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_GET_ALL_
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_GET_ALL_OK;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_GET_ALL_START;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_GET_ALL_UNAUTHORIZED;
+import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_REMOVE_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_REMOVE_OK;
+import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_REMOVE_START;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_UPLOAD_DISABLED;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_UPLOAD_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.FILE_DIVE_FILE_UPLOAD_OK;
@@ -298,13 +301,19 @@ public class FileTransferController implements FileTransferAPI {
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Override
     public ResponseEntity<byte[]> downloadDiveFile(long diveFileId) {
-        return null;
+        // We do not audit this endpoint because it is expected to be quite high-traffic
+        log.debug("Downloading dive file ID: {}", diveFileId);
+        return diveFileTransferService.downloadDiveFile(diveFileId);
     }
 
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Override
+    @Audited(startMessage = FILE_DIVE_FILE_REMOVE_START, okMessage = FILE_DIVE_FILE_REMOVE_OK, failMessage = FILE_DIVE_FILE_REMOVE_FAIL)
     public ResponseEntity<ActionResponse> removeDiveFile(long diveFileId) {
-        return null;
+        var userId = AuthTools.getCurrentUserId();
+        log.debug("Removing dive file: {} by user: {}", diveFileId, userId);
+        var response = diveFileTransferService.removeDiveFile(diveFileId, userId);
+        return ResponseEntity.ok(response);
     }
 
     /* Document */

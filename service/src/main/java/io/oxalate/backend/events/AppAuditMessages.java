@@ -447,6 +447,10 @@ public class AppAuditMessages {
     public static final String FILE_DIVE_FILE_UPLOAD_OK = "Dive plan uploaded";
     public static final String FILE_DIVE_FILE_UPLOAD_DISABLED = "Dive file uploads are disabled by configuration";
 
+    public static final String FILE_DIVE_FILE_REMOVE_START = "Removing dive plan";
+    public static final String FILE_DIVE_FILE_REMOVE_FAIL = "Failed to remove dive plan";
+    public static final String FILE_DIVE_FILE_REMOVE_OK = "Dive plan removed";
+
     public static final String FILE_DOCUMENT_GET_ALL_START = "Start fetching all document files";
     public static final String FILE_DOCUMENT_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all document files";
     public static final String FILE_DOCUMENT_GET_ALL_FAIL = "Failed to fetch all document files";
