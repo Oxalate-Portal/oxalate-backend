@@ -9,6 +9,7 @@ import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.security.jwt.JwtUtils;
 import io.oxalate.backend.security.service.UserDetailsServiceImpl;
 import io.oxalate.backend.service.RecaptchaService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -63,6 +64,14 @@ public class WebSecurityConfig {
     private long maxAge;
     @Value("${oxalate.cors.cors-pattern}")
     private String corsPattern;
+    @Value("${oxalate.app.env}")
+    private String appEnvironment;
+
+    private static final String STRICT_CONTENT_SECURITY_POLICY =
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+    private static final String LOCAL_SWAGGER_CONTENT_SECURITY_POLICY =
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                    + "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -105,11 +114,11 @@ public class WebSecurityConfig {
                             .anyRequest()
                             .authenticated();
                 })
-                // OWASP A02:2025 - send hardening directives on every response. The API returns JSON only,
-                // so the policy can be maximally restrictive.
+                // OWASP A02:2025 - send hardening directives on every response. Swagger UI needs a local-only
+                // same-origin exception because it is a browser application composed of JavaScript and CSS.
                 .headers(headers -> headers
-                        .contentSecurityPolicy(csp -> csp.policyDirectives(
-                                "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"))
+                        .addHeaderWriter((request, response) -> response.setHeader(
+                                "Content-Security-Policy", contentSecurityPolicy(request)))
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true)
                                                                  .maxAgeInSeconds(31_536_000))
@@ -123,6 +132,20 @@ public class WebSecurityConfig {
         ;
 
         return http.build();
+    }
+
+    static String contentSecurityPolicy(String appEnvironment, String requestUri) {
+        if ("local".equalsIgnoreCase(appEnvironment)
+                && (requestUri.startsWith("/actuator/swagger-ui/")
+                || requestUri.equals("/actuator/swagger-ui.html"))) {
+            return LOCAL_SWAGGER_CONTENT_SECURITY_POLICY;
+        }
+
+        return STRICT_CONTENT_SECURITY_POLICY;
+    }
+
+    private String contentSecurityPolicy(HttpServletRequest request) {
+        return contentSecurityPolicy(appEnvironment, request.getRequestURI());
     }
 
     /**

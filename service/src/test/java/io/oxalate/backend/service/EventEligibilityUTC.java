@@ -55,7 +55,7 @@ class EventEligibilityUTC {
                                                                                                   .endDate(LocalDate.of(2027, 1, 1))
                                                                                                   .build()));
 
-        assertTrue(paymentService.getBestAvailablePaymentTypeAtDate(7L, EVENT_TIME)
+        assertTrue(paymentService.getBestAvailablePaymentTypeAtDate(7L, Instant.parse("2027-01-01T09:00:00Z"))
                                  .isEmpty());
     }
 

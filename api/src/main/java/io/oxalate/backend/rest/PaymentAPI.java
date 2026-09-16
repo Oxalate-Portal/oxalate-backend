@@ -55,6 +55,16 @@ public interface PaymentAPI {
     @GetMapping(path = BASE_PATH + "/user/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PaymentStatusResponse> getPaymentStatusForUser(@PathVariable(name = "userId") long userId);
 
+    @Operation(description = "Get the current and future payment status for a specific user", tags = "PaymentAPI")
+    @Parameter(name = "userId", description = "User ID for which current and future payment status should be fetched", example = "123")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Status retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @GetMapping(path = BASE_PATH + "/user/{userId}/current-and-future", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PaymentStatusResponse> getCurrentAndFuturePaymentStatusForUser(@PathVariable(name = "userId") long userId);
+
     @Operation(description = "Add a payment entry to a specific user", tags = "PaymentAPI")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New payment", required = true)
     @ApiResponses(value = {

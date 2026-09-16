@@ -60,6 +60,24 @@ class OwaspSecurityHeadersRTC extends AbstractIntegrationTest {
     }
 
     @Test
+    void localSwaggerUiGetsBrowserCompatiblePolicyOk() {
+        var policy = WebSecurityConfig.contentSecurityPolicy("local", "/actuator/swagger-ui/index.html");
+
+        assertTrue(policy.contains("script-src 'self'"));
+        assertTrue(policy.contains("style-src 'self'"));
+        assertTrue(policy.contains("connect-src 'self'"));
+        assertTrue(!policy.contains("default-src 'none'"));
+    }
+
+    @Test
+    void nonLocalSwaggerUiKeepsStrictPolicyOk() {
+        var policy = WebSecurityConfig.contentSecurityPolicy("test", "/actuator/swagger-ui/index.html");
+
+        assertTrue(policy.contains("default-src 'none'"));
+        assertTrue(!policy.contains("script-src 'self'"));
+    }
+
+    @Test
     void responseDeniesFramingOk() throws Exception {
         mockMvc.perform(get(PUBLIC_ENDPOINT))
                .andExpect(header().string("X-Frame-Options", "DENY"));

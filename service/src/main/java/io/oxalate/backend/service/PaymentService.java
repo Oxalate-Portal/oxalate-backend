@@ -74,6 +74,16 @@ public class PaymentService {
 
     public PaymentStatusResponse getPaymentStatusForUser(long userId) {
         var paymentResponses = getActivePaymentResponsesByUser(userId);
+        return createPaymentStatusResponse(userId, paymentResponses);
+    }
+
+    public PaymentStatusResponse getCurrentAndFuturePaymentStatusForUser(long userId) {
+        var payments = paymentRepository.findAllCurrentAndFuturePaymentsByUserId(userId);
+        var paymentResponses = toPaymentResponses(userId, payments);
+        return createPaymentStatusResponse(userId, paymentResponses);
+    }
+
+    private PaymentStatusResponse createPaymentStatusResponse(long userId, List<PaymentResponse> paymentResponses) {
         // Populate the list of one-time payments used in future events
         var futureEventList = eventParticipantsRepository.findOneTimeFutureEventParticipantsByUserId(userId);
         for (var paymentResponse : paymentResponses) {
@@ -94,7 +104,10 @@ public class PaymentService {
     }
 
     public List<PaymentResponse> getActivePaymentResponsesByUser(long userId) {
-        var payments = getActivePaymentsByUser(userId);
+        return toPaymentResponses(userId, getActivePaymentsByUser(userId));
+    }
+
+    private List<PaymentResponse> toPaymentResponses(long userId, List<Payment> payments) {
         var paymentResponses = new ArrayList<PaymentResponse>();
 
         for (Payment payment : payments) {
@@ -109,7 +122,7 @@ public class PaymentService {
             paymentResponses.add(paymentResponse);
         }
 
-        log.debug("Found active payment responds for user ID {}: {}", userId, paymentResponses);
+        log.debug("Found payment responses for user ID {}: {}", userId, paymentResponses);
         return paymentResponses;
     }
 
@@ -322,7 +335,7 @@ public class PaymentService {
         var overlappingPeriodPayments = periodicalPayments.stream()
                                                           .filter(payment -> payment.getPaymentType()
                                                                                     .equals(PERIODICAL)
-                                                                  && isActiveOnDate(payment, now))
+                                                                  && periodsOverlap(payment, requestedStartDate, requestedEndDate))
                                                           .toList();
 
         if (!overlappingPeriodPayments.isEmpty()) {
@@ -536,9 +549,20 @@ public class PaymentService {
     private boolean isActiveOnDate(Payment payment, LocalDate date) {
         var started = payment.getStartDate() == null || !payment.getStartDate()
                                                                 .isAfter(date);
-        var notEnded = payment.getEndDate() == null || !payment.getEndDate()
-                                                               .isBefore(date);
+        var notEnded = payment.getEndDate() == null || payment.getEndDate()
+                                                              .isAfter(date);
         return started && notEnded;
+    }
+
+    private boolean periodsOverlap(Payment payment, LocalDate requestedStartDate, LocalDate requestedEndDate) {
+        var startsBeforeRequestedEnd = requestedEndDate == null
+                || payment.getStartDate() == null
+                || payment.getStartDate()
+                          .isBefore(requestedEndDate);
+        var endsAfterRequestedStart = payment.getEndDate() == null
+                || payment.getEndDate()
+                          .isAfter(requestedStartDate);
+        return startsBeforeRequestedEnd && endsAfterRequestedStart;
     }
 
     /**
