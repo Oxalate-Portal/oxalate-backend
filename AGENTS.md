@@ -147,6 +147,7 @@ Every notable action is recorded as an immutable `ApplicationAuditEvent` (`userI
 | `DataDownloadAPI`                                        | `/api/data-download`                    | data exports                                        |
 | `BlockedDateAPI`                                         | `/api/blocked-dates`                    | dates blocked for events                            |
 | `ThirdPartyAPI`                                          | `/api/third-party`                      | third-party token access                            |
+| `TagAPI`                                                 | `/api/tags`                             | tag groups and tags                                 |
 | `TestAPI`                                                | `/api/test`                             | local-only test data generation                     |
 
 ## 3. Audit and exception pattern (important)
@@ -217,7 +218,7 @@ Upload root comes from `oxalate.upload.directory`. Subdirectories are defined in
 ## 9. Database and migrations
 
 - PostgreSQL + Flyway; schema is migration-driven (`ddl-auto: validate`), so an entity change without a migration will fail startup.
-- Migrations are in `service/src/main/resources/db/migration/` as `V{N}__snake_case_description.sql`. There are currently 41 of them; always add the next unused
+- Migrations are in `service/src/main/resources/db/migration/` as `V{N}__snake_case_description.sql`. There are currently 43 of them; always add the next unused
   number and never edit an applied migration.
 - Portal configuration defaults are seeded by migrations, so a new configuration key needs a migration too.
 
@@ -246,10 +247,10 @@ datasets are documented in `README.md`.
 
 ## 11. Test structure used in this repo
 
-- `*UTC`: unit tests with Mockito (21 classes).
+- `*UTC`: unit tests with Mockito (34 classes).
 - `*ITC`: integration tests with Spring Boot + Testcontainers; extend `AbstractIntegrationTest` (`postgres:18-alpine`)
   (5 classes).
-- `*RTC`: REST tests with MockMvc + Spring Security against containerized DB (6 classes).
+- `*RTC`: REST tests with MockMvc + Spring Security against containerized DB (10 classes).
 - Test method naming pattern: `methodScenarioOk/Fail` (camelCase).
 - Every new REST endpoint must add or update a contract test. `api/src/test/java/io/oxalate/backend/api/RestContractTC.java`
   is the baseline contract gate; `ApiValueContractUTC` guards enum/constant wire values. Contract tests must verify the mapping, response type, OpenAPI

@@ -6,6 +6,7 @@ import io.oxalate.backend.api.request.CertificateClassificationRequest;
 import io.oxalate.backend.api.response.CertificateClassificationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -23,37 +24,61 @@ public interface CertificateClassificationAPI {
     String BASE_PATH = API + "/certificate-classifications";
 
     @Operation(description = "Get all dive certificate classifications")
-    @ApiResponse(responseCode = "200", description = "Classifications retrieved successfully")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classifications retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<CertificateClassificationResponse>> getAll();
 
     @Operation(description = "Get a dive certificate classification")
-    @ApiResponse(responseCode = "200", description = "Classification retrieved successfully")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classification retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Classification not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<CertificateClassificationResponse> getById(@PathVariable("id") long id);
 
     @Operation(description = "Create a dive certificate classification")
-    @ApiResponse(responseCode = "200", description = "Classification created successfully")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classification created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @PostMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<CertificateClassificationResponse> create(@RequestBody CertificateClassificationRequest request);
 
     @Operation(description = "Update a dive certificate classification")
-    @ApiResponse(responseCode = "200", description = "Classification updated successfully")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classification updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "404", description = "Classification not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<CertificateClassificationResponse> update(@RequestBody CertificateClassificationRequest request);
 
     @Operation(description = "Save the order of dive certificate classifications")
-    @ApiResponse(responseCode = "200", description = "Classification order saved successfully")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classification order saved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/order", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> reorder(@RequestBody List<CertificateClassificationRequest> requests);
 
     @Operation(description = "Delete a dive certificate classification")
-    @ApiResponse(responseCode = "200", description = "Classification deleted successfully")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classification deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Classification not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @DeleteMapping(BASE_PATH + "/{id}")
     ResponseEntity<Void> delete(@PathVariable("id") long id);

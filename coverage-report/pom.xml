@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.oxalate</groupId>
+        <artifactId>oxalate-service-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>oxalate-service-coverage</artifactId>
+    <name>oxalate-service-coverage</name>
+    <description>
+        Aggregated JaCoCo coverage report across api and service. This module produces no artifact; it exists only so
+        that there is one honest cross-module coverage number.
+
+        Why it is needed: JaCoCo reports per module, so classes in `api` that are exercised by `service` tests are not
+        credited to `api`. Reading the per-module reports alone therefore understates `api` badly (13.6% instruction
+        coverage measured from its own tests). A naive 90% rule applied per module would fail `api` for a reason that
+        has nothing to do with how well those classes are actually tested.
+
+        JaCoCo has no `check-aggregate` goal, so enforcement stays per module (see the ratcheted
+        jacoco.min.* properties in the parent pom) while this module provides the combined report that the
+        per-module thresholds should eventually be reconciled against.
+    </description>
+    <packaging>pom</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.oxalate</groupId>
+            <artifactId>oxalate-service-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.oxalate</groupId>
+            <artifactId>oxalate-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <!--
+                        The inherited prepare-agent/report/check executions have nothing to act on in a module with no
+                        sources and no tests, so they are disabled here to keep the build output honest.
+                    -->
+                    <execution>
+                        <id>prepare-agent</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>report-aggregate</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report-aggregate</goal>
+                        </goals>
+                        <configuration>
+                            <title>Oxalate backend aggregated coverage</title>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

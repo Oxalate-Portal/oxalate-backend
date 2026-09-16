@@ -7,6 +7,7 @@ import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import io.oxalate.backend.api.response.ActionResponse;
 import io.oxalate.backend.api.response.UploadResponse;
+import io.oxalate.backend.api.response.filetransfer.CertificateFileResponse;
 import io.oxalate.backend.api.response.filetransfer.DiveFileResponse;
 import io.oxalate.backend.api.response.filetransfer.DocumentFileResponse;
 import io.oxalate.backend.exception.OxalateUnauthorizedException;
@@ -234,6 +235,61 @@ class FileTransferControllerUTC {
         assertThrows(OxalateValidationException.class, () -> controller.uploadDiveFile(uploadFile, 42L, 7L));
         verify(diveFileTransferService, never()).uploadDiveFile(uploadFile, 42L, 7L, 9L);
     }
-}
 
+    @Test
+    void findAllCertificateFiles_nonAdmin_throwsUnauthorized() {
+        try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
+            authTools.when(AuthTools::getCurrentUserId)
+                     .thenReturn(7L);
+            authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
+                     .thenReturn(false);
+
+            assertThrows(OxalateUnauthorizedException.class, () -> controller.findAllCertificateFiles());
+        }
+    }
+
+    @Test
+    void findAllCertificateFiles_adminReturnsFiles() {
+        var expected = List.of(CertificateFileResponse.builder()
+                                                      .id(8L)
+                                                      .build());
+        when(certificateFileTransferService.findAllCertificateFiles()).thenReturn(expected);
+
+        try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
+            authTools.when(AuthTools::getCurrentUserId)
+                     .thenReturn(7L);
+            authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
+                     .thenReturn(true);
+
+            assertEquals(expected, controller.findAllCertificateFiles()
+                                             .getBody());
+        }
+    }
+
+    @Test
+    void uploadCertificateFile_serviceFailureReturnsValidationError() {
+        var uploadFile = new MockMultipartFile("uploadFile", "cert.jpg", "image/jpeg", new byte[] { 1 });
+        when(certificateFileTransferService.uploadCertificateFile(uploadFile, 7L, 8L))
+                .thenThrow(new RuntimeException("storage failed"));
+
+        try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
+            authTools.when(AuthTools::getCurrentUserId)
+                     .thenReturn(7L);
+
+            assertThrows(OxalateValidationException.class, () -> controller.uploadCertificateFile(uploadFile, 8L));
+        }
+    }
+
+    @Test
+    void downloadCertificateFile_rejectsAnonymousRoles() {
+        try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
+            authTools.when(AuthTools::getCurrentUserId)
+                     .thenReturn(7L);
+            authTools.when(AuthTools::getUserRoles)
+                     .thenReturn(java.util.Set.of(io.oxalate.backend.api.RoleEnum.ROLE_ANONYMOUS));
+
+            assertThrows(OxalateUnauthorizedException.class, () -> controller.downloadCertificateFile(8L));
+        }
+    }
+}
 

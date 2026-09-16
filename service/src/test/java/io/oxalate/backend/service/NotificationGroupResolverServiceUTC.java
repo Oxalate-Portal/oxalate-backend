@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationGroupResolverServiceTest {
+class NotificationGroupResolverServiceUTC {
 
     @Mock
     private UserRepository userRepository;
@@ -147,8 +147,6 @@ class NotificationGroupResolverServiceTest {
     @Test
     void testResolveGroupUsersWithInactiveDaysAndNull() {
         List<Long> inactiveUserIds = Arrays.asList(1L, 2L);
-
-        when(userRepository.findUsersInactiveSince(any(Instant.class))).thenReturn(Collections.emptyList());
 
         List<Long> result = service.resolveGroupUsers(NotificationGroupEnum.INACTIVE_DAYS, null);
 

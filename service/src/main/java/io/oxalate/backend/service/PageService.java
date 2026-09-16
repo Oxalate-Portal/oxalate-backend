@@ -51,9 +51,9 @@ public class PageService {
     private final EmailQueueService emailQueueService;
     private final PortalConfigurationService portalConfigurationService;
 
-    private final long RESERVED_PAGE_GROUP_ID = 1L;
-    private final long BLOG_PAGE_GROUP_ID = 3L;
-    private final List<Long> BLOCKED_PAGE_GROUPS = List.of(RESERVED_PAGE_GROUP_ID, BLOG_PAGE_GROUP_ID);
+    private static final long RESERVED_PAGE_GROUP_ID = 1L;
+    private static final long BLOG_PAGE_GROUP_ID = 3L;
+    private static final List<Long> BLOCKED_PAGE_GROUPS = List.of(RESERVED_PAGE_GROUP_ID, BLOG_PAGE_GROUP_ID);
 
     public PageResponse getPage(long pageId, Set<RoleEnum> roles, String language) {
         var supportedLanguages = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);

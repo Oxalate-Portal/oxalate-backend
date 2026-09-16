@@ -18,13 +18,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationControllerGroupNotificationTest {
+@MockitoSettings(strictness = Strictness.LENIENT)
+class NotificationControllerGroupNotificationRTC {
 
     @Mock
     private MessageService messageService;

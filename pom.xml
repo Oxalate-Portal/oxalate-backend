@@ -25,6 +25,22 @@
         <jboss-logging.component.version>3.0.4.Final</jboss-logging.component.version>
         <lombok.version>1.18.48</lombok.version>
         <jspecify.version>1.0.1</jspecify.version>
+
+        <!--
+            Ratcheted JaCoCo coverage floors. The target is 0.90 on every counter (see
+            ../TODO-20260916.md); these defaults are 0.00 so that a module which has not opted in does
+            not fail, and each module overrides them with its own measured actuals rounded down.
+            The build therefore fails on a coverage regression without failing today.
+            Raise these as coverage improves. Never lower one to make a build pass.
+        -->
+        <jacoco.min.instruction>0.00</jacoco.min.instruction>
+        <jacoco.min.branch>0.00</jacoco.min.branch>
+        <jacoco.min.line>0.00</jacoco.min.line>
+
+        <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
+        <checkstyle.version>10.26.1</checkstyle.version>
+        <checkstyle.config.location>${maven.multiModuleProjectDirectory}/config/checkstyle/checkstyle.xml</checkstyle.config.location>
+        <checkstyle.suppressions.location>${maven.multiModuleProjectDirectory}/config/checkstyle/suppressions.xml</checkstyle.suppressions.location>
     </properties>
 
     <build>
@@ -70,6 +86,42 @@
                     </includes>
                 </configuration>
             </plugin>
+            <!--
+                Style gate. The backend previously had no lint or static analysis of any kind: documentation/CODESTYLE.md
+                and .editorconfig described the house style, but nothing in the build read either, so a style
+                deviation could not be detected. The ruleset is intentionally small and is paired with a shrink-only
+                suppressions file for the violations that already existed.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${checkstyle.plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <configLocation>${checkstyle.config.location}</configLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <consoleOutput>true</consoleOutput>
+                    <failOnViolation>true</failOnViolation>
+                    <violationSeverity>error</violationSeverity>
+                    <!-- The ruleset is ours, not a shipped one; do not fall back to sun_checks.xml. -->
+                    <propertyExpansion>checkstyle.suppressions.location=${checkstyle.suppressions.location}</propertyExpansion>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -84,6 +136,43 @@
                         <phase>verify</phase>
                         <goals><goal>report</goal></goals>
                     </execution>
+                    <!--
+                        Runs after `report` in the same phase (execution order follows declaration
+                        order). Before this existed, coverage was measured, uploaded as a CI
+                        artifact, and never asserted against anything.
+                    -->
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <haltOnFailure>true</haltOnFailure>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.min.instruction}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.min.branch}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.min.line}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -92,6 +181,8 @@
     <modules>
         <module>api</module>
         <module>service</module>
+        <!-- Must stay last: it aggregates the coverage data the other modules produce. -->
+        <module>coverage-report</module>
     </modules>
 
     <dependencyManagement>
@@ -119,7 +210,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.194</version>
+                <version>4.8.195</version>
             </dependency>
             <dependency>
                 <groupId>org.checkerframework</groupId>

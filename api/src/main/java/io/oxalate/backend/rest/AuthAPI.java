@@ -82,6 +82,7 @@ public interface AuthAPI {
             example = "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "302", description = "Redirect to the frontend page with either a success or error message"),
+            @ApiResponse(responseCode = "400", description = "Request could not be processed")
     })
     @GetMapping(path = BASE_PATH + "/registrations")
     ResponseEntity<Void> verifyRegistration(@RequestParam(name = "token") String token, HttpServletRequest request);
@@ -100,7 +101,8 @@ public interface AuthAPI {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "EmailRequest", required = true)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Request was OK. Endpoint does not reveal whether mail sending was successful to prevent "
-                    + "email phishing.")
+                    + "email phishing."),
+            @ApiResponse(responseCode = "400", description = "Request could not be processed")
     })
     @PostMapping(path = BASE_PATH + "/lost-password")
     ResponseEntity<ActionResponse> lostPassword(@RequestBody EmailRequest emailRequest, HttpServletRequest request);
@@ -130,7 +132,8 @@ public interface AuthAPI {
     @Operation(description = "Endpoint used in the email change confirmation link", tags = "AuthAPI")
     @Parameter(name = "token", description = "Email change token", required = true)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "302", description = "Redirect to frontend page with status query parameter")
+            @ApiResponse(responseCode = "302", description = "Redirect to frontend page with status query parameter"),
+            @ApiResponse(responseCode = "400", description = "Request could not be processed")
     })
     @GetMapping(path = BASE_PATH + "/email-change/confirmations")
     ResponseEntity<Void> verifyEmailChange(@RequestParam(name = "token") String token, HttpServletRequest request, HttpServletResponse response);

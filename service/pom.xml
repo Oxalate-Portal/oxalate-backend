@@ -13,12 +13,35 @@
     <name>oxalate-service</name>
     <description>Oxalate backend server</description>
 
+    <properties>
+        <!--
+            Measured actuals rounded down: instruction 39.2%, branch 32.0%, line 38.5%.
+            Target is 0.90 on each. See ../TODO-20260916.md item 3.
+        -->
+        <jacoco.min.instruction>0.49</jacoco.min.instruction>
+        <jacoco.min.branch>0.43</jacoco.min.branch>
+        <jacoco.min.line>0.49</jacoco.min.line>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.oxalate</groupId>
             <artifactId>oxalate-service-api</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
+        </dependency>
+        <!-- RestEndpointInventory, shared with RestContractTC so both modules agree on the endpoint inventory. -->
+        <dependency>
+            <groupId>io.oxalate</groupId>
+            <artifactId>oxalate-service-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <scope>test</scope>
         </dependency>
         <!-- Spring Boot Starters -->
         <dependency>
@@ -107,7 +130,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>3.1.0</version>
+            <version>3.1.1</version>
         </dependency>
 
         <dependency>
