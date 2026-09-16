@@ -92,6 +92,20 @@ public class PaymentController implements PaymentAPI {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    @Audited(startMessage = PAYMENTS_GET_USER_STATUS_START, okMessage = PAYMENTS_GET_USER_STATUS_OK)
+    public ResponseEntity<PaymentStatusResponse> getCurrentAndFuturePaymentStatusForUser(long userId) {
+        if (!AuthTools.currentUserHasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN) && AuthTools.getCurrentUserId() != userId) {
+            log.error("User ID {} tried to get user {} payment info", AuthTools.getCurrentUserId(), userId);
+            throw new OxalateUnauthorizedException(PAYMENTS_GET_USER_STATUS_UNAUTHORIZED + userId, HttpStatus.NOT_FOUND);
+        }
+
+        var response = paymentService.getCurrentAndFuturePaymentStatusForUser(userId);
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(response);
+    }
+
+    @Override
     @PreAuthorize("hasRole('ADMIN')")
     @Audited(startMessage = PAYMENTS_ADD_START, okMessage = PAYMENTS_ADD_OK)
     public ResponseEntity<PaymentResponse> addPaymentForUser(PaymentRequest paymentRequest) {

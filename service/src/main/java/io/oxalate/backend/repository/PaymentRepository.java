@@ -94,4 +94,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                    OR end_date IS NULL)
             """)
     List<Payment> findAllCurrentPaymentsByUserId(long userId);
+
+    @Query(nativeQuery = true, value = """
+            SELECT *
+            FROM payments
+            WHERE user_id = :userId
+              AND (end_date >= CURRENT_DATE
+                   OR end_date IS NULL)
+            ORDER BY start_date DESC
+            """)
+    List<Payment> findAllCurrentAndFuturePaymentsByUserId(@Param("userId") long userId);
 }

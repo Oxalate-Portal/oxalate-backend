@@ -1,5 +1,6 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.DiveGroupTypeEnum;
 import io.oxalate.backend.api.ParticipantTypeEnum;
 import io.oxalate.backend.api.PaymentTypeEnum;
 import io.oxalate.backend.api.UserTypeEnum;
@@ -7,6 +8,7 @@ import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
 import io.oxalate.backend.api.response.DiveGroupResponse;
+import io.oxalate.backend.api.response.filetransfer.DiveFileResponse;
 import io.oxalate.backend.exception.OxalateNotFoundException;
 import io.oxalate.backend.exception.OxalateUnauthorizedException;
 import io.oxalate.backend.exception.OxalateValidationException;
@@ -18,8 +20,10 @@ import io.oxalate.backend.repository.DiveGroupRepository;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.UserRepository;
+import io.oxalate.backend.service.filetransfer.DiveFileTransferService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,6 +75,8 @@ class DiveGroupServiceUTC {
     private MessageService messageService;
     @Mock
     private NotificationLocalizationService notificationLocalizationService;
+    @Mock
+    private DiveFileTransferService diveFileTransferService;
 
     @InjectMocks
     private DiveGroupService diveGroupService;
@@ -205,6 +211,28 @@ class DiveGroupServiceUTC {
         assertEquals("Unknown user", response.getOwnerName());
         assertTrue(response.getMembers()
                            .isEmpty());
+    }
+
+    @Test
+    void getDiveGroupByIdIncludesDiveFilesOk() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+        when(diveFileTransferService.findDiveFilesByDiveGroupId(GROUP_ID)).thenReturn(List.of(DiveFileResponse.builder()
+                                                                                                              .id(11L)
+                                                                                                              .filename("plan.pdf")
+                                                                                                              .diveGroupId(GROUP_ID)
+                                                                                                              .eventId(EVENT_ID)
+                                                                                                              .build()));
+
+        var response = diveGroupService.getDiveGroupById(GROUP_ID);
+
+        assertEquals(1, response.getDiveFiles()
+                                .size());
+        assertEquals("plan.pdf", response.getDiveFiles()
+                                         .getFirst()
+                                         .getFilename());
+        assertEquals(DiveGroupTypeEnum.NORMAL, response.getGroupType());
     }
 
     @Test
@@ -468,8 +496,131 @@ class DiveGroupServiceUTC {
     }
 
     // ------------------------------------------------------------------
+    // createDiveGroup with initial members
+    // ------------------------------------------------------------------
+
+    private DiveGroupRequest createRequestWithMembers(Long ownerId, List<Long> memberIds) {
+        return DiveGroupRequest.builder()
+                               .eventId(EVENT_ID)
+                               .name("Team Sidemount")
+                               .ownerId(ownerId)
+                               .memberIds(memberIds)
+                               .build();
+    }
+
+    private void stubCreateForOwner(long ownerId) {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, ownerId)).thenReturn(participant(ownerId, null, null));
+        when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, ownerId)).thenReturn(Optional.empty());
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenReturn(diveGroup(ownerId));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+    }
+
+    @Test
+    void createDiveGroupWithMembersAsUserOk() {
+        stubCreateForOwner(OWNER_ID);
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, MEMBER_ID)).thenReturn(participant(MEMBER_ID, null, null));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OUTSIDER_ID)).thenReturn(participant(OUTSIDER_ID, null, null));
+        stubUsers(MEMBER_ID, OUTSIDER_ID);
+
+        var response = diveGroupService.createDiveGroup(createRequestWithMembers(null, List.of(MEMBER_ID, OUTSIDER_ID)), OWNER_ID, false, false);
+
+        assertEquals(GROUP_ID, response.getId());
+        verify(eventParticipantsRepository).assignDiveGroup(eq(EVENT_ID), eq(OWNER_ID), eq(GROUP_ID), any(Instant.class));
+        verify(eventParticipantsRepository).assignDiveGroup(eq(EVENT_ID), eq(MEMBER_ID), eq(GROUP_ID), any(Instant.class));
+        verify(eventParticipantsRepository).assignDiveGroup(eq(EVENT_ID), eq(OUTSIDER_ID), eq(GROUP_ID), any(Instant.class));
+        verify(messageService).createSimpleNotification(eq(MEMBER_ID), eq(OWNER_ID), anyString(), anyString(), anyString());
+        verify(messageService).createSimpleNotification(eq(OUTSIDER_ID), eq(OWNER_ID), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void createDiveGroupWithMembersSkipsOwnerDuplicatesAndNullsOk() {
+        stubCreateForOwner(OWNER_ID);
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, MEMBER_ID)).thenReturn(participant(MEMBER_ID, null, null));
+        stubUsers(MEMBER_ID);
+
+        diveGroupService.createDiveGroup(createRequestWithMembers(null, Arrays.asList(MEMBER_ID, null, MEMBER_ID, OWNER_ID)), OWNER_ID, false, false);
+
+        verify(eventParticipantsRepository).assignDiveGroup(eq(EVENT_ID), eq(OWNER_ID), eq(GROUP_ID), any(Instant.class));
+        verify(eventParticipantsRepository, times(1)).assignDiveGroup(eq(EVENT_ID), eq(MEMBER_ID), eq(GROUP_ID), any(Instant.class));
+        verify(messageService, times(1)).createSimpleNotification(anyLong(), anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void createDiveGroupWithEmptyMemberListOk() {
+        stubCreateForOwner(OWNER_ID);
+
+        diveGroupService.createDiveGroup(createRequestWithMembers(null, List.of()), OWNER_ID, false, false);
+
+        verify(eventParticipantsRepository, times(1)).assignDiveGroup(eq(EVENT_ID), anyLong(), eq(GROUP_ID), any(Instant.class));
+        verify(messageService, never()).createSimpleNotification(anyLong(), anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void createDiveGroupByOrganizerWithMembersNotifiesAllOk() {
+        stubCreateForOwner(OWNER_ID);
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, MEMBER_ID)).thenReturn(participant(MEMBER_ID, null, null));
+        stubUsers(OWNER_ID, MEMBER_ID);
+
+        var response = diveGroupService.createDiveGroup(createRequestWithMembers(OWNER_ID, List.of(MEMBER_ID)), ORGANIZER_ID, false, true);
+
+        assertEquals(OWNER_ID, response.getOwnerId());
+        verify(eventParticipantsRepository).assignDiveGroup(eq(EVENT_ID), eq(MEMBER_ID), eq(GROUP_ID), any(Instant.class));
+        verify(messageService).createSimpleNotification(eq(OWNER_ID), eq(ORGANIZER_ID), anyString(), anyString(), anyString());
+        verify(messageService).createSimpleNotification(eq(MEMBER_ID), eq(ORGANIZER_ID), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void createDiveGroupWithMemberAlreadyInGroupFail() {
+        stubCreateForOwner(OWNER_ID);
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, MEMBER_ID)).thenReturn(participant(MEMBER_ID, 99L, Instant.now()));
+
+        assertThrows(OxalateValidationException.class,
+                () -> diveGroupService.createDiveGroup(createRequestWithMembers(null, List.of(MEMBER_ID)), OWNER_ID, false, false));
+        verify(eventParticipantsRepository, never()).assignDiveGroup(eq(EVENT_ID), eq(MEMBER_ID), anyLong(), any(Instant.class));
+    }
+
+    @Test
+    void createDiveGroupWithMemberNotParticipantFail() {
+        stubCreateForOwner(OWNER_ID);
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OUTSIDER_ID)).thenReturn(null);
+
+        assertThrows(OxalateValidationException.class,
+                () -> diveGroupService.createDiveGroup(createRequestWithMembers(null, List.of(OUTSIDER_ID)), OWNER_ID, false, false));
+        verify(eventParticipantsRepository, never()).assignDiveGroup(eq(EVENT_ID), eq(OUTSIDER_ID), anyLong(), any(Instant.class));
+    }
+
+    // ------------------------------------------------------------------
     // updateDiveGroup
     // ------------------------------------------------------------------
+
+    @Test
+    void createDiveGroupDefaultsToNormalGroupTypeOk() {
+        stubCreateForOwner(OWNER_ID);
+
+        diveGroupService.createDiveGroup(createRequest(null), OWNER_ID, false, false);
+
+        var diveGroupCaptor = ArgumentCaptor.forClass(DiveGroup.class);
+        verify(diveGroupRepository).save(diveGroupCaptor.capture());
+        assertEquals(DiveGroupTypeEnum.NORMAL, diveGroupCaptor.getValue()
+                                                              .getGroupType());
+    }
+
+    @Test
+    void createDiveGroupWithProjectGroupTypeOk() {
+        stubCreateForOwner(OWNER_ID);
+
+        diveGroupService.createDiveGroup(DiveGroupRequest.builder()
+                                                         .eventId(EVENT_ID)
+                                                         .name("Team Sidemount")
+                                                         .groupType(DiveGroupTypeEnum.PROJECT)
+                                                         .build(), OWNER_ID, false, false);
+
+        var diveGroupCaptor = ArgumentCaptor.forClass(DiveGroup.class);
+        verify(diveGroupRepository).save(diveGroupCaptor.capture());
+        assertEquals(DiveGroupTypeEnum.PROJECT, diveGroupCaptor.getValue()
+                                                               .getGroupType());
+    }
 
     @Test
     void updateDiveGroupByOwnerOk() {
@@ -484,6 +635,37 @@ class DiveGroupServiceUTC {
 
         assertEquals("Renamed", response.getName());
         assertNotNull(response.getUpdatedAt());
+    }
+
+    @Test
+    void updateDiveGroupGroupTypeOk() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+
+        var response = diveGroupService.updateDiveGroup(GROUP_ID, DiveGroupUpdateRequest.builder()
+                                                                                        .name("Renamed")
+                                                                                        .groupType(DiveGroupTypeEnum.PROJECT)
+                                                                                        .build(), OWNER_ID, false, false);
+
+        assertEquals(DiveGroupTypeEnum.PROJECT, response.getGroupType());
+    }
+
+    @Test
+    void updateDiveGroupWithoutGroupTypeKeepsExistingOk() {
+        var existingGroup = diveGroup(OWNER_ID);
+        existingGroup.setGroupType(DiveGroupTypeEnum.PROJECT);
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(existingGroup));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+
+        var response = diveGroupService.updateDiveGroup(GROUP_ID, DiveGroupUpdateRequest.builder()
+                                                                                        .name("Renamed")
+                                                                                        .build(), OWNER_ID, false, false);
+
+        assertEquals(DiveGroupTypeEnum.PROJECT, response.getGroupType());
     }
 
     @Test

@@ -1,0 +1,2 @@
+ALTER TABLE dive_groups
+    ADD COLUMN group_type VARCHAR(255) NOT NULL DEFAULT 'NORMAL';

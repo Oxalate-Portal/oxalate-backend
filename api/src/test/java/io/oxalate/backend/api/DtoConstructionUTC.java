@@ -182,22 +182,28 @@ class DtoConstructionUTC {
                                   .eventId(42L)
                                   .name("Team Sidemount")
                                   .ownerId(7L)
+                                  .memberIds(List.of(8L, 9L))
                                   .build();
 
         assertEquals(42L, dto.getEventId());
         assertEquals("Team Sidemount", dto.getName());
         assertEquals(7L, dto.getOwnerId());
+        assertEquals(List.of(8L, 9L), dto.getMemberIds());
     }
 
     @Test
     void DiveGroupRequestConstructorOk() {
-        var dto = new DiveGroupRequest(42L, "Team Sidemount", null);
+        var dto = new DiveGroupRequest(42L, "Team Sidemount", null, DiveGroupTypeEnum.PROJECT, null);
         assertEquals(42L, dto.getEventId());
         assertNull(dto.getOwnerId());
+        assertEquals(DiveGroupTypeEnum.PROJECT, dto.getGroupType());
+        assertNull(dto.getMemberIds());
 
         var empty = new DiveGroupRequest();
         empty.setName("Renamed");
+        empty.setMemberIds(List.of(8L));
         assertEquals("Renamed", empty.getName());
+        assertEquals(List.of(8L), empty.getMemberIds());
     }
 
     @Test
@@ -213,9 +219,10 @@ class DtoConstructionUTC {
 
     @Test
     void DiveGroupUpdateRequestConstructorOk() {
-        var dto = new DiveGroupUpdateRequest("Renamed group", null);
+        var dto = new DiveGroupUpdateRequest("Renamed group", null, DiveGroupTypeEnum.NORMAL);
         assertEquals("Renamed group", dto.getName());
         assertNull(dto.getOwnerId());
+        assertEquals(DiveGroupTypeEnum.NORMAL, dto.getGroupType());
         assertNotNull(new DiveGroupUpdateRequest());
     }
 
@@ -276,10 +283,12 @@ class DtoConstructionUTC {
 
     @Test
     void DiveGroupResponseConstructorOk() {
-        var dto = new DiveGroupResponse(1L, 42L, "Team", 3L, "John Doe", 1, Instant.EPOCH, Instant.EPOCH, List.of());
+        var dto = new DiveGroupResponse(1L, 42L, "Team", 3L, "John Doe", DiveGroupTypeEnum.NORMAL, 1, Instant.EPOCH, Instant.EPOCH, List.of(), List.of());
         assertEquals("Team", dto.getName());
         assertEquals(3L, dto.getOwnerId());
+        assertEquals(DiveGroupTypeEnum.NORMAL, dto.getGroupType());
         assertEquals(1, dto.getGroupOrder());
+        assertEquals(List.of(), dto.getDiveFiles());
         assertNotNull(new DiveGroupResponse());
     }
 

@@ -290,6 +290,24 @@ class PaymentServiceITC extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldSavePeriodicalWhenRequestStartsAtExistingEndDate() {
+        applyPaymentModeConfig(PeriodicPaymentTypeEnum.PERIODICAL, PeriodicPaymentTypeEnum.PERIODICAL);
+
+        var periodStart = LocalDate.now();
+        var existing = createPayment(diver.getId(), PERIODICAL, 0, periodStart.minusYears(1), periodStart);
+
+        var response = paymentService.savePayment(PaymentRequest.builder()
+                                                                .userId(diver.getId())
+                                                                .paymentType(PERIODICAL)
+                                                                .startDate(periodStart)
+                                                                .build());
+
+        assertNotNull(response);
+        assertNotEquals(existing.getId(), response.getId());
+        assertEquals(periodStart, response.getStartDate());
+    }
+
+    @Test
     void shouldIgnoreExpiredPeriodicalEvenWhenRequestStartDateIsHistorical() {
         applyPaymentModeConfig(PeriodicPaymentTypeEnum.PERIODICAL, PeriodicPaymentTypeEnum.PERIODICAL);
 
@@ -510,6 +528,24 @@ class PaymentServiceITC extends AbstractIntegrationTest {
                             .getStartDate()
                             .isBefore(payments.get(1)
                                               .getStartDate()));
+    }
+
+    @Test
+    void shouldFindCurrentAndFuturePaymentsForUser() {
+        createPayment(diver.getId(), PERIODICAL, 0, LocalDate.now()
+                                                             .plusYears(1), LocalDate.now()
+                                                                                     .plusYears(2));
+        createPayment(diver.getId(), PERIODICAL, 0, LocalDate.now()
+                                                             .minusYears(2), LocalDate.now()
+                                                                                      .minusYears(1));
+
+        var payments = paymentService.getCurrentAndFuturePaymentStatusForUser(diver.getId())
+                                     .getPayments();
+
+        assertEquals(1, payments.size());
+        assertEquals(LocalDate.now()
+                              .plusYears(1), payments.getFirst()
+                                                     .getStartDate());
     }
 
     private void applyDeterministicOneTimePaymentConfig() {

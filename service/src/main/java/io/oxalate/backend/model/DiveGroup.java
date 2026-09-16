@@ -1,9 +1,13 @@
 package io.oxalate.backend.model;
 
+import io.oxalate.backend.api.DiveGroupTypeEnum;
 import io.oxalate.backend.api.response.DiveGroupMemberResponse;
 import io.oxalate.backend.api.response.DiveGroupResponse;
+import io.oxalate.backend.api.response.filetransfer.DiveFileResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -45,6 +49,14 @@ public class DiveGroup {
     private long ownerId;
 
     /**
+     * Whether the group performs a normal dive or a special, project dive.
+     */
+    @Builder.Default
+    @Column(name = "group_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private DiveGroupTypeEnum groupType = DiveGroupTypeEnum.NORMAL;
+
+    /**
      * Position of the group within the dive event, starting from 1. The default order is the order of creation.
      */
     @Column(name = "group_order", nullable = false)
@@ -61,19 +73,22 @@ public class DiveGroup {
      *
      * @param ownerName full name of the owner of the group
      * @param members   current members of the group
+     * @param diveFiles dive files uploaded by the members of the group
      * @return the populated DiveGroupResponse
      */
-    public DiveGroupResponse toDiveGroupResponse(String ownerName, List<DiveGroupMemberResponse> members) {
+    public DiveGroupResponse toDiveGroupResponse(String ownerName, List<DiveGroupMemberResponse> members, List<DiveFileResponse> diveFiles) {
         return DiveGroupResponse.builder()
                                 .id(this.id)
                                 .eventId(this.eventId)
                                 .name(this.name)
                                 .ownerId(this.ownerId)
                                 .ownerName(ownerName)
+                                .groupType(this.groupType)
                                 .groupOrder(this.groupOrder)
                                 .createdAt(this.createdAt)
                                 .updatedAt(this.updatedAt)
                                 .members(members)
+                                .diveFiles(diveFiles)
                                 .build();
     }
 }

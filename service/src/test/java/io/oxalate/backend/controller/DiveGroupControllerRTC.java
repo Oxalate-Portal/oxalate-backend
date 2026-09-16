@@ -349,6 +349,74 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
     }
 
     @Test
+    void createDiveGroupWithMembersAsUserOk() throws Exception {
+        mockMvc.perform(post(BASE_PATH)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupRequest.builder()
+                                                     .eventId(event.getId())
+                                                     .name("Group with members")
+                                                     .memberIds(List.of(secondUser.getId()))
+                                                     .build())))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.ownerId").value(firstUser.getId()))
+               .andExpect(jsonPath("$.members.length()").value(2))
+               .andExpect(jsonPath("$.members[?(@.userId == " + secondUser.getId() + ")].owner").value(false));
+    }
+
+    @Test
+    void createDiveGroupWithMemberAlreadyInAnotherGroupFail() throws Exception {
+        createGroupFor(secondUser);
+
+        mockMvc.perform(post(BASE_PATH)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupRequest.builder()
+                                                     .eventId(event.getId())
+                                                     .name("Poaching group")
+                                                     .memberIds(List.of(secondUser.getId()))
+                                                     .build())))
+               .andExpect(status().isBadRequest());
+
+        // The whole creation is rolled back, so the group must not exist
+        mockMvc.perform(get(BASE_PATH + "/events/{eventId}", event.getId())
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void createDiveGroupWithNonParticipantMemberFail() throws Exception {
+        mockMvc.perform(post(BASE_PATH)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupRequest.builder()
+                                                     .eventId(event.getId())
+                                                     .name("Group with outsider")
+                                                     .memberIds(List.of(outsider.getId()))
+                                                     .build())))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createDiveGroupWithMembersAsOrganizerOk() throws Exception {
+        jdbcTemplate.update("DELETE FROM event_participants WHERE event_id = ? AND user_id = ?", event.getId(), organizer.getId());
+
+        mockMvc.perform(post(BASE_PATH)
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupRequest.builder()
+                                                     .eventId(event.getId())
+                                                     .name("Organizer built group")
+                                                     .ownerId(firstUser.getId())
+                                                     .memberIds(List.of(secondUser.getId(), firstUser.getId()))
+                                                     .build())))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.ownerId").value(firstUser.getId()))
+               .andExpect(jsonPath("$.members.length()").value(2));
+    }
+
+    @Test
     void getDiveGroupsByEventIdOk() throws Exception {
         createGroupFor(firstUser);
         createGroupFor(secondUser);

@@ -1,6 +1,7 @@
 package io.oxalate.backend.api.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.oxalate.backend.api.DiveGroupTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -26,4 +27,8 @@ public class DiveGroupUpdateRequest {
     @Schema(description = "Optional new owner of the group. Only organizers and administrators may transfer the ownership.", example = "123")
     @JsonProperty("ownerId")
     private Long ownerId;
+
+    @Schema(description = "Optional new type of the dive group. When omitted, the current type is kept.", example = "PROJECT")
+    @JsonProperty("groupType")
+    private DiveGroupTypeEnum groupType;
 }
