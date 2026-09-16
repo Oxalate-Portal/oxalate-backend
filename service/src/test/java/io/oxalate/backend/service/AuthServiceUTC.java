@@ -9,6 +9,7 @@ import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EmailChangeRequest;
 import io.oxalate.backend.api.request.LoginRequest;
 import io.oxalate.backend.events.AppEventPublisher;
+import io.oxalate.backend.exception.OxalateAuthenticationException;
 import io.oxalate.backend.model.Membership;
 import io.oxalate.backend.model.Role;
 import io.oxalate.backend.model.Token;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -348,6 +350,70 @@ class AuthServiceUTC {
 
         assertNotNull(result);
         assertNull(result.getPrimaryUserType());
+    }
+
+    @Test
+    void authenticateInvalidCredentialsFails() {
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+        var loginRequest = LoginRequest.builder()
+                                       .username("user@example.com")
+                                       .password("wrong")
+                                       .build();
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("bad credentials"));
+
+        assertThrows(OxalateAuthenticationException.class, () -> authService.authenticate(loginRequest, request, response));
+        verify(userService, never()).findByUsername(anyString());
+    }
+
+    @Test
+    void authenticateUnknownUserFails() {
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+        var loginRequest = LoginRequest.builder()
+                                       .username("missing@example.com")
+                                       .password("password")
+                                       .build();
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(org.mockito.Mockito.mock(Authentication.class));
+        when(userService.findByUsername("missing@example.com")).thenReturn(Optional.empty());
+
+        assertThrows(OxalateAuthenticationException.class, () -> authService.authenticate(loginRequest, request, response));
+    }
+
+    @Test
+    void authenticateInactiveUserFails() {
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+        var loginRequest = LoginRequest.builder()
+                                       .username("locked@example.com")
+                                       .password("password")
+                                       .build();
+        var user = createActiveUser(101L, "locked@example.com");
+        user.setStatus(LOCKED);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(org.mockito.Mockito.mock(Authentication.class));
+        when(userService.findByUsername("locked@example.com")).thenReturn(Optional.of(user));
+
+        assertThrows(OxalateAuthenticationException.class, () -> authService.authenticate(loginRequest, request, response));
+    }
+
+    @Test
+    void authenticateUserWithoutRolesFails() {
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+        var loginRequest = LoginRequest.builder()
+                                       .username("noroles@example.com")
+                                       .password("password")
+                                       .build();
+        var user = createActiveUser(102L, "noroles@example.com");
+        user.setRoles(Set.of());
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(org.mockito.Mockito.mock(Authentication.class));
+        when(userService.findByUsername("noroles@example.com")).thenReturn(Optional.of(user));
+
+        assertThrows(OxalateAuthenticationException.class, () -> authService.authenticate(loginRequest, request, response));
     }
 
     private User buildActiveUserWithTypeAndMemberships(long id, String username,

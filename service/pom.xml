@@ -18,9 +18,9 @@
             Measured actuals rounded down: instruction 39.2%, branch 32.0%, line 38.5%.
             Target is 0.90 on each. See ../TODO-20260916.md item 3.
         -->
-        <jacoco.min.instruction>0.38</jacoco.min.instruction>
-        <jacoco.min.branch>0.31</jacoco.min.branch>
-        <jacoco.min.line>0.37</jacoco.min.line>
+        <jacoco.min.instruction>0.49</jacoco.min.instruction>
+        <jacoco.min.branch>0.43</jacoco.min.branch>
+        <jacoco.min.line>0.49</jacoco.min.line>
     </properties>
 
     <dependencies>

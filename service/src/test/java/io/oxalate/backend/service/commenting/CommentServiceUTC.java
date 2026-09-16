@@ -3,11 +3,15 @@ package io.oxalate.backend.service.commenting;
 import io.oxalate.backend.api.CommentStatusEnum;
 import io.oxalate.backend.api.CommentTypeEnum;
 import static io.oxalate.backend.api.PortalConfigEnum.COMMENTING;
+import static io.oxalate.backend.api.PortalConfigEnum.CommentConfigEnum.COMMENT_REPORT_TRIGGER_LEVEL;
 import static io.oxalate.backend.api.PortalConfigEnum.CommentConfigEnum.COMMENT_REQUIRE_REVIEW;
+import io.oxalate.backend.api.UpdateStatusEnum;
 import io.oxalate.backend.api.request.commenting.CommentRequest;
+import io.oxalate.backend.api.request.commenting.ReportRequest;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.model.commenting.Comment;
+import io.oxalate.backend.model.commenting.CommentReport;
 import io.oxalate.backend.model.commenting.EventComment;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.commenting.CommentReportRepository;
@@ -23,6 +27,7 @@ import java.util.Locale;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -208,5 +213,108 @@ class CommentServiceUTC {
 
         assertNotNull(response);
         verify(messageService, never()).createEventCommentNotificationForUser(any(), anyLong());
+    }
+
+    @Test
+    void createCommentWithUnknownUserReturnsNull() {
+        when(userService.findUserEntityById(99L)).thenReturn(null);
+
+        var request = CommentRequest.builder()
+                                    .parentCommentId(1L)
+                                    .commentType(CommentTypeEnum.USER_COMMENT)
+                                    .build();
+
+        assertNull(commentService.createComment(99L, request));
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    @Test
+    void createCommentWithUnknownParentReturnsNull() {
+        when(userService.findUserEntityById(1L)).thenReturn(buildUser(1L, "en", "Alice", "Anderson"));
+        when(commentRepository.findById(404L)).thenReturn(Optional.empty());
+
+        var request = CommentRequest.builder()
+                                    .parentCommentId(404L)
+                                    .commentType(CommentTypeEnum.USER_COMMENT)
+                                    .build();
+
+        assertNull(commentService.createComment(1L, request));
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    @Test
+    void getCommentMissingReturnsNull() {
+        when(commentRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertNull(commentService.getComment(404L));
+    }
+
+    @Test
+    void reportCommentRejectsDuplicateReport() {
+        when(commentReportRepository.existsByUserIdAndCommentId(1L, 7L)).thenReturn(true);
+
+        var result = commentService.reportComment(ReportRequest.builder()
+                                                               .commentId(7L)
+                                                               .reportReason("spam content")
+                                                               .build(), 1L);
+
+        assertEquals(UpdateStatusEnum.FAIL, result.getStatus());
+        assertEquals("User has already reported this comment", result.getMessage());
+        verify(commentReportRepository, never()).save(any(CommentReport.class));
+    }
+
+    @Test
+    void reportCommentRejectsNonUserComment() {
+        when(commentReportRepository.existsByUserIdAndCommentId(1L, 7L)).thenReturn(false);
+        var topic = buildComment(7L, 2L, null, "Topic", "Topic body");
+        topic.setCommentType(CommentTypeEnum.TOPIC);
+        when(commentRepository.findById(7L)).thenReturn(Optional.of(topic));
+
+        var result = commentService.reportComment(ReportRequest.builder()
+                                                               .commentId(7L)
+                                                               .reportReason("not relevant")
+                                                               .build(), 1L);
+
+        assertEquals(UpdateStatusEnum.FAIL, result.getStatus());
+        assertEquals("Comment is not a user comment", result.getMessage());
+    }
+
+    @Test
+    void reportCommentReturnsFailureWhenReportCannotBeSaved() {
+        when(commentReportRepository.existsByUserIdAndCommentId(1L, 7L)).thenReturn(false);
+        when(commentRepository.findById(7L)).thenReturn(Optional.of(buildComment(7L, 2L, null, "Comment", "Body")));
+        when(commentReportRepository.save(any(CommentReport.class))).thenReturn(CommentReport.builder()
+                                                                                             .build());
+        when(commentReportRepository.countByCommentId(7L)).thenReturn(0L);
+
+        var result = commentService.reportComment(ReportRequest.builder()
+                                                               .commentId(7L)
+                                                               .reportReason("spam content")
+                                                               .build(), 1L);
+
+        assertEquals(UpdateStatusEnum.FAIL, result.getStatus());
+        assertEquals("Saving report failed", result.getMessage());
+    }
+
+    @Test
+    void reportCommentHoldsCommentAtConfiguredThreshold() {
+        var comment = buildComment(7L, 2L, null, "Comment", "Body");
+        when(commentReportRepository.existsByUserIdAndCommentId(1L, 7L)).thenReturn(false);
+        when(commentRepository.findById(7L)).thenReturn(Optional.of(comment));
+        when(commentReportRepository.save(any(CommentReport.class))).thenReturn(CommentReport.builder()
+                                                                                             .id(8L)
+                                                                                             .build());
+        when(commentReportRepository.countByCommentId(7L)).thenReturn(3L);
+        when(portalConfigurationService.getNumericConfiguration(COMMENTING.group, COMMENT_REPORT_TRIGGER_LEVEL.key))
+                .thenReturn(3L);
+
+        var result = commentService.reportComment(ReportRequest.builder()
+                                                               .commentId(7L)
+                                                               .reportReason("spam content")
+                                                               .build(), 1L);
+
+        assertEquals(UpdateStatusEnum.OK, result.getStatus());
+        assertEquals(CommentStatusEnum.HELD_FOR_MODERATION, comment.getCommentStatus());
+        verify(commentRepository).save(comment);
     }
 }

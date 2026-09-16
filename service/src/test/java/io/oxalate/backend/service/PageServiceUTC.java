@@ -12,6 +12,7 @@ import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.model.Page;
 import io.oxalate.backend.model.PageGroup;
 import io.oxalate.backend.model.PageGroupVersion;
+import io.oxalate.backend.model.PageRoleAccess;
 import io.oxalate.backend.model.PageVersion;
 import io.oxalate.backend.repository.PageGroupRepository;
 import io.oxalate.backend.repository.PageGroupVersionRepository;
@@ -29,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +50,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 @Slf4j
 @ExtendWith(MockitoExtension.class)
@@ -388,6 +392,90 @@ class PageServiceUTC {
         // Then
         assertNotNull(result);
         assertFalse(result.isEmpty());
+    }
+
+    @Test
+    void getPageUnsupportedLanguageReturnsNull() {
+        when(portalConfigurationService.getArrayConfiguration(any(), any())).thenReturn(List.of("en"));
+
+        assertNull(pageService.getPage(1L, userRoles, "de"));
+        verify(pageRepository, times(0)).findById(anyLong());
+    }
+
+    @Test
+    void getPageMissingPageReturnsNull() {
+        when(portalConfigurationService.getArrayConfiguration(any(), any())).thenReturn(List.of("en"));
+        when(pageRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertNull(pageService.getPage(1L, userRoles, "en"));
+    }
+
+    @Test
+    void getPageUnpublishedPageReturnsNull() {
+        when(portalConfigurationService.getArrayConfiguration(any(), any())).thenReturn(List.of("en"));
+        when(pageRepository.findById(1L)).thenReturn(Optional.of(Page.builder()
+                                                                     .id(1L)
+                                                                     .status(PageStatusEnum.DRAFTED)
+                                                                     .build()));
+
+        assertNull(pageService.getPage(1L, userRoles, "en"));
+        verify(pageVersionRepository, times(0)).findByPageIdAndLanguage(anyLong(), anyString());
+    }
+
+    @Test
+    void getPageMissingLanguageVersionReturnsNull() {
+        when(portalConfigurationService.getArrayConfiguration(any(), any())).thenReturn(List.of("en"));
+        when(pageRepository.findById(1L)).thenReturn(Optional.of(Page.builder()
+                                                                     .id(1L)
+                                                                     .status(PageStatusEnum.PUBLISHED)
+                                                                     .build()));
+        when(pageVersionRepository.findByPageIdAndLanguage(1L, "en")).thenReturn(Optional.empty());
+
+        assertNull(pageService.getPage(1L, userRoles, "en"));
+    }
+
+    @Test
+    void getPageWithoutPermissionFails() {
+        when(portalConfigurationService.getArrayConfiguration(any(), any())).thenReturn(List.of("en"));
+        when(pageRepository.findById(1L)).thenReturn(Optional.of(Page.builder()
+                                                                     .id(1L)
+                                                                     .status(PageStatusEnum.PUBLISHED)
+                                                                     .build()));
+        when(pageVersionRepository.findByPageIdAndLanguage(1L, "en"))
+                .thenReturn(Optional.of(createMockPageVersion(1L, 1L, "en", "Title", "Ingress", "Body")));
+        when(pageRoleAccessRepository.findByPageIdAndRoleIn(1L, userRoles)).thenReturn(new HashSet<>());
+
+        assertThrows(AccessDeniedException.class, () -> pageService.getPage(1L, userRoles, "en"));
+    }
+
+    @Test
+    void getPageWithPermissionReturnsLocalizedResponse() {
+        when(portalConfigurationService.getArrayConfiguration(any(), any())).thenReturn(List.of("en"));
+        when(pageRepository.findById(1L)).thenReturn(Optional.of(Page.builder()
+                                                                     .id(1L)
+                                                                     .status(PageStatusEnum.PUBLISHED)
+                                                                     .build()));
+        when(pageVersionRepository.findByPageIdAndLanguage(1L, "en"))
+                .thenReturn(Optional.of(createMockPageVersion(1L, 1L, "en", "Title", "Ingress", "Body")));
+        when(pageRoleAccessRepository.findByPageIdAndRoleIn(1L, userRoles))
+                .thenReturn(Set.of(PageRoleAccess.builder()
+                                                 .id(10L)
+                                                 .pageId(1L)
+                                                 .role(RoleEnum.ROLE_USER)
+                                                 .readPermission(true)
+                                                 .writePermission(false)
+                                                 .build()));
+
+        var result = pageService.getPage(1L, userRoles, "en");
+
+        assertNotNull(result);
+        assertEquals(1, result.getPageVersions()
+                              .size());
+        assertEquals("Title", result.getPageVersions()
+                                    .get(0)
+                                    .getTitle());
+        assertEquals(1, result.getRolePermissions()
+                              .size());
     }
 
     @Test

@@ -1,13 +1,24 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.PaymentTypeEnum;
+import io.oxalate.backend.api.UpdateStatusEnum;
+import io.oxalate.backend.model.Payment;
+import io.oxalate.backend.repository.EventParticipantsRepository;
+import io.oxalate.backend.repository.PaymentRepository;
+import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.tools.PeriodTools;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit test cases for PaymentService, at this point we mainly test the date calculations
@@ -15,6 +26,109 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 @Slf4j
 public class PaymentServiceUTC {
+
+    private final PortalConfigurationService configuration = mock(PortalConfigurationService.class);
+    private final EventParticipantsRepository participants = mock(EventParticipantsRepository.class);
+    private final PaymentRepository paymentRepository = mock(PaymentRepository.class);
+    private final UserRepository userRepository = mock(UserRepository.class);
+
+    private PaymentService service() {
+        return new PaymentService(configuration, participants, paymentRepository, userRepository);
+    }
+
+    @org.junit.jupiter.api.Test
+    void bestAvailablePaymentPrefersPeriodical() {
+        var periodic = Payment.builder()
+                              .paymentType(PaymentTypeEnum.PERIODICAL)
+                              .build();
+        when(paymentRepository.findAllCurrentPaymentsByUserId(7L)).thenReturn(List.of(periodic));
+
+        assertEquals(java.util.Optional.of(PaymentTypeEnum.PERIODICAL), service().getBestAvailablePaymentType(7L));
+    }
+
+    @org.junit.jupiter.api.Test
+    void bestAvailablePaymentUsesOneTimeOnlyWhenCountRemains() {
+        var exhausted = Payment.builder()
+                               .paymentType(PaymentTypeEnum.ONE_TIME)
+                               .paymentCount(0)
+                               .build();
+        var available = Payment.builder()
+                               .paymentType(PaymentTypeEnum.ONE_TIME)
+                               .paymentCount(2)
+                               .build();
+        when(paymentRepository.findAllCurrentPaymentsByUserId(7L)).thenReturn(List.of(exhausted, available));
+
+        assertEquals(java.util.Optional.of(PaymentTypeEnum.ONE_TIME), service().getBestAvailablePaymentType(7L));
+    }
+
+    @org.junit.jupiter.api.Test
+    void bestAvailablePaymentIsEmptyWithoutUsablePayments() {
+        when(paymentRepository.findAllCurrentPaymentsByUserId(7L)).thenReturn(List.of());
+
+        assertTrue(service().getBestAvailablePaymentType(7L)
+                            .isEmpty());
+    }
+
+    @org.junit.jupiter.api.Test
+    void paymentAtDateRequiresActivePeriod() {
+        var active = Payment.builder()
+                            .paymentType(PaymentTypeEnum.PERIODICAL)
+                            .startDate(LocalDate.now()
+                                                .minusDays(2))
+                            .endDate(LocalDate.now()
+                                              .plusDays(2))
+                            .build();
+        var expired = Payment.builder()
+                             .paymentType(PaymentTypeEnum.PERIODICAL)
+                             .startDate(LocalDate.now()
+                                                 .minusDays(5))
+                             .endDate(LocalDate.now()
+                                               .minusDays(1))
+                             .build();
+        when(paymentRepository.findAllByUserIdOrderByStartDateDesc(7L)).thenReturn(List.of(expired, active));
+
+        assertTrue(service().hasPaymentAtDate(7L, Instant.now()));
+        assertEquals(java.util.Optional.of(PaymentTypeEnum.PERIODICAL),
+                service().getBestAvailablePaymentTypeAtDate(7L, Instant.now()));
+    }
+
+    @org.junit.jupiter.api.Test
+    void paymentAtDateReturnsEmptyWhenOnlyExpired() {
+        var expired = Payment.builder()
+                             .paymentType(PaymentTypeEnum.ONE_TIME)
+                             .paymentCount(3)
+                             .startDate(LocalDate.now()
+                                                 .minusDays(5))
+                             .endDate(LocalDate.now()
+                                               .minusDays(1))
+                             .build();
+        when(paymentRepository.findAllByUserIdOrderByStartDateDesc(7L)).thenReturn(List.of(expired));
+
+        assertFalse(service().hasPaymentAtDate(7L, Instant.now()));
+        assertTrue(service().getBestAvailablePaymentTypeAtDate(7L, Instant.now())
+                            .isEmpty());
+    }
+
+    @org.junit.jupiter.api.Test
+    void currentStatusBindsFutureEventsToOneTimePayments() {
+        var payment = Payment.builder()
+                             .id(4L)
+                             .userId(7L)
+                             .paymentType(PaymentTypeEnum.ONE_TIME)
+                             .paymentCount(1)
+                             .created(Instant.now())
+                             .startDate(LocalDate.now())
+                             .build();
+        when(paymentRepository.findAllCurrentPaymentsByUserId(7L)).thenReturn(List.of(payment));
+        when(participants.findOneTimeFutureEventParticipantsByUserId(7L)).thenReturn(List.of(11L));
+
+        var result = service().getPaymentStatusForUser(7L);
+
+        assertEquals(UpdateStatusEnum.OK, result.getStatus());
+        assertEquals(List.of(11L), result.getPayments()
+                                         .getFirst()
+                                         .getBoundEvents());
+    }
     @ParameterizedTest
     @CsvSource({
             "durational, 2025-01-01, Europe/Helsinki,  YEARS,   1, 2025-01-01, 1,  1, 1, 2026",
