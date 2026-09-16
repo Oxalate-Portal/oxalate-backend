@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<!--
+    Checkstyle suppressions for violations that already existed when the style gate was introduced.
+
+    SHRINK-ONLY. Every entry is a file that violated the ruleset at that point. Fix the violation and delete the
+    entry; never add an entry to make a build pass. The baseline was 103 violations across 35 files:
+    46 MethodName, 41 LineLength, 12 NeedBraces, 3 MemberName, 1 LocalVariableName.
+
+    Suppression is per file and per check rather than per line, so entries do not drift when line numbers move. The
+    trade-off is that a new violation of the same check inside one of these files is not caught, which is the reason
+    to empty this file. See ../TODO-20260916.md item 2.
+-->
+<suppressions>
+
+    <!-- Lines over the 160-character limit from .editorconfig: long native queries and Lombok-heavy DTOs. -->
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]AbstractUser\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]request[/\\]ConfirmationRequest\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]request[/\\]MembershipRequest\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]request[/\\]MessageRequest\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]request[/\\]SignupRequest\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]request[/\\]TokenRequest\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]request[/\\]UserResetPasswordRequest\.java"/>
+    <suppress checks="LineLength"
+              files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]request[/\\]commenting[/\\]CommentFilterRequest\.java"/>
+    <suppress checks="LineLength"
+              files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]request[/\\]commenting[/\\]CommentRequest\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]response[/\\]DiveGroupResponse\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]response[/\\]MembershipResponse\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]response[/\\]PaymentResponse\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]rest[/\\]FileTransferAPI\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]rest[/\\]NotificationAPI\.java"/>
+    <suppress checks="LineLength" files="api[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]rest[/\\]StatsAPI\.java"/>
+    <suppress checks="LineLength"
+              files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]repository[/\\]EventParticipantsRepository\.java"/>
+    <suppress checks="LineLength" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]repository[/\\]EventRepository\.java"/>
+    <suppress checks="LineLength" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]CertificateService\.java"/>
+    <suppress checks="LineLength" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]EmailService\.java"/>
+    <suppress checks="LineLength" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]EventService\.java"/>
+    <suppress checks="LineLength" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]MessageService\.java"/>
+    <suppress checks="LineLength" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]PaymentService\.java"/>
+    <suppress checks="LineLength" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]RegistrationService\.java"/>
+    <suppress checks="LineLength" files="service[/\\]src[/\\]test[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]DiveGroupServiceUTC\.java"/>
+
+    <!-- Local variable not in camelCase. -->
+    <suppress checks="LocalVariableName" files="service[/\\]src[/\\]test[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]PageServiceITC\.java"/>
+
+    <!-- Compile-time constants declared as instance fields in UPPER_SNAKE; they should be static final. -->
+    <suppress checks="MemberName" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]PageService\.java"/>
+
+    <!-- Test methods named in PascalCase. AGENTS.md specifies camelCase methodScenarioOk/Fail. -->
+    <suppress checks="MethodName" files="api[/\\]src[/\\]test[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]api[/\\]DtoConstructionUTC\.java"/>
+    <suppress checks="MethodName" files="service[/\\]src[/\\]test[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]controller[/\\]FileTransferControllerRTC\.java"/>
+    <suppress checks="MethodName" files="service[/\\]src[/\\]test[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]controller[/\\]FileTransferControllerUTC\.java"/>
+    <suppress checks="MethodName"
+              files="service[/\\]src[/\\]test[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]filetransfer[/\\]AvatarFileTransferServiceUTC\.java"/>
+
+    <!-- Single-statement if/for written without braces. -->
+    <suppress checks="NeedBraces"
+              files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]controller[/\\]CertificateClassificationController\.java"/>
+    <suppress checks="NeedBraces" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]controller[/\\]CertificateController\.java"/>
+    <suppress checks="NeedBraces" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]model[/\\]CertificateClassification\.java"/>
+    <suppress checks="NeedBraces" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]model[/\\]PageGroup\.java"/>
+    <suppress checks="NeedBraces" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]security[/\\]service[/\\]UserDetailsImpl\.java"/>
+    <suppress checks="NeedBraces" files="service[/\\]src[/\\]main[/\\]java[/\\]io[/\\]oxalate[/\\]backend[/\\]service[/\\]CertificateService\.java"/>
+</suppressions>

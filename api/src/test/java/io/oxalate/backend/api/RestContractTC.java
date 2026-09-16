@@ -1,208 +1,368 @@
 package io.oxalate.backend.api;
 
-import io.oxalate.backend.rest.AuditAPI;
-import io.oxalate.backend.rest.AuthAPI;
-import io.oxalate.backend.rest.BlockedDateAPI;
-import io.oxalate.backend.rest.CertificateAPI;
-import io.oxalate.backend.rest.CertificateClassificationAPI;
-import io.oxalate.backend.rest.CommentAPI;
-import io.oxalate.backend.rest.DataDownloadAPI;
-import io.oxalate.backend.rest.DiveGroupAPI;
-import io.oxalate.backend.rest.EmailNotificationSubscriptionAPI;
-import io.oxalate.backend.rest.EventAPI;
-import io.oxalate.backend.rest.FileTransferAPI;
-import io.oxalate.backend.rest.MembershipAPI;
-import io.oxalate.backend.rest.NotificationAPI;
-import io.oxalate.backend.rest.PageAPI;
-import io.oxalate.backend.rest.PageManagementAPI;
-import io.oxalate.backend.rest.PaymentAPI;
-import io.oxalate.backend.rest.PortalConfigurationAPI;
-import io.oxalate.backend.rest.StatsAPI;
-import io.oxalate.backend.rest.TagAPI;
-import io.oxalate.backend.rest.TestAPI;
-import io.oxalate.backend.rest.ThirdPartyAPI;
-import io.oxalate.backend.rest.TokenAPI;
-import io.oxalate.backend.rest.UserAPI;
+import io.oxalate.backend.api.RestEndpointInventory.Endpoint;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
- * Provider-neutral contract checks for the public REST API. These checks run in
- * the API module, so a contract regression is caught without a database or Docker.
+ * Provider-neutral contract checks for the public REST API. These checks run in the API module, so a contract
+ * regression is caught without a database or Docker.
+ * <p>
+ * The API interfaces are <b>discovered</b> from the classpath by {@link RestEndpointInventory} rather than listed
+ * here. The previous version of this test held a hardcoded array of 23 interfaces, so a 24th interface was silently
+ * unchecked, and it asserted {@code endpointCount >= 100} against an actual 164 endpoints, which meant the
+ * completeness check could not fail.
+ * <p>
+ * What this test guarantees for <i>every</i> mapped endpoint:
+ * <ul>
+ *     <li>the mapping is unique;</li>
+ *     <li>the method returns {@link ResponseEntity};</li>
+ *     <li>the method declares OpenAPI {@link Operation} metadata;</li>
+ *     <li>the method declares {@link ApiResponses} with at least one success and one error status;</li>
+ *     <li>the method either declares {@link SecurityRequirement} or is classified as a public route.</li>
+ * </ul>
+ * The last three have shrink-only allow-lists for endpoints that do not comply yet.
+ * <p>
+ * What this test deliberately does <b>not</b> guarantee: that the declared statuses are actually produced. Declaring a
+ * 404 is not the same as returning one. That is {@code RestEndpointTestCoverageUTC} in the service module, where
+ * MockMvc lives.
  */
+@DisplayName("REST contract: every declared endpoint is completely specified")
 class RestContractTC {
 
-    private static final Class<?>[] API_INTERFACES = {
-            AuditAPI.class, AuthAPI.class, BlockedDateAPI.class, CertificateAPI.class, CertificateClassificationAPI.class,
-            CommentAPI.class, DataDownloadAPI.class, DiveGroupAPI.class, EmailNotificationSubscriptionAPI.class,
-            EventAPI.class, FileTransferAPI.class, MembershipAPI.class, NotificationAPI.class,
-            PageAPI.class, PageManagementAPI.class, PaymentAPI.class,
-            PortalConfigurationAPI.class, StatsAPI.class, TagAPI.class, TestAPI.class, UserAPI.class,
-            TokenAPI.class, ThirdPartyAPI.class
-    };
+    /**
+     * Exact endpoint inventory. Pinned rather than a lower bound so that adding or removing an endpoint forces a
+     * deliberate edit here. This is what turns "every new REST endpoint must add or update a contract test" from a
+     * request in AGENTS.md into a rule the build checks.
+     */
+    private static final int EXPECTED_ENDPOINT_COUNT = 164;
+
+    /**
+     * Endpoints that do not yet declare their response statuses, as {@code Interface.method}.
+     * <p>
+     * This list may only shrink. Every entry is an endpoint whose contract is undocumented, so neither a client nor a
+     * contract test can know what it is allowed to return. A new endpoint must declare {@code @ApiResponses} from the
+     * start. See ../TODO-20260916.md item 4.
+     */
+    private static final Set<String> ENDPOINTS_WITHOUT_DECLARED_RESPONSES = Set.of(
+            "CertificateAPI.replaceCertificateNames",
+            "CertificateAPI.replaceOrganizations",
+            "CertificateAPI.updateClassification",
+            "CertificateClassificationAPI.create",
+            "CertificateClassificationAPI.delete",
+            "CertificateClassificationAPI.getAll",
+            "CertificateClassificationAPI.getById",
+            "CertificateClassificationAPI.reorder",
+            "CertificateClassificationAPI.update",
+            "ThirdPartyAPI.getUpcomingEvents",
+            "TokenAPI.createToken",
+            "TokenAPI.invalidateToken",
+            "TokenAPI.listTokens",
+            "TokenAPI.refreshToken"
+    );
+
+    /**
+     * Endpoints that declare a success status but no error status, so a client has no documented failure contract.
+     * This list may only shrink. See ../TODO-20260916.md item 4.
+     */
+    private static final Set<String> ENDPOINTS_WITHOUT_DECLARED_ERROR_STATUS = Set.of(
+            "AuthAPI.lostPassword",
+            "AuthAPI.verifyEmailChange",
+            "AuthAPI.verifyRegistration"
+    );
+
+    /**
+     * Endpoints that are authenticated in {@code WebSecurityConfig} and carry a {@code @PreAuthorize} rule on the
+     * controller, but do not say so in their OpenAPI metadata, so Swagger presents them as public.
+     * <p>
+     * A documentation defect rather than a security hole: {@code OwaspEndpointAuthorizationUTC} independently proves
+     * the authorization rule exists. This list may only shrink. See ../TODO-20260916.md item 4.
+     */
+    private static final Set<String> ENDPOINTS_WITHOUT_SECURITY_DECLARATION = Set.of(
+            "PageManagementAPI.getPageById"
+    );
 
     @Test
-    void everyDeclaredEndpointHasACompleteJavaContract() {
-        var paths = new HashSet<String>();
-        var endpointCount = 0;
+    void everyApiInterfaceIsDiscoveredOk() {
+        var interfaces = RestEndpointInventory.apiInterfaces();
 
-        for (var api : API_INTERFACES) {
-            for (var method : api.getDeclaredMethods()) {
-                var mapping = mapping(method);
-                if (mapping == null) {
-                    continue;
-                }
-                endpointCount++;
-                assertTrue(paths.add(api.getName() + ":" + method.getName() + ":" + path(mapping)),
-                        () -> "Duplicate endpoint mapping in " + api.getSimpleName() + ": " + path(mapping));
-                assertTrue(ResponseEntity.class.isAssignableFrom(method.getReturnType()),
-                        () -> api.getSimpleName() + "." + method.getName() + " must return ResponseEntity");
-                assertNotNull(method.getAnnotation(io.swagger.v3.oas.annotations.Operation.class),
-                        () -> api.getSimpleName() + "." + method.getName() + " is missing OpenAPI @Operation");
+        assertFalse(interfaces.isEmpty(),
+                "Classpath scan of " + RestEndpointInventory.API_PACKAGE + " found no API interfaces at all");
+        // A sanity floor only. Discovery is the real guarantee; this catches a broken scan configuration.
+        assertTrue(interfaces.size() >= 20,
+                () -> "Classpath scan found only " + interfaces.size() + " API interfaces, which is too few to be trustworthy");
+    }
+
+    @Test
+    void theEndpointInventoryMatchesExactlyOk() {
+        var endpoints = RestEndpointInventory.endpoints();
+
+        assertEquals(EXPECTED_ENDPOINT_COUNT, endpoints.size(), () -> """
+                The REST endpoint count changed. Expected %d, found %d.
+
+                Adding or removing an endpoint is fine, but it must be deliberate:
+                  1. update EXPECTED_ENDPOINT_COUNT in this test;
+                  2. declare @Operation, @ApiResponses and @SecurityRequirement on the new endpoint;
+                  3. add its status-code test and update
+                     service/src/test/resources/rest-endpoint-test-coverage-baseline.txt.
+                """.formatted(EXPECTED_ENDPOINT_COUNT, endpoints.size()));
+    }
+
+    @Test
+    void everyEndpointHasAUniqueMappingOk() {
+        var seen = new HashSet<String>();
+        var duplicates = new TreeSet<String>();
+
+        for (var endpoint : RestEndpointInventory.endpoints()) {
+            if (!seen.add(endpoint.httpMethod() + " " + endpoint.path())) {
+                duplicates.add(endpoint.describe());
             }
         }
 
-        assertTrue(endpointCount >= 100, "The contract inventory unexpectedly contains too few endpoints");
+        assertTrue(duplicates.isEmpty(), () -> "The same HTTP method and path is mapped more than once: " + duplicates);
     }
 
     @Test
-    void publicEndpointsUseOnlyTheSecurityConfigPublicPrefixes() {
-        var publicEndpointCount = 0;
-        for (var api : API_INTERFACES) {
-            for (var method : api.getDeclaredMethods()) {
-                var mapping = mapping(method);
-                if (mapping == null) {
-                    continue;
-                }
-                var endpointPath = path(mapping);
-                var explicitlyPublic = endpointPath.startsWith("/api/auth/")
-                        || endpointPath.startsWith("/api/pages/")
-                        || endpointPath.startsWith("/api/files/")
-                        || endpointPath.startsWith("/api/documents/")
-                        || endpointPath.startsWith("/api/dive-plans/")
-                        || endpointPath.startsWith("/api/test/")
-                        || endpointPath.equals("/api/third-party/events")
-                        || endpointPath.equals("/api/configurations/frontend");
-                if (explicitlyPublic) {
-                    publicEndpointCount++;
-                }
-            }
-        }
-        assertTrue(publicEndpointCount > 0, "The contract must contain at least one public endpoint");
+    void everyEndpointReturnsAResponseEntityOk() {
+        var offenders = offenders(endpoint -> !ResponseEntity.class.isAssignableFrom(endpoint.method()
+                                                                                             .getReturnType()));
+
+        assertTrue(offenders.isEmpty(), () -> "These endpoints must return ResponseEntity:\n" + join(offenders));
     }
 
     @Test
-    void certificateSearchEndpointsAreAuthenticated() {
-        var paths = CertificateAPI.class.getDeclaredMethods();
-        var searchEndpoints = java.util.Arrays.stream(paths)
-                                              .filter(method -> method.isAnnotationPresent(GetMapping.class))
-                                              .filter(method -> path(method.getAnnotation(GetMapping.class)).contains("/management/"))
-                                              .toList();
+    void everyEndpointDeclaresOpenApiOperationMetadataOk() {
+        var offenders = offenders(endpoint -> !endpoint.method()
+                                                       .isAnnotationPresent(Operation.class));
 
-        assertTrue(searchEndpoints.stream()
-                                  .anyMatch(method -> path(method.getAnnotation(GetMapping.class))
-                                          .endsWith("/certificate-names")));
-        assertTrue(searchEndpoints.stream()
-                                  .anyMatch(method -> path(method.getAnnotation(GetMapping.class))
-                                          .endsWith("/organizations")));
-        searchEndpoints.forEach(method -> assertTrue(method.isAnnotationPresent(SecurityRequirement.class),
-                () -> method.getName() + " must declare authentication"));
+        assertTrue(offenders.isEmpty(), () -> "These endpoints are missing OpenAPI @Operation:\n" + join(offenders));
+    }
+
+    /**
+     * The declaration half of "contract tests must cover 200 and every declared error code": an endpoint that declares
+     * no statuses has no error contract for a test to cover.
+     */
+    @Test
+    void everyEndpointDeclaresItsResponseStatusesOk() {
+        var offenders = offenders(endpoint -> endpoint.declaredStatusCodes()
+                                                      .isEmpty()
+                && !ENDPOINTS_WITHOUT_DECLARED_RESPONSES.contains(endpoint.id()));
+
+        assertTrue(offenders.isEmpty(), () -> """
+                These endpoints declare no @ApiResponses, so their contract is undocumented:
+                %s
+                Declare the statuses the endpoint can return. Do not add them to
+                ENDPOINTS_WITHOUT_DECLARED_RESPONSES -- that list may only shrink.
+                """.formatted(join(offenders)));
     }
 
     @Test
-    void diveGroupEndpointsAreAuthenticatedAndComplete() {
-        var methods = DiveGroupAPI.class.getDeclaredMethods();
+    void everyDeclaredResponseSetCoversSuccessAndFailureOk() {
+        var missingSuccess = new ArrayList<String>();
+        var missingFailure = new ArrayList<String>();
 
-        assertEquals(10, java.util.Arrays.stream(methods)
-                                         .filter(method -> mapping(method) != null)
-                                         .count(), "DiveGroupAPI must declare all ten dive group endpoints");
-
-        for (var method : methods) {
-            var mapping = mapping(method);
-            if (mapping == null) {
+        for (var endpoint : RestEndpointInventory.endpoints()) {
+            var declared = endpoint.declaredStatusCodes();
+            if (declared.isEmpty()) {
                 continue;
             }
+            if (declared.stream()
+                        .noneMatch(code -> code >= 200 && code < 400)) {
+                missingSuccess.add(endpoint.describe() + " declares " + declared);
+            }
+            if (declared.stream()
+                        .noneMatch(code -> code >= 400)
+                    && !ENDPOINTS_WITHOUT_DECLARED_ERROR_STATUS.contains(endpoint.id())) {
+                missingFailure.add(endpoint.describe() + " declares " + declared);
+            }
+        }
 
-            var endpointPath = path(mapping);
-            assertTrue(endpointPath.startsWith("/api/dive-groups"),
-                    () -> method.getName() + " must be mapped below /api/dive-groups, was: " + endpointPath);
-            assertTrue(method.isAnnotationPresent(SecurityRequirement.class),
-                    () -> method.getName() + " must declare authentication");
-            assertNotNull(method.getAnnotation(io.swagger.v3.oas.annotations.Operation.class),
-                    () -> method.getName() + " is missing OpenAPI @Operation");
-            assertNotNull(method.getAnnotation(io.swagger.v3.oas.annotations.responses.ApiResponses.class),
-                    () -> method.getName() + " is missing OpenAPI @ApiResponses");
-            assertTrue(ResponseEntity.class.isAssignableFrom(method.getReturnType()),
-                    () -> method.getName() + " must return ResponseEntity");
-            assertFalse(endpointPath.startsWith("/api/auth/")
-                            || endpointPath.startsWith("/api/pages/")
-                            || endpointPath.startsWith("/api/files/")
-                            || endpointPath.startsWith("/api/documents/")
-                            || endpointPath.startsWith("/api/dive-plans/")
-                            || endpointPath.startsWith("/api/test/"),
-                    () -> method.getName() + " must not be classified as a public route");
+        assertTrue(missingSuccess.isEmpty(), () -> "These endpoints declare no success status:\n" + join(missingSuccess));
+        assertTrue(missingFailure.isEmpty(), () -> "These endpoints declare no error status:\n" + join(missingFailure));
+    }
+
+    @Test
+    void everyEndpointIsEitherSecuredOrClassifiedPublicOk() {
+        var offenders = offenders(endpoint -> !endpoint.method()
+                                                       .isAnnotationPresent(SecurityRequirement.class)
+                && !endpoint.isPublicRoute()
+                && !ENDPOINTS_WITHOUT_SECURITY_DECLARATION.contains(endpoint.id()));
+
+        assertTrue(offenders.isEmpty(), () -> """
+                These endpoints neither declare @SecurityRequirement nor sit on a public path:
+                %s
+                Either declare the authentication requirement, or add the path to the public allow-list in
+                RestEndpointInventory, WebSecurityConfig and OwaspEndpointAuthorizationUTC.
+                """.formatted(join(offenders)));
+    }
+
+    /**
+     * Keeps the three allow-lists honest. Without this an endpoint could be fixed while its exemption lingered,
+     * silently exempting whatever later reused the name, and the lists would never shrink.
+     */
+    @Test
+    void theAllowListsHaveNoStaleEntriesOk() {
+        var endpoints = RestEndpointInventory.endpoints();
+        var knownIds = endpoints.stream()
+                                .map(Endpoint::id)
+                                .collect(Collectors.toSet());
+        var stale = new TreeSet<String>();
+
+        for (var entry : allAllowListEntries()) {
+            if (!knownIds.contains(entry)) {
+                stale.add(entry + " (no such endpoint)");
+            }
+        }
+
+        for (var endpoint : endpoints) {
+            var id = endpoint.id();
+            var declared = endpoint.declaredStatusCodes();
+
+            if (ENDPOINTS_WITHOUT_DECLARED_RESPONSES.contains(id) && !declared.isEmpty()) {
+                stale.add(id + " now declares @ApiResponses -- remove it from ENDPOINTS_WITHOUT_DECLARED_RESPONSES");
+            }
+            if (ENDPOINTS_WITHOUT_DECLARED_ERROR_STATUS.contains(id)
+                    && declared.stream()
+                               .anyMatch(code -> code >= 400)) {
+                stale.add(id + " now declares an error status -- remove it from ENDPOINTS_WITHOUT_DECLARED_ERROR_STATUS");
+            }
+            if (ENDPOINTS_WITHOUT_SECURITY_DECLARATION.contains(id)
+                    && endpoint.method()
+                               .isAnnotationPresent(SecurityRequirement.class)) {
+                stale.add(id + " now declares @SecurityRequirement -- remove it from ENDPOINTS_WITHOUT_SECURITY_DECLARATION");
+            }
+        }
+
+        assertTrue(stale.isEmpty(), () -> """
+                A contract allow-list is out of date. Remove these entries:
+                %s
+                """.formatted(join(stale)));
+    }
+
+    // -------------------------------------------------------------------------------------------------------------
+    // Endpoint-specific contracts. These pin exact paths, which the generic rules above cannot.
+    // -------------------------------------------------------------------------------------------------------------
+
+    @Test
+    void certificateSearchEndpointsAreAuthenticatedOk() {
+        var searchEndpoints = RestEndpointInventory.endpoints()
+                                                   .stream()
+                                                   .filter(endpoint -> endpoint.api()
+                                                                               .getSimpleName()
+                                                                               .equals("CertificateAPI"))
+                                                   .filter(endpoint -> endpoint.httpMethod()
+                                                                               .equals("GET"))
+                                                   .filter(endpoint -> endpoint.path()
+                                                                               .contains("/management/"))
+                                                   .toList();
+
+        assertTrue(searchEndpoints.stream()
+                                  .anyMatch(endpoint -> endpoint.path()
+                                                                .endsWith("/certificate-names")),
+                "CertificateAPI must expose a /management/ certificate-names search endpoint");
+        assertTrue(searchEndpoints.stream()
+                                  .anyMatch(endpoint -> endpoint.path()
+                                                                .endsWith("/organizations")),
+                "CertificateAPI must expose a /management/ organizations search endpoint");
+        searchEndpoints.forEach(endpoint -> assertTrue(endpoint.method()
+                                                               .isAnnotationPresent(SecurityRequirement.class),
+                () -> endpoint.describe() + " must declare authentication"));
+    }
+
+    @Test
+    void diveGroupEndpointsAreAuthenticatedAndCompleteOk() {
+        var diveGroupEndpoints = RestEndpointInventory.endpoints()
+                                                      .stream()
+                                                      .filter(endpoint -> endpoint.api()
+                                                                                  .getSimpleName()
+                                                                                  .equals("DiveGroupAPI"))
+                                                      .toList();
+
+        assertEquals(10, diveGroupEndpoints.size(), "DiveGroupAPI must declare all ten dive group endpoints");
+
+        for (var endpoint : diveGroupEndpoints) {
+            assertTrue(endpoint.path()
+                               .startsWith("/api/dive-groups"),
+                    () -> endpoint.describe() + " must be mapped below /api/dive-groups");
+            assertTrue(endpoint.method()
+                               .isAnnotationPresent(SecurityRequirement.class),
+                    () -> endpoint.describe() + " must declare authentication");
+            assertTrue(endpoint.method()
+                               .isAnnotationPresent(ApiResponses.class),
+                    () -> endpoint.describe() + " is missing OpenAPI @ApiResponses");
+            assertFalse(endpoint.isPublicRoute(), () -> endpoint.describe() + " must not be classified as a public route");
         }
     }
 
     @Test
-    void diveGroupEndpointsUseTheExpectedHttpMethods() {
-        assertEquals("/api/dive-groups", mappedPath(PostMapping.class, "createDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(PutMapping.class, "updateDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(DeleteMapping.class, "deleteDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(GetMapping.class, "getDiveGroupById"));
-        assertEquals("/api/dive-groups/events/{eventId}", mappedPath(GetMapping.class, "getDiveGroupsByEventId"));
-        assertEquals("/api/dive-groups/events/{eventId}/order", mappedPath(PutMapping.class, "reorderDiveGroups"));
-        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath(PostMapping.class, "joinDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath(DeleteMapping.class, "leaveDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath(PostMapping.class, "addMemberToDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath(DeleteMapping.class, "removeMemberFromDiveGroup"));
+    void diveGroupEndpointsUseTheExpectedHttpMethodsOk() {
+        assertEquals("/api/dive-groups", mappedPath("DiveGroupAPI", "POST", "createDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "PUT", "updateDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "DELETE", "deleteDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "GET", "getDiveGroupById"));
+        assertEquals("/api/dive-groups/events/{eventId}", mappedPath("DiveGroupAPI", "GET", "getDiveGroupsByEventId"));
+        assertEquals("/api/dive-groups/events/{eventId}/order", mappedPath("DiveGroupAPI", "PUT", "reorderDiveGroups"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath("DiveGroupAPI", "POST", "joinDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath("DiveGroupAPI", "DELETE", "leaveDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath("DiveGroupAPI", "POST", "addMemberToDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath("DiveGroupAPI", "DELETE", "removeMemberFromDiveGroup"));
     }
 
-    private static String mappedPath(Class<? extends java.lang.annotation.Annotation> annotation, String methodName) {
-        return java.util.Arrays.stream(DiveGroupAPI.class.getDeclaredMethods())
-                               .filter(method -> method.getName()
-                                                       .equals(methodName))
-                               .filter(method -> method.isAnnotationPresent(annotation))
-                               .map(method -> path(method.getAnnotation(annotation)))
-                               .findFirst()
-                               .orElseThrow(() -> new AssertionError(methodName + " is not mapped with " + annotation.getSimpleName()));
+    // -------------------------------------------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------------------------------------------
+
+    private static String mappedPath(String apiName, String httpMethod, String methodName) {
+        return RestEndpointInventory.endpoints()
+                                    .stream()
+                                    .filter(endpoint -> endpoint.api()
+                                                                .getSimpleName()
+                                                                .equals(apiName))
+                                    .filter(endpoint -> endpoint.method()
+                                                                .getName()
+                                                                .equals(methodName))
+                                    .filter(endpoint -> endpoint.httpMethod()
+                                                                .equals(httpMethod))
+                                    .map(Endpoint::path)
+                                    .findFirst()
+                                    .orElseThrow(() -> new AssertionError(
+                                            apiName + "." + methodName + " is not mapped with " + httpMethod));
     }
 
-    private static Object mapping(Method method) {
-        if (method.isAnnotationPresent(GetMapping.class))
-            return method.getAnnotation(GetMapping.class);
-        if (method.isAnnotationPresent(PostMapping.class)) return method.getAnnotation(PostMapping.class);
-        if (method.isAnnotationPresent(PutMapping.class)) return method.getAnnotation(PutMapping.class);
-        if (method.isAnnotationPresent(DeleteMapping.class)) return method.getAnnotation(DeleteMapping.class);
-        if (method.isAnnotationPresent(PatchMapping.class)) return method.getAnnotation(PatchMapping.class);
-        return method.getAnnotation(RequestMapping.class);
+    private static java.util.List<String> offenders(Predicate<Endpoint> isOffender) {
+        return RestEndpointInventory.endpoints()
+                                    .stream()
+                                    .filter(isOffender)
+                                    .map(Endpoint::describe)
+                                    .sorted()
+                                    .toList();
     }
 
-    private static String path(Object mapping) {
-        if (mapping instanceof GetMapping annotation) return first(annotation.path(), annotation.value());
-        if (mapping instanceof PostMapping annotation) return first(annotation.path(), annotation.value());
-        if (mapping instanceof PutMapping annotation) return first(annotation.path(), annotation.value());
-        if (mapping instanceof DeleteMapping annotation) return first(annotation.path(), annotation.value());
-        if (mapping instanceof PatchMapping annotation) return first(annotation.path(), annotation.value());
-        if (mapping instanceof RequestMapping annotation) return first(annotation.path(), annotation.value());
-        return "";
+    private static Set<String> allAllowListEntries() {
+        var all = new TreeSet<String>();
+        all.addAll(ENDPOINTS_WITHOUT_DECLARED_RESPONSES);
+        all.addAll(ENDPOINTS_WITHOUT_DECLARED_ERROR_STATUS);
+        all.addAll(ENDPOINTS_WITHOUT_SECURITY_DECLARATION);
+        return all;
     }
 
-    private static String first(String[] paths, String[] values) {
-        assertFalse(paths.length == 0 && values.length == 0, "Every mapping must declare a path");
-        return paths.length > 0 ? paths[0] : values[0];
+    private static String join(Collection<String> lines) {
+        return lines.stream()
+                    .map(line -> "  - " + line)
+                    .collect(Collectors.joining("\n"));
     }
 }

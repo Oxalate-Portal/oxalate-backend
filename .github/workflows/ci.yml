@@ -28,8 +28,14 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+      # Style gate first: it needs no tests or containers, so a style regression fails in seconds
+      # rather than after the Testcontainers suite.
+      - name: Checkstyle
+        run: ./mvnw -B -ntp checkstyle:check
+      # `verify` runs the tests, the ratcheted JaCoCo coverage checks, the REST contract gates and
+      # the enforcer dependency-convergence rule.
       - name: Build with Maven and run tests
-        run: ./mvnw clean verify package
+        run: ./mvnw -B -ntp clean verify package
       - name: Upload JaCoCo reports
         if: always()
         uses: actions/upload-artifact@v7
@@ -37,7 +43,9 @@ jobs:
           name: backend-jacoco-reports
           path: |
             **/target/site/jacoco/**
+            coverage-report/target/site/jacoco-aggregate/**
             **/target/surefire-reports/**
+            **/target/checkstyle-result.xml
           if-no-files-found: warn
   build-docker:
     name: Build and push Docker image

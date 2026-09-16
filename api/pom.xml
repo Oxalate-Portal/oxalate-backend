@@ -13,6 +13,18 @@
     <name>oxalate-service-api</name>
     <description>Oxalate backend server API</description>
 
+    <properties>
+        <!--
+            Measured actuals for this module's own tests, rounded down. These are low because most
+            api classes (DTOs, enums) are exercised by tests in the `service` module, and JaCoCo
+            credits coverage per module. BRANCH stays at 0.00 until this module's own tests cover
+            at least one branch (currently 0/16). See coverage/pom.xml and ../TODO-20260916.md item 3.
+        -->
+        <jacoco.min.instruction>0.13</jacoco.min.instruction>
+        <jacoco.min.branch>0.00</jacoco.min.branch>
+        <jacoco.min.line>0.12</jacoco.min.line>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -59,5 +71,33 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Used by RestContractTC to discover every REST API interface instead of listing them by hand. -->
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <scope>test</scope>
+        </dependency>
 	</dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                Publishes the test classes so that the service module can reuse RestEndpointInventory. Two independent
+                copies of the endpoint-discovery reflection would drift apart, and a contract gate that disagrees with
+                itself is worse than no gate.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+    Minimal Checkstyle ruleset for the Oxalate backend.
+
+    Scope: this encodes rules that are already written down and already followed, namely
+    documentation/CODESTYLE.md (PascalCase declarations, camelCase variables) and the TS/Java settings in
+    .editorconfig (max_line_length = 160). Before this file existed, nothing in the build read either document, so
+    "the added and updated code must always conform to the current style of code" was unenforceable.
+
+    Deliberately NOT included: a wholesale formatter such as google-java-format or palantir-java-format. The existing
+    code does not match any of them, so adopting one means a repository-wide reformat that buries real changes in
+    noise. That is a decision for a human, written up as ../TODO-20260916.md item 2.
+
+    Everything here is an error rather than a warning, because a warning nobody sees is not a gate.
+-->
+<module name="Checker">
+    <property name="severity" value="error"/>
+    <property name="fileExtensions" value="java"/>
+
+    <!--
+        Locations that violate the rules below today. The file is shrink-only: fix a violation and delete its entry.
+        It exists so that the gate can be hard for all new and changed code without a repository-wide reformat.
+    -->
+    <module name="SuppressionFilter">
+        <property name="file" value="${checkstyle.suppressions.location}"/>
+        <property name="optional" value="false"/>
+    </module>
+
+    <!-- Matches .editorconfig: max_line_length = 160 for [*.java]. -->
+    <module name="LineLength">
+        <property name="max" value="160"/>
+        <!-- Imports and long URLs in Javadoc cannot usefully be wrapped. -->
+        <property name="ignorePattern" value="^package.*|^import.*|https?://"/>
+    </module>
+
+    <module name="TreeWalker">
+        <!-- CODESTYLE.md: declarations in PascalCase. -->
+        <module name="TypeName">
+            <property name="format" value="^[A-Z][a-zA-Z0-9]*$"/>
+        </module>
+
+        <!-- CODESTYLE.md: instantiated variables in camelCase. -->
+        <module name="MemberName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="LocalVariableName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="ParameterName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <!--
+            camelCase, but a single underscore is allowed because Spring Data uses it to disambiguate nested property
+            traversal in derived query names (findAllByCreator_Id). That is the framework's idiom, not a style lapse.
+        -->
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*(_[A-Z][a-zA-Z0-9]*)?$"/>
+        </module>
+
+        <!-- A star import hides which types a file actually depends on and breaks silently on upstream additions. -->
+        <module name="AvoidStarImport"/>
+        <module name="RedundantImport"/>
+        <module name="UnusedImports">
+            <property name="processJavadoc" value="true"/>
+        </module>
+
+        <!-- An empty block is either dead code or a swallowed error; say which with a comment or remove it. -->
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
+
+        <!-- Guards against the classic if-without-braces edit hazard. -->
+        <module name="NeedBraces"/>
+    </module>
+</module>
