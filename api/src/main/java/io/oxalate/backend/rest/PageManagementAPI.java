@@ -102,6 +102,7 @@ public interface PageManagementAPI {
             @ApiResponse(responseCode = "404", description = "Page not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
+    @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/pages/{pageId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PageResponse> getPageById(@PathVariable(name = "pageId") long pageId);
 

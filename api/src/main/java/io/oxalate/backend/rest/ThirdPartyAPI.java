@@ -3,6 +3,8 @@ package io.oxalate.backend.rest;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.response.ThirdPartyEventResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.http.MediaType;
@@ -16,6 +18,11 @@ public interface ThirdPartyAPI {
 
     @GetMapping(path = BASE_PATH + "/events", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get upcoming published events. Requires a valid third-party token in the X-Third-Party-Token header.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Upcoming events retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid third-party token"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     ResponseEntity<List<ThirdPartyEventResponse>> getUpcomingEvents(
             @RequestHeader(name = "X-Third-Party-Token") String tokenValue);
 }

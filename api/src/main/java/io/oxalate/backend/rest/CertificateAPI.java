@@ -92,16 +92,31 @@ public interface CertificateAPI {
     ResponseEntity<Void> deleteCertificate(@PathVariable("certificateId") long certificateId);
 
     @Operation(description = "Assign a classification to one certificate or all certificates with selected names", tags = "CertificateAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Classification updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/classification", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> updateClassification(@RequestBody CertificateClassificationAssignmentRequest request);
 
     @Operation(description = "Replace exact matching organization values", tags = "CertificateAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Organizations replaced successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/management/organization", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> replaceOrganizations(@RequestBody CertificateValueReplacementRequest request);
 
     @Operation(description = "Replace exact matching certificate name values", tags = "CertificateAPI")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Certificate names replaced successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @SecurityRequirement(name = JWT_COOKIE)
     @PutMapping(value = BASE_PATH + "/management/certificate-name", consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> replaceCertificateNames(@RequestBody CertificateValueReplacementRequest request);

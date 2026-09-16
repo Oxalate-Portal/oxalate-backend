@@ -58,32 +58,13 @@ class RestContractTC {
      * contract test can know what it is allowed to return. A new endpoint must declare {@code @ApiResponses} from the
      * start. See ../TODO-20260916.md item 4.
      */
-    private static final Set<String> ENDPOINTS_WITHOUT_DECLARED_RESPONSES = Set.of(
-            "CertificateAPI.replaceCertificateNames",
-            "CertificateAPI.replaceOrganizations",
-            "CertificateAPI.updateClassification",
-            "CertificateClassificationAPI.create",
-            "CertificateClassificationAPI.delete",
-            "CertificateClassificationAPI.getAll",
-            "CertificateClassificationAPI.getById",
-            "CertificateClassificationAPI.reorder",
-            "CertificateClassificationAPI.update",
-            "ThirdPartyAPI.getUpcomingEvents",
-            "TokenAPI.createToken",
-            "TokenAPI.invalidateToken",
-            "TokenAPI.listTokens",
-            "TokenAPI.refreshToken"
-    );
+    private static final Set<String> ENDPOINTS_WITHOUT_DECLARED_RESPONSES = Set.of();
 
     /**
      * Endpoints that declare a success status but no error status, so a client has no documented failure contract.
      * This list may only shrink. See ../TODO-20260916.md item 4.
      */
-    private static final Set<String> ENDPOINTS_WITHOUT_DECLARED_ERROR_STATUS = Set.of(
-            "AuthAPI.lostPassword",
-            "AuthAPI.verifyEmailChange",
-            "AuthAPI.verifyRegistration"
-    );
+    private static final Set<String> ENDPOINTS_WITHOUT_DECLARED_ERROR_STATUS = Set.of();
 
     /**
      * Endpoints that are authenticated in {@code WebSecurityConfig} and carry a {@code @PreAuthorize} rule on the
@@ -92,9 +73,7 @@ class RestContractTC {
      * A documentation defect rather than a security hole: {@code OwaspEndpointAuthorizationUTC} independently proves
      * the authorization rule exists. This list may only shrink. See ../TODO-20260916.md item 4.
      */
-    private static final Set<String> ENDPOINTS_WITHOUT_SECURITY_DECLARATION = Set.of(
-            "PageManagementAPI.getPageById"
-    );
+    private static final Set<String> ENDPOINTS_WITHOUT_SECURITY_DECLARATION = Set.of();
 
     @Test
     void everyApiInterfaceIsDiscoveredOk() {
