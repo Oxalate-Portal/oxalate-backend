@@ -2,7 +2,10 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.AuditLevelEnum;
 import io.oxalate.backend.api.DiveGroupTypeEnum;
+import static io.oxalate.backend.api.PortalConfigEnum.FRONTEND;
+import static io.oxalate.backend.api.PortalConfigEnum.FrontendConfigEnum.DIVE_GROUP_DESCRIPTION_MAX_LENGTH;
 import io.oxalate.backend.api.UpdateStatusEnum;
+import io.oxalate.backend.api.request.DiveGroupDetailsRequest;
 import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
@@ -12,9 +15,11 @@ import io.oxalate.backend.api.response.DiveGroupResponse;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_ADD_MEMBER_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_ALREADY_IN_GROUP;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_ALREADY_OWNER;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_DETAILS_UNAUTHORIZED;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_EVENT_ENDED;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_EVENT_NOT_FOUND;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_EVENT_STARTED;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_INVALID_DESCRIPTION;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_INVALID_NAME;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_INVALID_ORDER;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_NOT_FOUND;
@@ -69,6 +74,7 @@ public class DiveGroupService {
     private final MessageService messageService;
     private final NotificationLocalizationService notificationLocalizationService;
     private final DiveFileTransferService diveFileTransferService;
+    private final PortalConfigurationService portalConfigurationService;
 
     @Transactional(readOnly = true)
     public List<DiveGroupResponse> getDiveGroupsByEventId(long eventId) {
@@ -94,6 +100,7 @@ public class DiveGroupService {
         }
 
         var name = sanitizeName(diveGroupRequest.getName());
+        var description = sanitizeDescription(diveGroupRequest.getDescription());
         var eventId = diveGroupRequest.getEventId();
         var event = getEvent(eventId);
         var privileged = mayManageEventGroups(event, currentUserId, isAdmin, isOrganizer);
@@ -124,6 +131,7 @@ public class DiveGroupService {
         var diveGroup = diveGroupRepository.save(DiveGroup.builder()
                                                           .eventId(eventId)
                                                           .name(name)
+                                                          .description(description)
                                                           .ownerId(ownerId)
                                                           .groupType(diveGroupRequest.getGroupType() != null
                                                                   ? diveGroupRequest.getGroupType()
@@ -197,6 +205,7 @@ public class DiveGroupService {
         }
 
         diveGroup.setName(sanitizeName(diveGroupUpdateRequest.getName()));
+        diveGroup.setDescription(sanitizeDescription(diveGroupUpdateRequest.getDescription()));
 
         if (diveGroupUpdateRequest.getGroupType() != null) {
             diveGroup.setGroupType(diveGroupUpdateRequest.getGroupType());
@@ -232,6 +241,44 @@ public class DiveGroupService {
         var updatedDiveGroup = diveGroupRepository.save(diveGroup);
 
         log.debug("Updated dive group ID {}", diveGroupId);
+        return toResponse(updatedDiveGroup);
+    }
+
+    /**
+     * Updates the name and description of a dive group on behalf of one of its members. Unlike
+     * {@link #updateDiveGroup}, which is reserved for the owner and the event organizer, every member of the group may
+     * change these two fields. Ownership and group type are never touched here.
+     *
+     * @param diveGroupId             ID of the dive group to update
+     * @param diveGroupDetailsRequest the new name and description
+     * @param currentUserId           ID of the calling user
+     * @param isAdmin                 whether the calling user is an administrator
+     * @param isOrganizer             whether the calling user has the organizer role
+     * @return the updated dive group
+     */
+    @Transactional
+    public DiveGroupResponse updateDiveGroupDetails(long diveGroupId, DiveGroupDetailsRequest diveGroupDetailsRequest, long currentUserId,
+            boolean isAdmin, boolean isOrganizer) {
+        var diveGroup = getDiveGroup(diveGroupId);
+        var event = getEvent(diveGroup.getEventId());
+        var privileged = mayManageEventGroups(event, currentUserId, isAdmin, isOrganizer);
+
+        if (!privileged && diveGroup.getOwnerId() != currentUserId && !isMemberOfDiveGroup(diveGroup, currentUserId)) {
+            throw new OxalateUnauthorizedException(AuditLevelEnum.WARN, DIVE_GROUPS_DETAILS_UNAUTHORIZED + diveGroupId, HttpStatus.UNAUTHORIZED);
+        }
+
+        assertEventIsModifiable(event, privileged);
+
+        if (diveGroupDetailsRequest == null) {
+            throw new OxalateValidationException(DIVE_GROUPS_INVALID_NAME);
+        }
+
+        diveGroup.setName(sanitizeName(diveGroupDetailsRequest.getName()));
+        diveGroup.setDescription(sanitizeDescription(diveGroupDetailsRequest.getDescription()));
+        diveGroup.setUpdatedAt(Instant.now());
+        var updatedDiveGroup = diveGroupRepository.save(diveGroup);
+
+        log.debug("Updated details of dive group ID {} by user ID {}", diveGroupId, currentUserId);
         return toResponse(updatedDiveGroup);
     }
 
@@ -518,6 +565,14 @@ public class DiveGroupService {
     }
 
     /**
+     * Whether the user is currently a member of the dive group, which is recorded on the event participation row.
+     */
+    private boolean isMemberOfDiveGroup(DiveGroup diveGroup, long userId) {
+        var participant = eventParticipantsRepository.findByEventIdAndUserId(diveGroup.getEventId(), userId);
+        return participant != null && participant.getDiveGroupId() != null && participant.getDiveGroupId() == diveGroup.getId();
+    }
+
+    /**
      * Resolves the order of a newly created dive group, which is the last position of the dive event.
      */
     private int nextGroupOrder(long eventId) {
@@ -567,6 +622,27 @@ public class DiveGroupService {
         }
 
         return trimmedName;
+    }
+
+    /**
+     * Normalizes a dive group description. A missing or blank description is stored as null. The maximum length is
+     * read from the portal configuration on every call so that an administrator can change it at runtime. The
+     * description is stored verbatim as plain text; it is never interpreted as HTML by the server, and the client is
+     * expected to render it as text.
+     */
+    private String sanitizeDescription(String description) {
+        if (description == null || description.isBlank()) {
+            return null;
+        }
+
+        var trimmedDescription = description.trim();
+        var maxLength = portalConfigurationService.getNumericConfiguration(FRONTEND.group, DIVE_GROUP_DESCRIPTION_MAX_LENGTH.key);
+
+        if (trimmedDescription.length() > maxLength) {
+            throw new OxalateValidationException(AuditLevelEnum.WARN, DIVE_GROUPS_INVALID_DESCRIPTION, HttpStatus.BAD_REQUEST);
+        }
+
+        return trimmedDescription;
     }
 
     private void notify(long userId, long actorUserId, String messageKey, Object... arguments) {

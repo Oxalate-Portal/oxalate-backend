@@ -45,6 +45,13 @@ public class DiveGroup {
     @Column(name = "name", nullable = false)
     private String name;
 
+    /**
+     * Free-text description of the group, for example the dive plan or the equipment the members bring along. The
+     * maximum length is governed by the {@code frontend.dive-group-description-max-length} portal configuration.
+     */
+    @Column(name = "description")
+    private String description;
+
     @Column(name = "owner_id", nullable = false)
     private long ownerId;
 
@@ -81,6 +88,7 @@ public class DiveGroup {
                                 .id(this.id)
                                 .eventId(this.eventId)
                                 .name(this.name)
+                                .description(this.description)
                                 .ownerId(this.ownerId)
                                 .ownerName(ownerName)
                                 .groupType(this.groupType)

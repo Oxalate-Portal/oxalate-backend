@@ -33,6 +33,10 @@ public class DiveGroupResponse {
     @JsonProperty("name")
     private String name;
 
+    @Schema(description = "Free-text description of the dive group, null when none has been given", example = "We dive the wreck first and then the reef")
+    @JsonProperty("description")
+    private String description;
+
     @Schema(description = "User ID of the owner of the dive group", example = "123", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("ownerId")
     private long ownerId;

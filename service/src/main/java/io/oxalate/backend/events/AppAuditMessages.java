@@ -652,6 +652,10 @@ public class AppAuditMessages {
     public static final String DIVE_GROUPS_UPDATE_OK = "Dive group updated with ID: ";
     public static final String DIVE_GROUPS_UPDATE_FAIL = "Failed to update dive group with ID: ";
 
+    public static final String DIVE_GROUPS_UPDATE_DETAILS_START = "Updating details of dive group with ID: ";
+    public static final String DIVE_GROUPS_UPDATE_DETAILS_OK = "Dive group details updated with ID: ";
+    public static final String DIVE_GROUPS_UPDATE_DETAILS_FAIL = "Failed to update details of dive group with ID: ";
+
     public static final String DIVE_GROUPS_DELETE_START = "Deleting dive group with ID: ";
     public static final String DIVE_GROUPS_DELETE_OK = "Dive group deleted with ID: ";
     public static final String DIVE_GROUPS_DELETE_FAIL = "Failed to delete dive group with ID: ";
@@ -681,6 +685,8 @@ public class AppAuditMessages {
     public static final String DIVE_GROUPS_EVENT_ENDED = "Dive event can no longer be modified, ID: ";
     public static final String DIVE_GROUPS_EVENT_STARTED = "Dive event has already started, ID: ";
     public static final String DIVE_GROUPS_INVALID_NAME = "Dive group name is invalid";
+    public static final String DIVE_GROUPS_INVALID_DESCRIPTION = "Dive group description exceeds the configured maximum length";
+    public static final String DIVE_GROUPS_DETAILS_UNAUTHORIZED = "User is not a member of the dive group and may not update its details, dive group ID: ";
     public static final String DIVE_GROUPS_NOT_PARTICIPANT = "User is not a participant of the dive event, user ID: ";
     public static final String DIVE_GROUPS_ALREADY_OWNER = "User already owns a dive group for the dive event, user ID: ";
     public static final String DIVE_GROUPS_ALREADY_IN_GROUP = "User already belongs to a dive group of the dive event, user ID: ";
