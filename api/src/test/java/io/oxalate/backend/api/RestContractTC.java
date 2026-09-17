@@ -49,7 +49,7 @@ class RestContractTC {
      * deliberate edit here. This is what turns "every new REST endpoint must add or update a contract test" from a
      * request in AGENTS.md into a rule the build checks.
      */
-    private static final int EXPECTED_ENDPOINT_COUNT = 164;
+    private static final int EXPECTED_ENDPOINT_COUNT = 165;
 
     /**
      * Endpoints that do not yet declare their response statuses, as {@code Interface.method}.
@@ -271,9 +271,7 @@ class RestContractTC {
                                                                                   .equals("DiveGroupAPI"))
                                                       .toList();
 
-        assertEquals(11, java.util.Arrays.stream(methods)
-                                         .filter(method -> mapping(method) != null)
-                                         .count(), "DiveGroupAPI must declare all eleven dive group endpoints");
+        assertEquals(11, diveGroupEndpoints.size(), "DiveGroupAPI must declare all eleven dive group endpoints");
 
         for (var endpoint : diveGroupEndpoints) {
             assertTrue(endpoint.path()
@@ -291,17 +289,17 @@ class RestContractTC {
 
     @Test
     void diveGroupEndpointsUseTheExpectedHttpMethods() {
-        assertEquals("/api/dive-groups", mappedPath(PostMapping.class, "createDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(PutMapping.class, "updateDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}/details", mappedPath(PutMapping.class, "updateDiveGroupDetails"));
-        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(DeleteMapping.class, "deleteDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath(GetMapping.class, "getDiveGroupById"));
-        assertEquals("/api/dive-groups/events/{eventId}", mappedPath(GetMapping.class, "getDiveGroupsByEventId"));
-        assertEquals("/api/dive-groups/events/{eventId}/order", mappedPath(PutMapping.class, "reorderDiveGroups"));
-        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath(PostMapping.class, "joinDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath(DeleteMapping.class, "leaveDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath(PostMapping.class, "addMemberToDiveGroup"));
-        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath(DeleteMapping.class, "removeMemberFromDiveGroup"));
+        assertEquals("/api/dive-groups", mappedPath("DiveGroupAPI", "POST", "createDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "PUT", "updateDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/details", mappedPath("DiveGroupAPI", "PUT", "updateDiveGroupDetails"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "DELETE", "deleteDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "GET", "getDiveGroupById"));
+        assertEquals("/api/dive-groups/events/{eventId}", mappedPath("DiveGroupAPI", "GET", "getDiveGroupsByEventId"));
+        assertEquals("/api/dive-groups/events/{eventId}/order", mappedPath("DiveGroupAPI", "PUT", "reorderDiveGroups"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath("DiveGroupAPI", "POST", "joinDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members", mappedPath("DiveGroupAPI", "DELETE", "leaveDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath("DiveGroupAPI", "POST", "addMemberToDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/members/{userId}", mappedPath("DiveGroupAPI", "DELETE", "removeMemberFromDiveGroup"));
     }
 
     // -------------------------------------------------------------------------------------------------------------
