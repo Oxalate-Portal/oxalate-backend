@@ -54,8 +54,15 @@ The end-user-facing description of these flows (with screenshots, per role) live
 `OPEN_AND_CAVE`, `OPEN_WATER`, `SURFACE`. `ParticipantTypeEnum`: `ORGANIZER`, `USER`, `WAITING_LIST`.
 
 - An event has an organizer, a start time, a duration, and safety limits (max depth, max dive duration, max participants).
-- Users subscribe/unsubscribe; when the event is full they join a **waiting list** and are offered a place when one frees up. `general.waiting-list-hours`
-  (default 12) controls how long that offer stays valid.
+- Users subscribe/unsubscribe. When the event is full, and it has not started yet, they may join a **waiting list**
+  (`POST /api/events/{id}/waiting-list/join`, stored as a `WAITING_LIST` participant) and leave it again
+  (`.../waiting-list/leave`). Joining the waiting list requires no payment or membership check; those are checked at promotion time.
+- Promotion is **automatic, not an offer**: whenever a participant unsubscribes, `EventService.moveNextWaitingListUserToEvent` walks the waiting list in join
+  order, removes entries whose user no longer has a valid payment type, promotes the first eligible user to a `USER` participant (consuming a one-time payment
+  when that is the payment type), and sends that user a `WAITING_LIST_AVAILABLE` email plus an in-portal notification. There is no acceptance step and no
+  expiry. A waiting user who subscribes directly while a place is free is promoted the same way.
+- `general.waiting-list-hours` (default 12) and the `event_participants.notified_at` column were seeded for a time-limited offer flow that was never
+  implemented: nothing reads the setting, and `notified_at` is only ever reset to `NULL`. Treat both as reserved; do not document behaviour for them.
 - Unless the event is surface-only, each participant is allotted one dive by default; the organizer adjusts real dive counts during or after the event. Dive
   counts feed the yearly "top divers" statistics.
 - `DiveGroup` records buddy teams within an event. A group has an owner, a type, an order and a free-text description whose maximum length is
@@ -198,12 +205,12 @@ Upload root comes from `oxalate.upload.directory`. Subdirectories are defined in
 
 ## 7. Scheduled jobs
 
-| Class                       | Interval     | Does                                         |
-|-----------------------------|--------------|----------------------------------------------|
-| `WaitingListScheduler`      | every 15 min | cleans up waiting lists for past events      |
-| `EmailQueueSchedule`        | every 15 min | flushes the queued email table               |
-| `ClosingEventSchedule`      | every 30 min | marks finished events as `HELD`              |
-| `AuditTrailCleanupSchedule` | every 24 h   | purges expired audit entries (PII retention) |
+| Class                       | Interval     | Does                                                                 |
+|-----------------------------|--------------|----------------------------------------------------------------------|
+| `WaitingListScheduler`      | every 15 min | deletes `WAITING_LIST` entries of events whose start time has passed |
+| `EmailQueueSchedule`        | every 15 min | flushes the queued email table                                       |
+| `ClosingEventSchedule`      | every 30 min | marks finished events as `HELD`                                      |
+| `AuditTrailCleanupSchedule` | every 24 h   | purges expired audit entries (PII retention)                         |
 
 ## 8. API and DTO conventions
 
