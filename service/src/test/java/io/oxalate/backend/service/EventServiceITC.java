@@ -6,10 +6,15 @@ import static io.oxalate.backend.api.CommentConstants.ROOT_EVENT_COMMENT_ID;
 import io.oxalate.backend.api.DiveTypeEnum;
 import static io.oxalate.backend.api.DiveTypeEnum.CAVE;
 import io.oxalate.backend.api.EventStatusEnum;
+import static io.oxalate.backend.api.EventStatusEnum.CANCELLED;
 import static io.oxalate.backend.api.EventStatusEnum.PUBLISHED;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PaymentTypeEnum.PERIODICAL;
 import io.oxalate.backend.api.PeriodicPaymentTypeEnum;
+import static io.oxalate.backend.api.PortalConfigEnum.FRONTEND;
+import static io.oxalate.backend.api.PortalConfigEnum.FrontendConfigEnum.MIN_PARTICIPANTS;
+import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.AUTO_CANCEL_EVENTS;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.EVENT_REQUIRE_PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.ONE_TIME_PAYMENT_EXPIRATION_TYPE;
@@ -29,11 +34,13 @@ import io.oxalate.backend.model.User;
 import io.oxalate.backend.model.commenting.Comment;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
+import io.oxalate.backend.repository.MessageRepository;
 import io.oxalate.backend.repository.PaymentRepository;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.repository.commenting.CommentRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
+import io.oxalate.backend.schedule.EventAutoCancelSchedule;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -44,11 +51,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 @Slf4j
@@ -72,6 +81,12 @@ class EventServiceITC extends AbstractIntegrationTest {
     private EventService eventService;
     @Autowired
     private PortalConfigurationService portalConfigurationService;
+    @Autowired
+    private EventAutoCancelSchedule eventAutoCancelSchedule;
+    @Autowired
+    private MessageRepository messageRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private User organizer;
     private User diver;
@@ -98,8 +113,13 @@ class EventServiceITC extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        portalConfigurationService.setRuntimeValue(GENERAL.group, AUTO_CANCEL_EVENTS.key, null);
+        portalConfigurationService.setRuntimeValue(FRONTEND.group, MIN_PARTICIPANTS.key, null);
+        portalConfigurationService.reloadPortalConfigurations();
         // Remove event participants
         eventParticipantsRepository.deleteAll();
+        jdbcTemplate.execute("DELETE FROM message_receivers");
+        messageRepository.deleteAll();
         // Remove all event-comments
         eventCommentRepository.deleteAll();
         // Remove all comments with ID above 4
@@ -367,6 +387,178 @@ class EventServiceITC extends AbstractIntegrationTest {
         // The diver should not be a participant because he had an expired payment
         assertTrue(eventResponse.getParticipants()
                                 .isEmpty());
+    }
+
+    // ------------------------------------------------------------------
+    // Cancellation removes participants
+    // ------------------------------------------------------------------
+
+    private void subscribeDiverWithOneTimePayment(Event targetEvent, int paymentCount) {
+        paymentService.savePayment(PaymentRequest.builder()
+                                                 .userId(diver.getId())
+                                                 .paymentCount(paymentCount)
+                                                 .paymentType(ONE_TIME)
+                                                 .build());
+        assertNotNull(eventService.addUserToEvent(diver, EventSubscribeRequest.builder()
+                                                                              .diveEventId(targetEvent.getId())
+                                                                              .userType(UserTypeEnum.SCUBA_DIVER)
+                                                                              .build()));
+    }
+
+    private long remainingOneTimePayments() {
+        return paymentRepository.findAll()
+                                .stream()
+                                .filter(payment -> payment.getUserId() == diver.getId() && payment.getPaymentType() == ONE_TIME)
+                                .mapToLong(payment -> payment.getPaymentCount())
+                                .sum();
+    }
+
+    @Test
+    void cancelRemovesParticipantsRestoresPaymentAndNotifiesOk() {
+        subscribeDiverWithOneTimePayment(event, 4);
+        assertEquals(3, remainingOneTimePayments());
+
+        eventService.cancel(event.getId());
+
+        var cancelledEvent = eventRepository.findById(event.getId())
+                                            .orElseThrow();
+        assertEquals(CANCELLED, cancelledEvent.getStatus());
+        assertTrue(eventParticipantsRepository.findAllByEventId(event.getId())
+                                              .stream()
+                                              .noneMatch(participant -> participant.getUserId() == diver.getId()));
+        assertEquals(4, remainingOneTimePayments());
+        var notificationCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM message_receivers WHERE user_id = ?", Long.class, diver.getId());
+        assertEquals(1L, notificationCount);
+    }
+
+    @Test
+    void cancelAlreadyCancelledEventFail() {
+        eventService.cancel(event.getId());
+
+        assertThrows(IllegalArgumentException.class, () -> eventService.cancel(event.getId()));
+    }
+
+    @Test
+    void cancelUnknownEventFail() {
+        assertThrows(IllegalArgumentException.class, () -> eventService.cancel(999_999L));
+    }
+
+    @Test
+    void updateEventToCancelledRemovesParticipantsOk() {
+        subscribeDiverWithOneTimePayment(event, 4);
+        var eventRequest = generateEventRequestFromEvent();
+        eventRequest.setStatus(CANCELLED);
+
+        var response = eventService.updateEvent(eventRequest);
+
+        assertNotNull(response);
+        assertEquals(CANCELLED, response.getStatus());
+        assertTrue(response.getParticipants()
+                           .isEmpty());
+        assertTrue(eventParticipantsRepository.findAllByEventId(event.getId())
+                                              .stream()
+                                              .noneMatch(participant -> participant.getUserId() == diver.getId()));
+        assertEquals(4, remainingOneTimePayments());
+    }
+
+    // ------------------------------------------------------------------
+    // Automatic cancellation of underbooked events
+    // ------------------------------------------------------------------
+
+    private Event startedEventWithParticipants(int minParticipants) {
+        portalConfigurationService.setRuntimeValue(FRONTEND.group, MIN_PARTICIPANTS.key, String.valueOf(minParticipants));
+        portalConfigurationService.reloadPortalConfigurations();
+        subscribeDiverWithOneTimePayment(event, 4);
+        var startedEvent = eventRepository.findById(event.getId())
+                                          .orElseThrow();
+        startedEvent.setStartTime(Instant.now()
+                                         .minus(30, ChronoUnit.MINUTES));
+        return eventRepository.save(startedEvent);
+    }
+
+    @Test
+    void cancelUnderbookedStartedEventsCancelsUnderbookedEventOk() {
+        startedEventWithParticipants(3);
+
+        var cancelledCount = eventService.cancelUnderbookedStartedEvents();
+
+        assertEquals(1, cancelledCount);
+        assertEquals(CANCELLED, eventRepository.findById(event.getId())
+                                               .orElseThrow()
+                                               .getStatus());
+        assertTrue(eventParticipantsRepository.findAllByEventId(event.getId())
+                                              .stream()
+                                              .noneMatch(participant -> participant.getUserId() == diver.getId()));
+        assertEquals(4, remainingOneTimePayments());
+    }
+
+    @Test
+    void cancelUnderbookedStartedEventsKeepsSufficientlyBookedEventOk() {
+        startedEventWithParticipants(1);
+
+        var cancelledCount = eventService.cancelUnderbookedStartedEvents();
+
+        assertEquals(0, cancelledCount);
+        assertEquals(PUBLISHED, eventRepository.findById(event.getId())
+                                               .orElseThrow()
+                                               .getStatus());
+        assertTrue(eventParticipantsRepository.findAllByEventId(event.getId())
+                                              .stream()
+                                              .anyMatch(participant -> participant.getUserId() == diver.getId()));
+    }
+
+    @Test
+    void cancelUnderbookedStartedEventsIgnoresFutureEventOk() {
+        portalConfigurationService.setRuntimeValue(FRONTEND.group, MIN_PARTICIPANTS.key, "3");
+        portalConfigurationService.reloadPortalConfigurations();
+        subscribeDiverWithOneTimePayment(event, 4);
+
+        var cancelledCount = eventService.cancelUnderbookedStartedEvents();
+
+        assertEquals(0, cancelledCount);
+        assertEquals(PUBLISHED, eventRepository.findById(event.getId())
+                                               .orElseThrow()
+                                               .getStatus());
+    }
+
+    @Test
+    void cancelUnderbookedStartedEventsIgnoresDraftedEventOk() {
+        portalConfigurationService.setRuntimeValue(FRONTEND.group, MIN_PARTICIPANTS.key, "3");
+        portalConfigurationService.reloadPortalConfigurations();
+        var draftedEvent = generateEvent(Instant.now()
+                                                .minus(1, ChronoUnit.HOURS), CAVE, organizer.getId(), EventStatusEnum.DRAFTED);
+
+        var cancelledCount = eventService.cancelUnderbookedStartedEvents();
+
+        assertEquals(0, cancelledCount);
+        assertEquals(EventStatusEnum.DRAFTED, eventRepository.findById(draftedEvent.getId())
+                                                             .orElseThrow()
+                                                             .getStatus());
+    }
+
+    @Test
+    void scheduledAutoCancelIsOffByDefaultOk() {
+        startedEventWithParticipants(3);
+
+        eventAutoCancelSchedule.cancelUnderbookedEvents();
+
+        assertEquals(PUBLISHED, eventRepository.findById(event.getId())
+                                               .orElseThrow()
+                                               .getStatus());
+    }
+
+    @Test
+    void scheduledAutoCancelRunsWhenEnabledOk() {
+        startedEventWithParticipants(3);
+        portalConfigurationService.setRuntimeValue(GENERAL.group, AUTO_CANCEL_EVENTS.key, "true");
+        portalConfigurationService.reloadPortalConfigurations();
+
+        eventAutoCancelSchedule.cancelUnderbookedEvents();
+
+        assertEquals(CANCELLED, eventRepository.findById(event.getId())
+                                               .orElseThrow()
+                                               .getStatus());
     }
 
     private Event generateEvent(Instant start, DiveTypeEnum type, long organizerId, EventStatusEnum eventStatus) {

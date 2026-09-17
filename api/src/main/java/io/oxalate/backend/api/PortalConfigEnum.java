@@ -74,7 +74,8 @@ public enum PortalConfigEnum {
         ORG_NAME("org-name"),
         TOP_DIVER_LIST_SIZE("top-divers-list-size"),
         BLOG_ENABLED("blog-enabled"),
-        WAITING_LIST_HOURS("waiting-list-hours");
+        WAITING_LIST_HOURS("waiting-list-hours"),
+        AUTO_CANCEL_EVENTS("auto-cancel-events");
 
         public final String key;
 

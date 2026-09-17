@@ -9,6 +9,10 @@ import io.oxalate.backend.api.PaymentTypeEnum;
 import static io.oxalate.backend.api.PaymentTypeEnum.ONE_TIME;
 import static io.oxalate.backend.api.PortalConfigEnum.EMAIL;
 import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTIFICATIONS;
+import static io.oxalate.backend.api.PortalConfigEnum.FRONTEND;
+import static io.oxalate.backend.api.PortalConfigEnum.FrontendConfigEnum.MIN_PARTICIPANTS;
+import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
+import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.DEFAULT_LANGUAGE;
 import static io.oxalate.backend.api.PortalConfigEnum.MEMBERSHIP;
 import static io.oxalate.backend.api.PortalConfigEnum.MembershipConfigEnum.EVENT_REQUIRE_MEMBERSHIP;
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
@@ -24,6 +28,7 @@ import io.oxalate.backend.exception.OxalateValidationException;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.EventsParticipant;
 import io.oxalate.backend.model.User;
+import io.oxalate.backend.repository.DiveGroupRepository;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
@@ -58,6 +63,7 @@ public class EventService {
     private final EventCommentRepository eventCommentRepository;
     private final MessageService messageService;
     private final DiveGroupService diveGroupService;
+    private final DiveGroupRepository diveGroupRepository;
     private final NotificationLocalizationService notificationLocalizationService;
 
     @Transactional(readOnly = true)
@@ -195,6 +201,10 @@ public class EventService {
                 || oldStatus.equals(EventStatusEnum.PUBLISHED) && newStatus.equals(EventStatusEnum.DRAFTED))
                 && portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "event-removed")) {
             emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, updatedEvent.getId());
+        }
+
+        if (newStatus.equals(EventStatusEnum.CANCELLED) && !oldStatus.equals(EventStatusEnum.CANCELLED)) {
+            removeParticipantsOfCancelledEvent(updatedEvent);
         }
 
         // Check if the event already has a comment topic, we're doing this in order to make sure no open event was missed by the Flyway migration
@@ -540,6 +550,94 @@ public class EventService {
         }
 
         eventRepository.updateEventStatus(eventId, EventStatusEnum.CANCELLED);
+        removeParticipantsOfCancelledEvent(event);
+    }
+
+    /**
+     * Cancels started published events with fewer USER participants than configured.
+     *
+     * @return the number of cancelled events
+     */
+    @Transactional
+    public int cancelUnderbookedStartedEvents() {
+        var minParticipants = portalConfigurationService.getNumericConfiguration(FRONTEND.group, MIN_PARTICIPANTS.key);
+        var startedEvents = eventRepository.findByStatusAndStartTimeBeforeOrderByStartTimeAsc(EventStatusEnum.PUBLISHED, Instant.now());
+        var cancelledCount = 0;
+
+        for (var event : startedEvents) {
+            var participantCount = eventParticipantsRepository.findAllByEventId(event.getId())
+                                                              .stream()
+                                                              .filter(participant -> participant.getParticipantType() == ParticipantTypeEnum.USER)
+                                                              .count();
+
+            if (participantCount >= minParticipants) {
+                continue;
+            }
+
+            log.info("Cancelling event ID {} automatically: {} participants, minimum is {}", event.getId(), participantCount, minParticipants);
+
+            if (portalConfigurationService.isEnabled(EMAIL, EMAIL_NOTIFICATIONS.key, "event-removed")) {
+                emailQueueService.addNotification(EmailNotificationTypeEnum.EVENT, EmailNotificationDetailEnum.DELETED, event.getId());
+            }
+
+            eventRepository.updateEventStatus(event.getId(), EventStatusEnum.CANCELLED);
+            removeParticipantsOfCancelledEvent(event);
+            cancelledCount++;
+        }
+
+        return cancelledCount;
+    }
+
+    private void removeParticipantsOfCancelledEvent(Event event) {
+        var participants = eventParticipantsRepository.findAllByEventId(event.getId());
+        var removedUserIds = new ArrayList<Long>();
+
+        for (var participant : participants) {
+            if (participant.getParticipantType() == ParticipantTypeEnum.ORGANIZER) {
+                continue;
+            }
+
+            if (participant.getParticipantType() == ParticipantTypeEnum.USER && ONE_TIME.equals(participant.getPaymentType())) {
+                paymentService.increaseOneTimePayment(participant.getUserId(), 1);
+            }
+
+            removedUserIds.add(participant.getUserId());
+        }
+
+        eventRepository.removeAllParticipantsFromEvent(event.getId(), ParticipantTypeEnum.USER.name());
+        eventRepository.removeAllParticipantsFromEvent(event.getId(), ParticipantTypeEnum.WAITING_LIST.name());
+        diveGroupRepository.deleteAllByEventId(event.getId());
+
+        for (var userId : removedUserIds) {
+            notifyRemovedParticipantOfCancellation(userId, event);
+        }
+
+        log.info("Removed {} participants from cancelled event ID {}", removedUserIds.size(), event.getId());
+    }
+
+    private void notifyRemovedParticipantOfCancellation(long userId, Event event) {
+        var user = userService.findUserEntityById(userId);
+
+        if (user == null) {
+            log.warn("Removed participant {} of cancelled event {} no longer exists", userId, event.getId());
+            return;
+        }
+
+        var title = notificationLocalizationService.getMessage(user, "notification.event-cancelled.title");
+        var description = notificationLocalizationService.getMessage(user, "notification.event-cancelled.description");
+        var message = notificationLocalizationService.getMessage(user, "notification.event-cancelled.message",
+                new Object[] { event.getTitle(), event.getId() });
+        messageService.createSimpleNotification(user.getId(), SYSTEM_USER_ID, title, description, message);
+
+        var language = user.getLanguage() != null
+                ? user.getLanguage()
+                : portalConfigurationService.getStringConfiguration(GENERAL.group, DEFAULT_LANGUAGE.key);
+
+        try {
+            emailService.sendEventNotificationEmail(user.getUsername(), language, EmailNotificationDetailEnum.DELETED, event);
+        } catch (RuntimeException e) {
+            log.warn("Could not email participant {} about cancellation of event {}: {}", userId, event.getId(), e.getMessage());
+        }
     }
 
     @Transactional
