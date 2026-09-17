@@ -16,6 +16,8 @@ public interface EventRepository extends CrudRepository<Event, Long> {
 
     List<Event> findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum status, Instant instant);
 
+    List<Event> findByStatusAndStartTimeBeforeOrderByStartTimeAsc(EventStatusEnum status, Instant instant);
+
     @Query(nativeQuery = true, value = "SELECT * FROM events e WHERE e.start_time < :until ORDER BY e.start_time DESC")
     List<Event> findAllEventsBefore(Instant until);
 

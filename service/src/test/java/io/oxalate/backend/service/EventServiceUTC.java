@@ -3,6 +3,7 @@ package io.oxalate.backend.service;
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.model.Event;
+import io.oxalate.backend.repository.DiveGroupRepository;
 import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
@@ -47,6 +48,8 @@ class EventServiceUTC {
     private MessageService messageService;
     @Mock
     private DiveGroupService diveGroupService;
+    @Mock
+    private DiveGroupRepository diveGroupRepository;
     @Mock
     private NotificationLocalizationService notificationLocalizationService;
 

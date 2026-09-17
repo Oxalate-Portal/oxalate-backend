@@ -154,6 +154,7 @@ public class StatsService {
                     EXTRACT(YEAR FROM MIN(e.start_time)) AS year,
                     EXTRACT(MONTH FROM MIN(e.start_time)) AS month
                 FROM events e
+                WHERE e.status <> 'CANCELLED'
                 """;
         var query = entityManager.createNativeQuery(queryString);
         List<Object[]> dateResult = query.getResultList();
@@ -212,6 +213,7 @@ public class StatsService {
                          events e
                     WHERE u.id = ep.user_id
                       AND e.id = ep.event_id
+                      AND e.status <> 'CANCELLED'
                       AND e.start_time < NOW()
                       AND EXTRACT('Year' FROM e.start_time) = %d
                     GROUP BY u.id
@@ -319,8 +321,8 @@ public class StatsService {
     }
 
     private long getOldestEventYear() {
-        var queryString = "SELECT MIN(EXTRACT('Year' FROM e.start_time))"
-                + "FROM events e";
+        var queryString = "SELECT MIN(EXTRACT('Year' FROM e.start_time)) "
+                + "FROM events e WHERE e.status <> 'CANCELLED'";
 
         var query = entityManager.createNativeQuery(queryString);
 

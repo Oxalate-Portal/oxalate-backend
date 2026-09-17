@@ -70,6 +70,13 @@ The end-user-facing description of these flows (with screenshots, per role) live
   change only the name and description through `PUT /api/dive-groups/{id}/details`.
 - `BlockedDate` marks calendar dates on which events may not be scheduled.
 - Events past their end time are closed to `HELD` automatically by `ClosingEventSchedule`.
+- **Cancelling an event removes its participants.** Whether set through `PUT /api/events` with status `CANCELLED`, through
+  `DELETE /api/events/{id}` or by the automatic task below, `EventService` removes every `USER` and `WAITING_LIST` participant, restores a
+  one-time payment the participant used, dissolves the dive groups, and sends each removed user an in-portal notification and an email. The
+  organizer stays on the event. Statistics and reports count `HELD` events only and exclude `CANCELLED` events from their date ranges.
+- **Automatic cancellation of underbooked events** (`EventAutoCancelSchedule`, every 10 min) cancels `PUBLISHED` events whose start time has
+  passed and which have fewer `USER` participants than `frontend.min-participants`. It runs only when `general.auto-cancel-events` is `true`; the
+  default is `false`. Events already closed to `HELD` are never cancelled.
 
 ### Payments and memberships
 
@@ -185,7 +192,7 @@ and the keys they own:
 
 | Group        | Keys                                                                                                                                                                                                                                                                                                          |
 |--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `general`    | `org-name`, `default-language`, `enabled-language`, `top-divers-list-size`, `timezone`, `blog-enabled`, `waiting-list-hours`                                                                                                                                                                                  |
+| `general`    | `org-name`, `default-language`, `enabled-language`, `top-divers-list-size`, `timezone`, `blog-enabled`, `waiting-list-hours`, `auto-cancel-events`                                                                                                                                                            |
 | `email`      | `org-email`, `support-email`, `system-email` (all required at runtime), `email-enabled`, `email-notifications`, `email-notification-retries`                                                                                                                                                                  |
 | `frontend`   | `min-event-length`, `max-event-length`, `max-dive-length`, `min-participants`, `max-participants`, `max-depth`, `types-of-event`, `max-certificates`, `dive-group-description-max-length`                                                                                                                     |
 | `payment`    | `event-require-payment`, `payment-enabled`, `single-payment-enabled`, `periodical-payment-method-type`, `periodical-payment-method-unit`, `payment-period-length`, `payment-period-start`, `payment-period-start-point`, `one-time-expiration-type`, `one-time-expiration-unit`, `one-time-expiration-length` |
@@ -205,12 +212,13 @@ Upload root comes from `oxalate.upload.directory`. Subdirectories are defined in
 
 ## 7. Scheduled jobs
 
-| Class                       | Interval     | Does                                                                 |
-|-----------------------------|--------------|----------------------------------------------------------------------|
-| `WaitingListScheduler`      | every 15 min | deletes `WAITING_LIST` entries of events whose start time has passed |
-| `EmailQueueSchedule`        | every 15 min | flushes the queued email table                                       |
-| `ClosingEventSchedule`      | every 30 min | marks finished events as `HELD`                                      |
-| `AuditTrailCleanupSchedule` | every 24 h   | purges expired audit entries (PII retention)                         |
+| Class                       | Interval     | Does                                                                                    |
+|-----------------------------|--------------|-----------------------------------------------------------------------------------------|
+| `WaitingListScheduler`      | every 15 min | deletes `WAITING_LIST` entries of events whose start time has passed                    |
+| `EmailQueueSchedule`        | every 15 min | flushes the queued email table                                                          |
+| `EventAutoCancelSchedule`   | every 10 min | cancels started, underbooked `PUBLISHED` events when `general.auto-cancel-events` is on |
+| `ClosingEventSchedule`      | every 30 min | marks finished events as `HELD`                                                         |
+| `AuditTrailCleanupSchedule` | every 24 h   | purges expired audit entries (PII retention)                                            |
 
 ## 8. API and DTO conventions
 
