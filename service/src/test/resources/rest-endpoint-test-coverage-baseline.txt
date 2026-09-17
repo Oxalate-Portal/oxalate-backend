@@ -66,6 +66,7 @@ UNTESTED DiveGroupAPI.leaveDiveGroup
 UNTESTED DiveGroupAPI.removeMemberFromDiveGroup
 UNTESTED DiveGroupAPI.reorderDiveGroups
 UNTESTED DiveGroupAPI.updateDiveGroup
+TESTED DiveGroupAPI.updateDiveGroupDetails
 UNTESTED EmailNotificationSubscriptionAPI.getAllEmailNotificationSubscriptions
 UNTESTED EmailNotificationSubscriptionAPI.subscribeToEmailNotifications
 TESTED EventAPI.cancelEvent

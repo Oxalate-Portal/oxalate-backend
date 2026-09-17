@@ -905,7 +905,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
         var groupId = createGroupFor(firstUser);
         diveGroupService.joinDiveGroup(groupId, secondUser.getId());
 
-        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+        mockMvc.perform(put("/api/dive-groups/{diveGroupId}/details", groupId)
                        .cookie(new Cookie(JWT_TOKEN, secondUserToken))
                        .contentType(MediaType.APPLICATION_JSON)
                        .content(json(DiveGroupDetailsRequest.builder()
