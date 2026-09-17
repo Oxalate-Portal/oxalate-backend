@@ -2,8 +2,11 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.DiveGroupTypeEnum;
 import io.oxalate.backend.api.ParticipantTypeEnum;
+import static io.oxalate.backend.api.PortalConfigEnum.FRONTEND;
+import static io.oxalate.backend.api.PortalConfigEnum.FrontendConfigEnum.DIVE_GROUP_DESCRIPTION_MAX_LENGTH;
 import io.oxalate.backend.api.PaymentTypeEnum;
 import io.oxalate.backend.api.UserTypeEnum;
+import io.oxalate.backend.api.request.DiveGroupDetailsRequest;
 import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
@@ -62,6 +65,7 @@ class DiveGroupServiceUTC {
     private static final long OWNER_ID = 200L;
     private static final long MEMBER_ID = 300L;
     private static final long OUTSIDER_ID = 400L;
+    private static final long DESCRIPTION_MAX_LENGTH = 8000L;
 
     @Mock
     private DiveGroupRepository diveGroupRepository;
@@ -77,6 +81,8 @@ class DiveGroupServiceUTC {
     private NotificationLocalizationService notificationLocalizationService;
     @Mock
     private DiveFileTransferService diveFileTransferService;
+    @Mock
+    private PortalConfigurationService portalConfigurationService;
 
     @InjectMocks
     private DiveGroupService diveGroupService;
@@ -97,6 +103,7 @@ class DiveGroupServiceUTC {
                 });
         when(notificationLocalizationService.getMessage(nullable(User.class), anyString(), any()))
                 .thenReturn("localized");
+        when(portalConfigurationService.getNumericConfiguration(FRONTEND.group, DIVE_GROUP_DESCRIPTION_MAX_LENGTH.key)).thenReturn(DESCRIPTION_MAX_LENGTH);
     }
 
     // ------------------------------------------------------------------
@@ -1532,5 +1539,328 @@ class DiveGroupServiceUTC {
         assertEquals(1, captor.getValue()
                               .getFirst()
                               .getGroupOrder());
+    }
+
+    // ------------------------------------------------------------------
+    // Description handling on create and update
+    // ------------------------------------------------------------------
+
+    private void stubCreateForOwner() {
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(participant(OWNER_ID, null, null));
+        when(diveGroupRepository.findByEventIdAndOwnerId(EVENT_ID, OWNER_ID)).thenReturn(Optional.empty());
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenAnswer(invocation -> {
+            var saved = invocation.getArgument(0, DiveGroup.class);
+            saved.setId(GROUP_ID);
+            return saved;
+        });
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+    }
+
+    @Test
+    void createDiveGroupWithDescriptionOk() {
+        stubCreateForOwner();
+
+        var response = diveGroupService.createDiveGroup(DiveGroupRequest.builder()
+                                                                        .eventId(EVENT_ID)
+                                                                        .name("Team Sidemount")
+                                                                        .description("  We dive the wreck first  ")
+                                                                        .build(), OWNER_ID, false, false);
+
+        assertEquals("We dive the wreck first", response.getDescription());
+    }
+
+    @Test
+    void createDiveGroupWithoutDescriptionOk() {
+        stubCreateForOwner();
+
+        var response = diveGroupService.createDiveGroup(DiveGroupRequest.builder()
+                                                                        .eventId(EVENT_ID)
+                                                                        .name("Team Sidemount")
+                                                                        .build(), OWNER_ID, false, false);
+
+        assertNull(response.getDescription());
+    }
+
+    @Test
+    void createDiveGroupWithBlankDescriptionStoresNullOk() {
+        stubCreateForOwner();
+
+        var response = diveGroupService.createDiveGroup(DiveGroupRequest.builder()
+                                                                        .eventId(EVENT_ID)
+                                                                        .name("Team Sidemount")
+                                                                        .description("   ")
+                                                                        .build(), OWNER_ID, false, false);
+
+        assertNull(response.getDescription());
+    }
+
+    @Test
+    void createDiveGroupWithDescriptionAtMaxLengthOk() {
+        stubCreateForOwner();
+
+        var response = diveGroupService.createDiveGroup(DiveGroupRequest.builder()
+                                                                        .eventId(EVENT_ID)
+                                                                        .name("Team Sidemount")
+                                                                        .description("d".repeat((int) DESCRIPTION_MAX_LENGTH))
+                                                                        .build(), OWNER_ID, false, false);
+
+        assertEquals(DESCRIPTION_MAX_LENGTH, response.getDescription()
+                                                     .length());
+    }
+
+    @Test
+    void createDiveGroupWithTooLongDescriptionFail() {
+        var request = DiveGroupRequest.builder()
+                                      .eventId(EVENT_ID)
+                                      .name("Team Sidemount")
+                                      .description("d".repeat((int) DESCRIPTION_MAX_LENGTH + 1))
+                                      .build();
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.createDiveGroup(request, OWNER_ID, false, false));
+        verify(diveGroupRepository, never()).save(any(DiveGroup.class));
+    }
+
+    @Test
+    void createDiveGroupDescriptionLimitComesFromConfigurationOk() {
+        when(portalConfigurationService.getNumericConfiguration(FRONTEND.group, DIVE_GROUP_DESCRIPTION_MAX_LENGTH.key)).thenReturn(10L);
+        var request = DiveGroupRequest.builder()
+                                      .eventId(EVENT_ID)
+                                      .name("Team Sidemount")
+                                      .description("12345678901")
+                                      .build();
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.createDiveGroup(request, OWNER_ID, false, false));
+    }
+
+    @Test
+    void updateDiveGroupDescriptionOk() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+
+        var response = diveGroupService.updateDiveGroup(GROUP_ID, DiveGroupUpdateRequest.builder()
+                                                                                        .name("Renamed")
+                                                                                        .description(" New plan ")
+                                                                                        .build(), OWNER_ID, false, false);
+
+        assertEquals("New plan", response.getDescription());
+    }
+
+    @Test
+    void updateDiveGroupWithEmptyDescriptionClearsExistingOk() {
+        var existingGroup = diveGroup(OWNER_ID);
+        existingGroup.setDescription("Old plan");
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(existingGroup));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+
+        var response = diveGroupService.updateDiveGroup(GROUP_ID, DiveGroupUpdateRequest.builder()
+                                                                                        .name("Renamed")
+                                                                                        .description("")
+                                                                                        .build(), OWNER_ID, false, false);
+
+        assertNull(response.getDescription());
+    }
+
+    @Test
+    void updateDiveGroupWithTooLongDescriptionFail() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        var request = DiveGroupUpdateRequest.builder()
+                                            .name("Renamed")
+                                            .description("d".repeat((int) DESCRIPTION_MAX_LENGTH + 1))
+                                            .build();
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.updateDiveGroup(GROUP_ID, request, OWNER_ID, false, false));
+        verify(diveGroupRepository, never()).save(any(DiveGroup.class));
+    }
+
+    // ------------------------------------------------------------------
+    // updateDiveGroupDetails
+    // ------------------------------------------------------------------
+
+    private DiveGroupDetailsRequest detailsRequest() {
+        return DiveGroupDetailsRequest.builder()
+                                      .name("Member renamed")
+                                      .description("Member plan")
+                                      .build();
+    }
+
+    private void stubDetailsUpdate(DiveGroup existingGroup) {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(existingGroup));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(futureEvent()));
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+    }
+
+    @Test
+    void updateDiveGroupDetailsByMemberOk() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, MEMBER_ID)).thenReturn(participant(MEMBER_ID, GROUP_ID, Instant.now()));
+
+        var response = diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), MEMBER_ID, false, false);
+
+        assertEquals("Member renamed", response.getName());
+        assertEquals("Member plan", response.getDescription());
+        assertEquals(OWNER_ID, response.getOwnerId());
+        assertNotNull(response.getUpdatedAt());
+    }
+
+    @Test
+    void updateDiveGroupDetailsByOwnerOk() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+
+        var response = diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), OWNER_ID, false, false);
+
+        assertEquals("Member renamed", response.getName());
+        verify(eventParticipantsRepository, never()).findByEventIdAndUserId(anyLong(), anyLong());
+    }
+
+    @Test
+    void updateDiveGroupDetailsByEventOrganizerOk() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+
+        var response = diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), ORGANIZER_ID, false, true);
+
+        assertEquals("Member renamed", response.getName());
+    }
+
+    @Test
+    void updateDiveGroupDetailsByAdminOk() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+
+        var response = diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), OUTSIDER_ID, true, false);
+
+        assertEquals("Member plan", response.getDescription());
+    }
+
+    @Test
+    void updateDiveGroupDetailsByNonMemberFail() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OUTSIDER_ID)).thenReturn(participant(OUTSIDER_ID, null, null));
+
+        assertThrows(OxalateUnauthorizedException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), OUTSIDER_ID, false, false));
+        verify(diveGroupRepository, never()).save(any(DiveGroup.class));
+    }
+
+    @Test
+    void updateDiveGroupDetailsByMemberOfAnotherGroupFail() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, MEMBER_ID)).thenReturn(participant(MEMBER_ID, GROUP_ID + 1, Instant.now()));
+
+        assertThrows(OxalateUnauthorizedException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), MEMBER_ID, false, false));
+    }
+
+    @Test
+    void updateDiveGroupDetailsByNonParticipantFail() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OUTSIDER_ID)).thenReturn(null);
+
+        assertThrows(OxalateUnauthorizedException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), OUTSIDER_ID, false, false));
+    }
+
+    @Test
+    void updateDiveGroupDetailsByOrganizerOfAnotherEventFail() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, OUTSIDER_ID)).thenReturn(null);
+
+        assertThrows(OxalateUnauthorizedException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), OUTSIDER_ID, false, true));
+    }
+
+    @Test
+    void updateDiveGroupDetailsUnknownGroupFail() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
+
+        assertThrows(OxalateNotFoundException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), OWNER_ID, false, false));
+    }
+
+    @Test
+    void updateDiveGroupDetailsNullRequestFail() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, null, OWNER_ID, false, false));
+    }
+
+    @Test
+    void updateDiveGroupDetailsBlankNameFail() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+        var request = DiveGroupDetailsRequest.builder()
+                                             .name("   ")
+                                             .build();
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, request, OWNER_ID, false, false));
+    }
+
+    @Test
+    void updateDiveGroupDetailsTooLongDescriptionFail() {
+        stubDetailsUpdate(diveGroup(OWNER_ID));
+        var request = DiveGroupDetailsRequest.builder()
+                                             .name("Renamed")
+                                             .description("d".repeat((int) DESCRIPTION_MAX_LENGTH + 1))
+                                             .build();
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, request, OWNER_ID, false, false));
+        verify(diveGroupRepository, never()).save(any(DiveGroup.class));
+    }
+
+    @Test
+    void updateDiveGroupDetailsWithEmptyDescriptionClearsExistingOk() {
+        var existingGroup = diveGroup(OWNER_ID);
+        existingGroup.setDescription("Old plan");
+        stubDetailsUpdate(existingGroup);
+
+        var response = diveGroupService.updateDiveGroupDetails(GROUP_ID, DiveGroupDetailsRequest.builder()
+                                                                                                .name("Renamed")
+                                                                                                .build(), OWNER_ID, false, false);
+
+        assertNull(response.getDescription());
+    }
+
+    @Test
+    void updateDiveGroupDetailsKeepsOwnerAndGroupTypeOk() {
+        var existingGroup = diveGroup(OWNER_ID);
+        existingGroup.setGroupType(DiveGroupTypeEnum.PROJECT);
+        stubDetailsUpdate(existingGroup);
+
+        var response = diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), OWNER_ID, false, false);
+
+        assertEquals(OWNER_ID, response.getOwnerId());
+        assertEquals(DiveGroupTypeEnum.PROJECT, response.getGroupType());
+        verify(eventParticipantsRepository, never()).assignDiveGroup(anyLong(), anyLong(), anyLong(), any(Instant.class));
+    }
+
+    @Test
+    void updateDiveGroupDetailsAfterEventStartedAsMemberFail() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event(Instant.now()
+                                                                                     .minus(1, ChronoUnit.HOURS))));
+        when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, MEMBER_ID)).thenReturn(participant(MEMBER_ID, GROUP_ID, Instant.now()));
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), MEMBER_ID, false, false));
+    }
+
+    @Test
+    void updateDiveGroupDetailsAfterEventStartedAsOrganizerOk() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event(Instant.now()
+                                                                                     .minus(1, ChronoUnit.HOURS))));
+        when(diveGroupRepository.save(any(DiveGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventParticipantsRepository.findAllByDiveGroupId(GROUP_ID)).thenReturn(List.of());
+
+        var response = diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), ORGANIZER_ID, false, true);
+
+        assertEquals("Member renamed", response.getName());
+    }
+
+    @Test
+    void updateDiveGroupDetailsAfterEventEndedFail() {
+        when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup(OWNER_ID)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event(Instant.now()
+                                                                                     .minus(10, ChronoUnit.HOURS))));
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.updateDiveGroupDetails(GROUP_ID, detailsRequest(), ORGANIZER_ID, false, true));
     }
 }

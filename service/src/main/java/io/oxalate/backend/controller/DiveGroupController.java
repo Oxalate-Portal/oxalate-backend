@@ -2,6 +2,7 @@ package io.oxalate.backend.controller;
 
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
+import io.oxalate.backend.api.request.DiveGroupDetailsRequest;
 import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
@@ -36,6 +37,9 @@ import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REMOVE_MEMB
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REORDER_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REORDER_OK;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_REORDER_START;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_DETAILS_FAIL;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_DETAILS_OK;
+import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_DETAILS_START;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_FAIL;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_OK;
 import static io.oxalate.backend.events.AppAuditMessages.DIVE_GROUPS_UPDATE_START;
@@ -91,6 +95,20 @@ public class DiveGroupController implements DiveGroupAPI {
     @Audited(startMessage = DIVE_GROUPS_UPDATE_START, okMessage = DIVE_GROUPS_UPDATE_OK, failMessage = DIVE_GROUPS_UPDATE_FAIL)
     public ResponseEntity<DiveGroupResponse> updateDiveGroup(long diveGroupId, DiveGroupUpdateRequest diveGroupUpdateRequest) {
         var diveGroup = diveGroupService.updateDiveGroup(diveGroupId, diveGroupUpdateRequest, AuthTools.getCurrentUserId(),
+                AuthTools.currentUserHasRole(ROLE_ADMIN), AuthTools.currentUserHasRole(ROLE_ORGANIZER));
+        return ResponseEntity.status(HttpStatus.OK)
+                             .body(diveGroup);
+    }
+
+    /**
+     * Member-wide by design: every authenticated user may call it, and the service verifies that the caller is a
+     * member of the dive group (or the owner, the event organizer or an administrator) before anything is changed.
+     */
+    @Override
+    @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
+    @Audited(startMessage = DIVE_GROUPS_UPDATE_DETAILS_START, okMessage = DIVE_GROUPS_UPDATE_DETAILS_OK, failMessage = DIVE_GROUPS_UPDATE_DETAILS_FAIL)
+    public ResponseEntity<DiveGroupResponse> updateDiveGroupDetails(long diveGroupId, DiveGroupDetailsRequest diveGroupDetailsRequest) {
+        var diveGroup = diveGroupService.updateDiveGroupDetails(diveGroupId, diveGroupDetailsRequest, AuthTools.getCurrentUserId(),
                 AuthTools.currentUserHasRole(ROLE_ADMIN), AuthTools.currentUserHasRole(ROLE_ORGANIZER));
         return ResponseEntity.status(HttpStatus.OK)
                              .body(diveGroup);

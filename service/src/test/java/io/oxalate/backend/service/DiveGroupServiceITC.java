@@ -5,6 +5,7 @@ import static io.oxalate.backend.api.EventStatusEnum.PUBLISHED;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import io.oxalate.backend.api.UserTypeEnum;
+import io.oxalate.backend.api.request.DiveGroupDetailsRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
 import io.oxalate.backend.exception.OxalateNotFoundException;
@@ -535,5 +536,103 @@ class DiveGroupServiceITC extends AbstractIntegrationTest {
 
         assertEquals(2, response.getMembers()
                                 .size());
+    }
+
+    // ------------------------------------------------------------------
+    // Description and member-editable details
+    // ------------------------------------------------------------------
+
+    @Test
+    void createDiveGroupWithDescriptionPersistsOk() {
+        var response = diveGroupService.createDiveGroup(DiveGroupRequest.builder()
+                                                                        .eventId(event.getId())
+                                                                        .name("Described group")
+                                                                        .description(" Wreck first, reef second ")
+                                                                        .build(), firstUser.getId(), false, false);
+
+        assertEquals("Wreck first, reef second", response.getDescription());
+        assertEquals("Wreck first, reef second", diveGroupRepository.findById(response.getId())
+                                                                    .orElseThrow()
+                                                                    .getDescription());
+    }
+
+    @Test
+    void createDiveGroupWithTooLongDescriptionFail() {
+        var request = DiveGroupRequest.builder()
+                                      .eventId(event.getId())
+                                      .name("Described group")
+                                      .description("d".repeat(8001))
+                                      .build();
+
+        assertThrows(OxalateValidationException.class, () -> diveGroupService.createDiveGroup(request, firstUser.getId(), false, false));
+        assertTrue(diveGroupRepository.findAllByEventIdOrderByGroupOrderAscCreatedAtAsc(event.getId())
+                                      .isEmpty());
+    }
+
+    @Test
+    void updateDiveGroupDetailsByMemberOk() {
+        var groupId = createGroupFor(firstUser);
+        diveGroupService.joinDiveGroup(groupId, secondUser.getId());
+
+        var response = diveGroupService.updateDiveGroupDetails(groupId, DiveGroupDetailsRequest.builder()
+                                                                                               .name("Member renamed")
+                                                                                               .description("Member plan")
+                                                                                               .build(), secondUser.getId(), false, false);
+
+        assertEquals("Member renamed", response.getName());
+        assertEquals("Member plan", response.getDescription());
+        assertEquals(firstUser.getId(), response.getOwnerId());
+        assertNotNull(response.getUpdatedAt());
+    }
+
+    @Test
+    void updateDiveGroupDetailsByNonMemberFail() {
+        var groupId = createGroupFor(firstUser);
+        var request = DiveGroupDetailsRequest.builder()
+                                             .name("Hijacked")
+                                             .build();
+
+        assertThrows(OxalateUnauthorizedException.class, () -> diveGroupService.updateDiveGroupDetails(groupId, request, secondUser.getId(), false, false));
+        assertEquals("Group of " + firstUser.getId(), diveGroupRepository.findById(groupId)
+                                                                          .orElseThrow()
+                                                                          .getName());
+    }
+
+    @Test
+    void updateDiveGroupDetailsByFormerMemberFail() {
+        var groupId = createGroupFor(firstUser);
+        diveGroupService.joinDiveGroup(groupId, secondUser.getId());
+        diveGroupService.leaveDiveGroup(groupId, secondUser.getId());
+        var request = DiveGroupDetailsRequest.builder()
+                                             .name("Hijacked")
+                                             .build();
+
+        assertThrows(OxalateUnauthorizedException.class, () -> diveGroupService.updateDiveGroupDetails(groupId, request, secondUser.getId(), false, false));
+    }
+
+    @Test
+    void updateDiveGroupDetailsUnknownGroupFail() {
+        var request = DiveGroupDetailsRequest.builder()
+                                             .name("Missing")
+                                             .build();
+
+        assertThrows(OxalateNotFoundException.class, () -> diveGroupService.updateDiveGroupDetails(999_999L, request, firstUser.getId(), false, false));
+    }
+
+    @Test
+    void updateDiveGroupDetailsClearsDescriptionOk() {
+        var groupId = diveGroupService.createDiveGroup(DiveGroupRequest.builder()
+                                                                       .eventId(event.getId())
+                                                                       .name("Described group")
+                                                                       .description("Old plan")
+                                                                       .build(), firstUser.getId(), false, false)
+                                      .getId();
+
+        var response = diveGroupService.updateDiveGroupDetails(groupId, DiveGroupDetailsRequest.builder()
+                                                                                               .name("Described group")
+                                                                                               .description("   ")
+                                                                                               .build(), firstUser.getId(), false, false);
+
+        assertNull(response.getDescription());
     }
 }

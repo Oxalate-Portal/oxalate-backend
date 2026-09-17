@@ -32,6 +32,11 @@ public class DiveGroupRequest {
     @JsonProperty("name")
     private String name;
 
+    @Schema(description = "Optional free-text description of the dive group. The maximum length is set by the portal configuration "
+            + "frontend.dive-group-description-max-length.", example = "We dive the wreck first and then the reef")
+    @JsonProperty("description")
+    private String description;
+
     @Schema(description = "Optional owner of the group. Only organizers and administrators may assign an owner other than themselves. "
             + "When omitted, the calling user becomes the owner.", example = "123")
     @JsonProperty("ownerId")

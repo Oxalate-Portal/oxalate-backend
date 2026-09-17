@@ -56,7 +56,8 @@ public enum PortalConfigEnum {
         MIN_EVENT_LENGTH("min-event-length"),
         MIN_PARTICIPANTS("min-participants"),
         TYPES_OF_EVENT("types-of-event"),
-        MAX_CERTIFICATES("max-certificates");
+        MAX_CERTIFICATES("max-certificates"),
+        DIVE_GROUP_DESCRIPTION_MAX_LENGTH("dive-group-description-max-length");
 
         public final String key;
 

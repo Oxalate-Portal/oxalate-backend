@@ -58,7 +58,9 @@ The end-user-facing description of these flows (with screenshots, per role) live
   (default 12) controls how long that offer stays valid.
 - Unless the event is surface-only, each participant is allotted one dive by default; the organizer adjusts real dive counts during or after the event. Dive
   counts feed the yearly "top divers" statistics.
-- `DiveGroup` records buddy teams within an event.
+- `DiveGroup` records buddy teams within an event. A group has an owner, a type, an order and a free-text description whose maximum length is
+  `frontend.dive-group-description-max-length`. The owner and the event organizer manage the group through `PUT /api/dive-groups/{id}`; every member may
+  change only the name and description through `PUT /api/dive-groups/{id}/details`.
 - `BlockedDate` marks calendar dates on which events may not be scheduled.
 - Events past their end time are closed to `HELD` automatically by `ClosingEventSchedule`.
 
@@ -178,7 +180,7 @@ and the keys they own:
 |--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `general`    | `org-name`, `default-language`, `enabled-language`, `top-divers-list-size`, `timezone`, `blog-enabled`, `waiting-list-hours`                                                                                                                                                                                  |
 | `email`      | `org-email`, `support-email`, `system-email` (all required at runtime), `email-enabled`, `email-notifications`, `email-notification-retries`                                                                                                                                                                  |
-| `frontend`   | `min-event-length`, `max-event-length`, `max-dive-length`, `min-participants`, `max-participants`, `max-depth`, `types-of-event`, `max-certificates`                                                                                                                                                          |
+| `frontend`   | `min-event-length`, `max-event-length`, `max-dive-length`, `min-participants`, `max-participants`, `max-depth`, `types-of-event`, `max-certificates`, `dive-group-description-max-length`                                                                                                                     |
 | `payment`    | `event-require-payment`, `payment-enabled`, `single-payment-enabled`, `periodical-payment-method-type`, `periodical-payment-method-unit`, `payment-period-length`, `payment-period-start`, `payment-period-start-point`, `one-time-expiration-type`, `one-time-expiration-unit`, `one-time-expiration-length` |
 | `membership` | `membership-type`, `membership-period-unit`, `membership-period-length`, `membership-period-start`, `membership-period-start-point`, `event-require-membership`                                                                                                                                               |
 | `commenting` | `commenting-enabled`, `commenting-allow-editing`, `commenting-enabled-features`, `comments-report-trigger-level`, `comments-require-review`                                                                                                                                                                   |

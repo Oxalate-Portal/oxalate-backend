@@ -1,6 +1,7 @@
 package io.oxalate.backend.api;
 
 import io.oxalate.backend.api.request.ConfirmationRequest;
+import io.oxalate.backend.api.request.DiveGroupDetailsRequest;
 import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
@@ -193,8 +194,9 @@ class DtoConstructionUTC {
 
     @Test
     void DiveGroupRequestConstructorOk() {
-        var dto = new DiveGroupRequest(42L, "Team Sidemount", null, DiveGroupTypeEnum.PROJECT, null);
+        var dto = new DiveGroupRequest(42L, "Team Sidemount", "We dive the wreck", null, DiveGroupTypeEnum.PROJECT, null);
         assertEquals(42L, dto.getEventId());
+        assertEquals("We dive the wreck", dto.getDescription());
         assertNull(dto.getOwnerId());
         assertEquals(DiveGroupTypeEnum.PROJECT, dto.getGroupType());
         assertNull(dto.getMemberIds());
@@ -219,8 +221,9 @@ class DtoConstructionUTC {
 
     @Test
     void DiveGroupUpdateRequestConstructorOk() {
-        var dto = new DiveGroupUpdateRequest("Renamed group", null, DiveGroupTypeEnum.NORMAL);
+        var dto = new DiveGroupUpdateRequest("Renamed group", "Updated plan", null, DiveGroupTypeEnum.NORMAL);
         assertEquals("Renamed group", dto.getName());
+        assertEquals("Updated plan", dto.getDescription());
         assertNull(dto.getOwnerId());
         assertEquals(DiveGroupTypeEnum.NORMAL, dto.getGroupType());
         assertNotNull(new DiveGroupUpdateRequest());
@@ -283,13 +286,38 @@ class DtoConstructionUTC {
 
     @Test
     void DiveGroupResponseConstructorOk() {
-        var dto = new DiveGroupResponse(1L, 42L, "Team", 3L, "John Doe", DiveGroupTypeEnum.NORMAL, 1, Instant.EPOCH, Instant.EPOCH, List.of(), List.of());
+        var dto = new DiveGroupResponse(1L, 42L, "Team", "Plan", 3L, "John Doe", DiveGroupTypeEnum.NORMAL, 1, Instant.EPOCH, Instant.EPOCH, List.of(),
+                List.of());
         assertEquals("Team", dto.getName());
+        assertEquals("Plan", dto.getDescription());
         assertEquals(3L, dto.getOwnerId());
         assertEquals(DiveGroupTypeEnum.NORMAL, dto.getGroupType());
         assertEquals(1, dto.getGroupOrder());
         assertEquals(List.of(), dto.getDiveFiles());
         assertNotNull(new DiveGroupResponse());
+    }
+
+    @Test
+    void DiveGroupDetailsRequestBuilderOk() {
+        var dto = DiveGroupDetailsRequest.builder()
+                                         .name("Renamed group")
+                                         .description("Updated plan")
+                                         .build();
+
+        assertEquals("Renamed group", dto.getName());
+        assertEquals("Updated plan", dto.getDescription());
+    }
+
+    @Test
+    void DiveGroupDetailsRequestConstructorOk() {
+        var dto = new DiveGroupDetailsRequest("Renamed group", null);
+        assertEquals("Renamed group", dto.getName());
+        assertNull(dto.getDescription());
+
+        var empty = new DiveGroupDetailsRequest();
+        empty.setDescription("Plan");
+        assertEquals("Plan", empty.getDescription());
+        assertNull(empty.getName());
     }
 
     @Test

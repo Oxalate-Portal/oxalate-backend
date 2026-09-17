@@ -7,6 +7,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import io.oxalate.backend.api.UserTypeEnum;
+import io.oxalate.backend.api.request.DiveGroupDetailsRequest;
 import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
@@ -851,5 +852,194 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                .andExpect(jsonPath("$[0].groupOrder").value(1))
                .andExpect(jsonPath("$[1].id").value(thirdGroupId))
                .andExpect(jsonPath("$[1].groupOrder").value(2));
+    }
+
+    // ------------------------------------------------------------------
+    // Description and member-editable details
+    // ------------------------------------------------------------------
+
+    @Test
+    void createDiveGroupWithDescriptionOk() throws Exception {
+        mockMvc.perform(post(BASE_PATH)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupRequest.builder()
+                                                     .eventId(event.getId())
+                                                     .name("Described group")
+                                                     .description("  We dive the wreck first  ")
+                                                     .build())))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.description").value("We dive the wreck first"));
+    }
+
+    @Test
+    void createDiveGroupWithTooLongDescriptionFail() throws Exception {
+        mockMvc.perform(post(BASE_PATH)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupRequest.builder()
+                                                     .eventId(event.getId())
+                                                     .name("Described group")
+                                                     .description("d".repeat(8001))
+                                                     .build())))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateDiveGroupDescriptionAsOwnerOk() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupUpdateRequest.builder()
+                                                           .name("Renamed group")
+                                                           .description("Owner plan")
+                                                           .build())))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.description").value("Owner plan"));
+    }
+
+    @Test
+    void updateDiveGroupDetailsAsMemberOk() throws Exception {
+        var groupId = createGroupFor(firstUser);
+        diveGroupService.joinDiveGroup(groupId, secondUser.getId());
+
+        mockMvc.perform(put("/api/dive-groups/{diveGroupId}/details", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, secondUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("Member renamed")
+                                                            .description("Member plan")
+                                                            .build())))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.name").value("Member renamed"))
+               .andExpect(jsonPath("$.description").value("Member plan"))
+               .andExpect(jsonPath("$.ownerId").value(firstUser.getId()));
+    }
+
+    @Test
+    void updateDiveGroupDetailsAsOwnerOk() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("Owner renamed")
+                                                            .build())))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.name").value("Owner renamed"))
+               .andExpect(jsonPath("$.description").isEmpty());
+    }
+
+    @Test
+    void updateDiveGroupDetailsAsOrganizerOk() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, organizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("Organizer renamed")
+                                                            .description("Organizer plan")
+                                                            .build())))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.description").value("Organizer plan"));
+    }
+
+    /**
+     * Horizontal access control: a participant of the same event who is not a member of the group may not touch it.
+     */
+    @Test
+    void updateDiveGroupDetailsAsNonMemberFail() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, secondUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("Hijacked")
+                                                            .build())))
+               .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get(BASE_PATH + "/{diveGroupId}", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.name").value("Group of " + firstUser.getId()));
+    }
+
+    @Test
+    void updateDiveGroupDetailsAsOrganizerOfAnotherEventFail() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, otherOrganizerToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("Hijacked")
+                                                            .build())))
+               .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateDiveGroupDetailsWithoutAuthenticationFail() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("Anonymous")
+                                                            .build())))
+               .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateDiveGroupDetailsUnknownGroupFail() throws Exception {
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", 999_999L)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("Missing")
+                                                            .build())))
+               .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateDiveGroupDetailsWithBlankNameFail() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("   ")
+                                                            .build())))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateDiveGroupDetailsWithTooLongDescriptionFail() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(json(DiveGroupDetailsRequest.builder()
+                                                            .name("Renamed")
+                                                            .description("d".repeat(8001))
+                                                            .build())))
+               .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateDiveGroupDetailsWithMalformedBodyFail() throws Exception {
+        var groupId = createGroupFor(firstUser);
+
+        mockMvc.perform(put(BASE_PATH + "/{diveGroupId}/details", groupId)
+                       .cookie(new Cookie(JWT_TOKEN, firstUserToken))
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content("{not json"))
+               .andExpect(status().isBadRequest());
     }
 }

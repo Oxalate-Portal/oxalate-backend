@@ -2,6 +2,7 @@ package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
+import io.oxalate.backend.api.request.DiveGroupDetailsRequest;
 import io.oxalate.backend.api.request.DiveGroupOrderRequest;
 import io.oxalate.backend.api.request.DiveGroupRequest;
 import io.oxalate.backend.api.request.DiveGroupUpdateRequest;
@@ -85,6 +86,22 @@ public interface DiveGroupAPI {
     @PutMapping(path = BASE_PATH + "/{diveGroupId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<DiveGroupResponse> updateDiveGroup(@NotNull @PathVariable("diveGroupId") long diveGroupId,
             @RequestBody DiveGroupUpdateRequest diveGroupUpdateRequest);
+
+    @Operation(description = "Update the name and description of a dive group. Every member of the group, the owner of the group, the organizer of the "
+            + "dive event and administrators may update the details. Ownership and group type are not changed by this endpoint.", tags = "DiveGroupAPI")
+    @Parameter(name = "diveGroupId", description = "ID of the dive group whose details are updated", example = "1", required = true)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New name and description of the dive group", required = true)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Dive group details updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Update failed due to invalid data or because the dive event can no longer be modified"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized, the caller is not a member of the dive group"),
+            @ApiResponse(responseCode = "404", description = "Dive group does not exist"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = JWT_COOKIE)
+    @PutMapping(path = BASE_PATH + "/{diveGroupId}/details", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<DiveGroupResponse> updateDiveGroupDetails(@NotNull @PathVariable("diveGroupId") long diveGroupId,
+            @RequestBody DiveGroupDetailsRequest diveGroupDetailsRequest);
 
     @Operation(description = "Delete a dive group. All members are removed from the group. Only the owner of the group, or the organizer of the dive event, "
             + "may delete the group.", tags = "DiveGroupAPI")

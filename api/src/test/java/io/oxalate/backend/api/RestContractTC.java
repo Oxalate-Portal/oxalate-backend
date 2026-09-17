@@ -49,7 +49,7 @@ class RestContractTC {
      * deliberate edit here. This is what turns "every new REST endpoint must add or update a contract test" from a
      * request in AGENTS.md into a rule the build checks.
      */
-    private static final int EXPECTED_ENDPOINT_COUNT = 164;
+    private static final int EXPECTED_ENDPOINT_COUNT = 165;
 
     /**
      * Endpoints that do not yet declare their response statuses, as {@code Interface.method}.
@@ -271,7 +271,7 @@ class RestContractTC {
                                                                                   .equals("DiveGroupAPI"))
                                                       .toList();
 
-        assertEquals(10, diveGroupEndpoints.size(), "DiveGroupAPI must declare all ten dive group endpoints");
+        assertEquals(11, diveGroupEndpoints.size(), "DiveGroupAPI must declare all eleven dive group endpoints");
 
         for (var endpoint : diveGroupEndpoints) {
             assertTrue(endpoint.path()
@@ -288,9 +288,10 @@ class RestContractTC {
     }
 
     @Test
-    void diveGroupEndpointsUseTheExpectedHttpMethodsOk() {
+    void diveGroupEndpointsUseTheExpectedHttpMethods() {
         assertEquals("/api/dive-groups", mappedPath("DiveGroupAPI", "POST", "createDiveGroup"));
         assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "PUT", "updateDiveGroup"));
+        assertEquals("/api/dive-groups/{diveGroupId}/details", mappedPath("DiveGroupAPI", "PUT", "updateDiveGroupDetails"));
         assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "DELETE", "deleteDiveGroup"));
         assertEquals("/api/dive-groups/{diveGroupId}", mappedPath("DiveGroupAPI", "GET", "getDiveGroupById"));
         assertEquals("/api/dive-groups/events/{eventId}", mappedPath("DiveGroupAPI", "GET", "getDiveGroupsByEventId"));
