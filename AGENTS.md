@@ -115,7 +115,9 @@ Every notable action is recorded as an immutable `ApplicationAuditEvent` (`userI
 
 ## 2. Architecture essentials
 
-- `api/` contains REST contracts, DTOs, and enums only; `service/` contains controllers, business logic, persistence, security, scheduling, and AOP.
+- Three Maven modules: `api/` contains REST contracts, DTOs, and enums only; `service/` contains controllers, business logic, persistence, security,
+  scheduling, and AOP; `coverage-report/` has no sources of its own and must stay last in the parent `<modules>` because it aggregates the JaCoCo data the
+  other two produce.
 - Controllers implement interfaces from `api/src/main/java/io/oxalate/backend/rest/` (example: `EventAPI` ->
   `EventController`).
 - Keep controllers thin: orchestration + auth checks + response wrapping; business rules belong in services.
@@ -220,6 +222,9 @@ Upload root comes from `oxalate.upload.directory`. Subdirectories are defined in
 | `ClosingEventSchedule`      | every 30 min | marks finished events as `HELD`                                                         |
 | `AuditTrailCleanupSchedule` | every 24 h   | purges expired audit entries (PII retention)                                            |
 
+These live in two packages: `service/.../schedule/` holds all of them except `WaitingListScheduler`, which is in `service/.../scheduler/`. Know both exist
+when searching for scheduled work.
+
 ## 8. API and DTO conventions
 
 - OpenAPI annotations belong on API interfaces, not controller implementations.
@@ -235,22 +240,44 @@ Upload root comes from `oxalate.upload.directory`. Subdirectories are defined in
 ## 9. Database and migrations
 
 - PostgreSQL + Flyway; schema is migration-driven (`ddl-auto: validate`), so an entity change without a migration will fail startup.
-- Migrations are in `service/src/main/resources/db/migration/` as `V{N}__snake_case_description.sql`. There are currently 43 of them; always add the next unused
-  number and never edit an applied migration.
+- Migrations are in `service/src/main/resources/db/migration/` as `V{N}__snake_case_description.sql`. Numbering is sequential; always add the next
+  unused number and never edit an applied migration.
 - Portal configuration defaults are seeded by migrations, so a new configuration key needs a migration too.
 
 ## 10. Build, run, and debug workflows
 
 ```bash
-./mvnw clean test
-./mvnw clean verify   # also runs maven-enforcer; CI runs `./mvnw clean verify package`
-./db_local_setup.sh
+./mvnw clean test                 # tests only
+./mvnw clean verify               # the full gate: checkstyle, tests, JaCoCo floors, enforcer
+./mvnw -B -ntp checkstyle:check   # the style gate alone; it needs no tests or containers, so it fails in seconds
+```
+
+Running locally needs `service/src/main/resources/local.yaml`, which is gitignored; copy it from
+`templates/local.yaml.template`. The upload directory (`oxalate.upload.directory`) must exist before startup; the service creates the subdirectories under it.
+
+```bash
+./db_local_setup.sh   # fresh PostgreSQL container and volume; destroys the previous one
 ./mvnw clean test spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=local -Dlogging.level.io.oxalate=debug -Doxalate.first-time=false -Doxalate.upload.directory=/var/tmp/oxalate'
 ./create_local_users.sh
 ```
 
 Swagger UI runs at <http://localhost:8081/actuator/swagger-ui/index.html>. `test-data/test-large.sql` provides a large dataset; local credentials for both
 datasets are documented in `README.md`.
+
+### Build gates that fail a change
+
+CI (`.github/workflows/ci.yml`) runs `checkstyle:check` first and then `./mvnw clean verify package`; a green build is required to merge. Each gate below fails
+the build on its own:
+
+| Gate                   | What it enforces                                                                                                                                                                                                                                                                       |
+|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Checkstyle**         | Bound to `validate`, so it fails before anything compiles. Ruleset is `config/checkstyle/checkstyle.xml`: line length 160 (imports and URLs exempt), no star imports, no unused or redundant imports, braces required, no empty blocks, Java naming. It is ours — never fall back to `sun_checks.xml`. |
+| **Suppressions**       | `config/checkstyle/suppressions.xml` exists only for violations that predate the gate and is **shrink-only**. Never add an entry for new code.                                                                                                                                         |
+| **JaCoCo floors**      | Ratcheted per module in each `pom.xml` (`service` 0.49 instruction / 0.43 branch / 0.49 line; `api` 0.13 / 0.00 / 0.12; target is 0.90 everywhere). Raise a floor as coverage improves; **never lower one to make a build pass.**                                                     |
+| **Enforcer**           | Fails when two versions of the same module or library reach the build. Only runs in `verify`, which is why `clean test` can pass where `clean verify` does not.                                                                                                                       |
+| **Test naming**        | Surefire only picks up `*UTC`, `*ITC`, `*RTC`, `*TC`, and `TestNamingUTC` fails the build if any source containing `@Test` is named otherwise — a misnamed test is silently never run.                                                                                                |
+| **Contract gates**     | `RestContractTC` and `ApiValueContractUTC` (section 11).                                                                                                                                                                                                                              |
+| **Authorization gate** | `OwaspEndpointAuthorizationUTC` fails when an endpoint declares no `@PreAuthorize` (section 12).                                                                                                                                                                                       |
 
 ### Multi-module test workflow
 
@@ -264,11 +291,11 @@ datasets are documented in `README.md`.
 
 ## 11. Test structure used in this repo
 
-- `*UTC`: unit tests with Mockito (34 classes).
-- `*ITC`: integration tests with Spring Boot + Testcontainers; extend `AbstractIntegrationTest` (`postgres:18-alpine`)
-  (5 classes).
-- `*RTC`: REST tests with MockMvc + Spring Security against containerized DB (10 classes).
-- Test method naming pattern: `methodScenarioOk/Fail` (camelCase).
+- `*UTC`: unit tests with Mockito.
+- `*ITC`: integration tests with Spring Boot + Testcontainers; extend `AbstractIntegrationTest` (`postgres:18-alpine`).
+- `*RTC`: REST tests with MockMvc + Spring Security against a containerized DB.
+- Test method naming pattern: `methodScenarioOk/Fail` (camelCase). The class-name suffix is enforced by `TestNamingUTC`, not just convention: Surefire's
+  includes are the four suffixes above, so a class named anything else never runs.
 - Every new REST endpoint must add or update a contract test. `api/src/test/java/io/oxalate/backend/api/RestContractTC.java`
   is the baseline contract gate; `ApiValueContractUTC` guards enum/constant wire values. Contract tests must verify the mapping, response type, OpenAPI
   metadata, and security declaration/public route classification.
@@ -400,7 +427,19 @@ Run the suite with:
 - Deprecations are migrated rather than suppressed; if a full migration does not fit the change, state the remaining cleanup explicitly in the task/PR
   description.
 
-## 14. Key files to learn first
+## 14. Commit messages and pull requests
+
+`.github/git-commit-instructions.md` is the authoritative format. Write the message from the actual diff only: a concise imperative subject line under 72
+characters, then a body with exactly these sections:
+
+- `Intent:` why the change was made and what problem it solves.
+- `Changes:` added, modified or removed functionality, plus the important implementation details.
+- `Impact:` behaviour, user-experience, API or configuration changes.
+
+Avoid vague wording, file-by-file lists, and claims about changes the diff does not contain. Dependabot follow-up commits are prefixed `[dependabot]`; each
+Dependabot pull request is investigated locally and merged manually.
+
+## 15. Key files to learn first
 
 - `service/src/main/java/io/oxalate/backend/aspect/AuditAspect.java`
 - `service/src/main/java/io/oxalate/backend/events/AppEventPublisher.java`
