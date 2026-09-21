@@ -1,6 +1,7 @@
 package io.oxalate.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import io.oxalate.backend.AbstractIntegrationTest;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
@@ -47,7 +48,8 @@ class NotificationControllerRTC extends AbstractIntegrationTest {
     private static final String CREATE_BULK_ENDPOINT = "/api/notifications/create-bulk";
 
     private MockMvc mockMvc;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+                                                        .build();
 
     @Autowired
     private WebApplicationContext webApplicationContext;

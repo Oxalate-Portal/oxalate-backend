@@ -20,10 +20,12 @@ import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.EVENT_RE
 import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.request.EventSubscribeRequest;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.exception.OxalateValidationException;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.EventsParticipant;
@@ -33,14 +35,19 @@ import io.oxalate.backend.repository.EventParticipantsRepository;
 import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
 import io.oxalate.backend.service.commenting.CommentService;
+import io.oxalate.backend.tools.PagingTools;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +57,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class EventService {
     private static final long SYSTEM_USER_ID = 1L;
+
+    /**
+     * Client sort names of {@code GET /api/events/past} mapped to the {@link Event} property they sort by.
+     */
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.of(
+            "start_time", "startTime",
+            "title", "title",
+            "status", "status",
+            "type", "type",
+            "event_duration", "eventDuration",
+            "max_duration", "maxDuration",
+            "max_depth", "maxDepth",
+            "max_participants", "maxParticipants");
+    private static final String DEFAULT_SORT_COLUMN = "startTime";
 
     private final EventRepository eventRepository;
     private final EventParticipantsRepository eventParticipantsRepository;
@@ -491,22 +512,33 @@ public class EventService {
         return eventResponses;
     }
 
+    /**
+     * One page of the events whose start time is before {@code until}, newest first unless the request says
+     * otherwise. The search matches the title and the description. An event whose organizer no longer exists is kept
+     * on the page with a {@code null} organizer so that the page counts stay consistent.
+     *
+     * @param pagedRequest paging, sorting and search parameters
+     * @param until        exclusive upper bound of the start time, normally now
+     * @return the requested page
+     */
     @Transactional(readOnly = true)
-    public List<EventResponse> findAllEventsBefore(Instant until) {
-        var events = eventRepository.findAllEventsBefore(until);
-        var eventList = new ArrayList<EventResponse>();
+    public PagedResponse<EventResponse> findPastEventsPaged(PagedRequest pagedRequest, Instant until) {
+        var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
+        var specification = PagingTools.allOf(startTimeBefore(until), PagingTools.searchSpecification(pagedRequest, "title", "description"));
 
-        for (Event event : events) {
-            var eventResponse = getPopulatedEventResponse(event);
+        return PagedResponse.fromPage(eventRepository.findAll(specification, pageable), event -> {
+            var organizer = userService.findUserEntityById(event.getOrganizerId());
 
-            if (eventResponse.isPresent()) {
-                eventList.add(eventResponse.get());
-            } else {
-                log.error("Event {} can not be populated to a EventResponse, the event may be in an incoherent state", event);
+            if (organizer == null) {
+                log.error("Event {} has an non-existing organizer: {}", event.getId(), event.getOrganizerId());
             }
-        }
 
-        return eventList;
+            return populateEventResponse(event, organizer);
+        });
+    }
+
+    private static Specification<Event> startTimeBefore(Instant until) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.lessThan(root.get("startTime"), until);
     }
 
     @Transactional(readOnly = true)
@@ -829,6 +861,17 @@ public class EventService {
             return Optional.empty();
         }
 
+        return Optional.of(populateEventResponse(event, organizer));
+    }
+
+    /**
+     * Builds the full event response with organizer, participants, waiting list and comment thread id.
+     *
+     * @param event     the event
+     * @param organizer the organizer, {@code null} when the user no longer exists
+     * @return the populated response
+     */
+    private EventResponse populateEventResponse(Event event, @Nullable User organizer) {
         var participants = userService.findEventParticipants(event.getId());
         var participantList = new ArrayList<ListUserResponse>();
 
@@ -855,7 +898,7 @@ public class EventService {
         }
 
         var eventResponse = event.toEventResponse();
-        eventResponse.setOrganizer(organizer.toUserResponse());
+        eventResponse.setOrganizer(organizer == null ? null : organizer.toUserResponse());
         eventResponse.setParticipants(participantList);
         eventResponse.setWaitingList(waitingList);
 
@@ -865,7 +908,7 @@ public class EventService {
             eventResponse.setEventCommentId(eventCommentId);
         }
 
-        return Optional.of(eventResponse);
+        return eventResponse;
     }
 
     private long countDivesByUserAndEvent(Long userId, long eventId) {

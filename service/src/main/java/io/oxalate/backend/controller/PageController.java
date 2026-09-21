@@ -48,10 +48,10 @@ public class PageController implements PageAPI {
 
     @Override
     @Audited(startMessage = PAGES_GET_BLOGS_START, okMessage = PAGES_GET_BLOGS_OK)
-    public ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(PagedRequest pagedRequest) {
+    public ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(PagedRequest pagedRequest, String language) {
         var userRoles = AuthTools.getUserRoles();
-        log.debug("Fetch blogs with request {}", pagedRequest);
-        var pagedResponse = pageService.getBlogArticles(pagedRequest, userRoles);
+        log.debug("Fetch blogs in language {} with request {}", language, pagedRequest);
+        var pagedResponse = pageService.getBlogArticles(pagedRequest, language, userRoles);
         return ResponseEntity.status(HttpStatus.OK)
                              .body(pagedResponse);
     }

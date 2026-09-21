@@ -5,9 +5,16 @@ import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.EventDiveListRequest;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.request.EventSubscribeRequest;
+import io.oxalate.backend.api.request.PagedRequest;
+import static io.oxalate.backend.api.request.PagedRequest.CASE_SENSITIVE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.DIRECTION_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.PAGE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SEARCH_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SIZE_DESCRIPTION;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -50,14 +57,21 @@ public interface EventAPI {
     @GetMapping(path = BASE_PATH + "/ongoing", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EventResponse>> getOngoingEvents();
 
-    @Operation(description = "Get a list of all past events.", tags = "EventAPI")
+    @Operation(description = "Get a page of all past events, i.e. events whose start time is in the past.", tags = "EventAPI")
+    @Parameter(name = "page", description = PAGE_DESCRIPTION, example = "0")
+    @Parameter(name = "size", description = SIZE_DESCRIPTION, example = "25")
+    @Parameter(name = "sort_by", description = "Column to sort by, one of: start_time, title, status, type, event_duration, max_duration, max_depth, "
+            + "max_participants. Unknown values fall back to start_time", example = "start_time")
+    @Parameter(name = "direction", description = DIRECTION_DESCRIPTION + " (DESC)", example = "DESC")
+    @Parameter(name = "search", description = SEARCH_DESCRIPTION + ": title, description", example = "wreck")
+    @Parameter(name = "case_sensitive", description = CASE_SENSITIVE_DESCRIPTION, example = "false")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Page retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/past", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<EventResponse>> getPastEvents();
+    ResponseEntity<PagedResponse<EventResponse>> getPastEvents(@Parameter(hidden = true) PagedRequest pagedRequest);
 
     @Operation(description = "Get a list of all events for a specific user", tags = "EventAPI")
     @Parameter(name = "userId", description = "User ID for which all events should be fetched", example = "123")

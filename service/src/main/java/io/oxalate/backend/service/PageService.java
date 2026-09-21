@@ -8,7 +8,8 @@ import static io.oxalate.backend.api.PortalConfigEnum.EmailConfigEnum.EMAIL_NOTI
 import static io.oxalate.backend.api.PortalConfigEnum.GENERAL;
 import static io.oxalate.backend.api.PortalConfigEnum.GeneralConfigEnum.ENABLED_LANGUAGES;
 import io.oxalate.backend.api.RoleEnum;
-import io.oxalate.backend.api.SortDirectionEnum;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Sort;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageRequest;
 import io.oxalate.backend.api.request.PagedRequest;
@@ -26,6 +27,7 @@ import io.oxalate.backend.repository.PageGroupVersionRepository;
 import io.oxalate.backend.repository.PageRepository;
 import io.oxalate.backend.repository.PageRoleAccessRepository;
 import io.oxalate.backend.repository.PageVersionRepository;
+import io.oxalate.backend.tools.PagingTools;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -112,19 +114,23 @@ public class PageService {
 
     /**
      * Get blog articles with pagination, sorting and search support.
-     * Blog articles are pages belonging to page group ID 3.
+     * Blog articles are pages belonging to page group ID 3. Role visibility is enforced by the native queries in
+     * {@link PageRepository}; the paging parameters are sanitized here and an unknown sort column falls back to
+     * {@code createdAt} so that a crafted request never reaches the database with an unexpected value.
      *
-     * @param pagedRequest Pagination request containing page, size, sortBy, direction, search, caseSensitive and language
+     * @param pagedRequest Pagination request containing page, size, sortBy, direction, search and caseSensitive
+     * @param language     ISO-639-1 language code of the articles
      * @param roles        Set of roles the user has
      * @return PagedResponse containing the list of PageResponse objects
      */
-    public PagedResponse<PageResponse> getBlogArticles(PagedRequest pagedRequest, Set<RoleEnum> roles) {
+    public PagedResponse<PageResponse> getBlogArticles(PagedRequest pagedRequest, @Nullable String language, Set<RoleEnum> roles) {
         var supportedLanguages = portalConfigurationService.getArrayConfiguration(GENERAL.group, ENABLED_LANGUAGES.key);
-        var language = pagedRequest.getLanguage();
+        var page = Math.max(pagedRequest.getPage(), 0);
+        var size = PagingTools.sanitizePageSize(pagedRequest.getSize());
 
         if (language == null || !supportedLanguages.contains(language)) {
             log.error("Requested language {} is not supported when fetching blog articles", language);
-            return PagedResponse.of(new ArrayList<>(), pagedRequest.getPage(), pagedRequest.getSize(), 0);
+            return PagedResponse.of(new ArrayList<>(), page, size, 0);
         }
 
         // Convert roles to a list of strings for the native query
@@ -134,10 +140,13 @@ public class PageService {
 
         var search = pagedRequest.getSearch();
         var caseSensitive = Boolean.TRUE.equals(pagedRequest.getCaseSensitive());
-        var sortBy = pagedRequest.getSortBy() != null ? pagedRequest.getSortBy() : "createdAt";
-        var direction = pagedRequest.getDirection() != null ? pagedRequest.getDirection() : SortDirectionEnum.DESC;
-        var page = pagedRequest.getPage();
-        var size = pagedRequest.getSize();
+        var sortBy = "title".equalsIgnoreCase(pagedRequest.getSortBy()) ? "title" : "createdAt";
+
+        if (pagedRequest.getSortBy() != null && !"created_at".equalsIgnoreCase(pagedRequest.getSortBy()) && !"title".equals(sortBy)) {
+            log.warn("Ignoring unsupported blog sort column, falling back to createdAt");
+        }
+
+        var direction = pagedRequest.getDirection() != null ? pagedRequest.getDirection() : Sort.Direction.DESC;
         var offset = page * size;
 
         // Get the total count
@@ -152,14 +161,14 @@ public class PageService {
         List<Page> pages;
         if (caseSensitive) {
             if ("title".equalsIgnoreCase(sortBy)) {
-                if (direction == SortDirectionEnum.ASC) {
+                if (direction == Sort.Direction.ASC) {
                     pages = pageRepository.findBlogArticlesCaseSensitiveOrderByTitleAsc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
                 } else {
                     pages = pageRepository.findBlogArticlesCaseSensitiveOrderByTitleDesc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
                 }
             } else {
                 // Default sort by createdAt
-                if (direction == SortDirectionEnum.ASC) {
+                if (direction == Sort.Direction.ASC) {
                     pages = pageRepository.findBlogArticlesCaseSensitiveOrderByCreatedAtAsc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
                 } else {
                     pages = pageRepository.findBlogArticlesCaseSensitiveOrderByCreatedAtDesc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
@@ -167,14 +176,14 @@ public class PageService {
             }
         } else {
             if ("title".equalsIgnoreCase(sortBy)) {
-                if (direction == SortDirectionEnum.ASC) {
+                if (direction == Sort.Direction.ASC) {
                     pages = pageRepository.findBlogArticlesCaseInsensitiveOrderByTitleAsc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
                 } else {
                     pages = pageRepository.findBlogArticlesCaseInsensitiveOrderByTitleDesc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
                 }
             } else {
                 // Default sort by createdAt
-                if (direction == SortDirectionEnum.ASC) {
+                if (direction == Sort.Direction.ASC) {
                     pages = pageRepository.findBlogArticlesCaseInsensitiveOrderByCreatedAtAsc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);
                 } else {
                     pages = pageRepository.findBlogArticlesCaseInsensitiveOrderByCreatedAtDesc(BLOG_PAGE_GROUP_ID, language, roleStrings, search, size, offset);

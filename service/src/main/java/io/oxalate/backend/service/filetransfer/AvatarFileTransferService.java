@@ -3,13 +3,16 @@ package io.oxalate.backend.service.filetransfer;
 import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.ActionResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.AvatarFileResponse;
 import io.oxalate.backend.model.filetransfer.AvatarFile;
 import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.repository.filetransfer.AvatarFileRepository;
 import io.oxalate.backend.tools.FileTools;
+import io.oxalate.backend.tools.PagingTools;
 import static io.oxalate.backend.tools.FileTools.getFileSuffix;
 import static io.oxalate.backend.tools.FileTools.readFileToResponseEntity;
 import static io.oxalate.backend.tools.FileTools.removeFile;
@@ -18,10 +21,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -33,6 +37,16 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Service
 public class AvatarFileTransferService {
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.ofEntries(
+            Map.entry("id", "id"),
+            Map.entry("filename", "fileName"),
+            Map.entry("filesize", "fileSize"),
+            Map.entry("mimetype", "mimeType"),
+            Map.entry("creator", "creator.lastName"),
+            Map.entry("created_at", "createdAt"));
+    private static final String DEFAULT_SORT_COLUMN = "createdAt";
+    private static final String[] SEARCHABLE_COLUMNS = {"fileName", "mimeType", "creator.firstName", "creator.lastName"};
+
     private final AvatarFileRepository avatarFileRepository;
     private final UserRepository userRepository;
 
@@ -45,15 +59,21 @@ public class AvatarFileTransferService {
      * Find all avatar files
      * @return List of all available avatar files as a response entity
      */
-    public List<AvatarFileResponse> findAllAvatarFiles() {
-        var avatarFiles = avatarFileRepository.findAll();
-        var avatarFileResponses = avatarFiles.stream()
-                .map(AvatarFile::toResponse).toList();
+    /**
+     * One page of all avatar files with their download URL populated.
+     *
+     * @param pagedRequest paging, sorting and search parameters
+     * @return the requested page
+     */
+    public PagedResponse<AvatarFileResponse> findAllAvatarFilesPaged(PagedRequest pagedRequest) {
+        var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
+        var specification = PagingTools.allOf(PagingTools.<AvatarFile>searchSpecification(pagedRequest, SEARCHABLE_COLUMNS));
 
-        log.info("Found {} avatar files", avatarFileResponses.size());
-        avatarFileResponses.forEach(avatarFileResponse -> avatarFileResponse.setUrl(getAvatarFileUrl(avatarFileResponse.getId())));
-
-        return avatarFileResponses;
+        return PagedResponse.fromPage(avatarFileRepository.findAll(specification, pageable), avatarFile -> {
+            var avatarFileResponse = avatarFile.toResponse();
+            avatarFileResponse.setUrl(getAvatarFileUrl(avatarFileResponse.getId()));
+            return avatarFileResponse;
+        });
     }
 
     /**

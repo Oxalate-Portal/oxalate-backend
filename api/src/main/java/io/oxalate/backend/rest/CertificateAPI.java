@@ -130,7 +130,7 @@ public interface CertificateAPI {
     @GetMapping(value = BASE_PATH + "/management/certificate-names", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<String>> findCertificateNames(
             @Parameter(description = "Case-insensitive search term", required = true, example = "open")
-            @RequestParam(name = "searchTerm") String searchTerm);
+            @RequestParam(name = "search_term") String searchTerm);
 
     @Operation(description = "Find distinct organizations matching a search term", tags = "CertificateAPI")
     @ApiResponses(value = {
@@ -141,5 +141,5 @@ public interface CertificateAPI {
     @GetMapping(value = BASE_PATH + "/management/organizations", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<String>> findOrganizations(
             @Parameter(description = "Case-insensitive search term", required = true, example = "PADI")
-            @RequestParam(name = "searchTerm") String searchTerm);
+            @RequestParam(name = "search_term") String searchTerm);
 }

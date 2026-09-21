@@ -3,7 +3,7 @@ package io.oxalate.backend.service;
 import io.oxalate.backend.AbstractIntegrationTest;
 import io.oxalate.backend.api.PageStatusEnum;
 import io.oxalate.backend.api.RoleEnum;
-import io.oxalate.backend.api.SortDirectionEnum;
+import org.springframework.data.domain.Sort;
 import io.oxalate.backend.api.UserStatusEnum;
 import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.PagedRequest;
@@ -88,11 +88,10 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -113,11 +112,10 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -134,13 +132,12 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .search("special")
                                   .caseSensitive(false)
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -161,13 +158,12 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .search("Special")
                                   .caseSensitive(true)
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -188,13 +184,12 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .search("unique")
                                   .caseSensitive(false)
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -210,13 +205,12 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .search("searchterm")
                                   .caseSensitive(false)
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -233,13 +227,12 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
-                                  .sortBy("createdAt")
-                                  .direction(SortDirectionEnum.DESC)
+                                  .sortBy("created_at")
+                                  .direction(Sort.Direction.DESC)
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -261,13 +254,12 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
-                                  .sortBy("createdAt")
-                                  .direction(SortDirectionEnum.ASC)
+                                  .sortBy("created_at")
+                                  .direction(Sort.Direction.ASC)
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -289,13 +281,12 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .sortBy("title")
-                                  .direction(SortDirectionEnum.ASC)
+                                  .direction(Sort.Direction.ASC)
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -316,13 +307,12 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .sortBy("title")
-                                  .direction(SortDirectionEnum.DESC)
+                                  .direction(Sort.Direction.DESC)
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -344,11 +334,10 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(5)
-                                  .language("en")
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -370,11 +359,10 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(1)
                                   .size(5)
-                                  .language("en")
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -396,11 +384,10 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(2)
                                   .size(5)
-                                  .language("en")
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -421,11 +408,10 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);
@@ -445,11 +431,10 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, anonymousRoles);
+        var result = pageService.getBlogArticles(request, "en", anonymousRoles);
 
         // Then
         assertNotNull(result);
@@ -464,18 +449,17 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When - anonymous users
-        var anonymousResult = pageService.getBlogArticles(request, anonymousRoles);
+        var anonymousResult = pageService.getBlogArticles(request, "en", anonymousRoles);
 
         // Then - should not see the article
         assertNotNull(anonymousResult);
         assertEquals(0, anonymousResult.getTotalElements());
 
         // When - authenticated users
-        var userResult = pageService.getBlogArticles(request, userRoles);
+        var userResult = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then - should see the article
         assertNotNull(userResult);
@@ -490,11 +474,10 @@ class PageServiceITC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When
-        var result = pageService.getBlogArticles(request, userRoles);
+        var result = pageService.getBlogArticles(request, "en", userRoles);
 
         // Then
         assertNotNull(result);

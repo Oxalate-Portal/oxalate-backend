@@ -5,7 +5,9 @@ import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import static io.oxalate.backend.api.UploadDirectoryConstants.DIVE_FILES;
 import io.oxalate.backend.api.UploadStatusEnum;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.ActionResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.DiveFileResponse;
 import io.oxalate.backend.model.User;
@@ -17,6 +19,7 @@ import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.repository.filetransfer.DiveFileRepository;
 import io.oxalate.backend.service.RoleService;
 import io.oxalate.backend.tools.FileTools;
+import io.oxalate.backend.tools.PagingTools;
 import static io.oxalate.backend.tools.FileTools.getFileSuffix;
 import static io.oxalate.backend.tools.FileTools.getSha1OfFile;
 import static io.oxalate.backend.tools.FileTools.readFileToResponseEntity;
@@ -28,9 +31,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -42,6 +49,19 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Service
 public class DiveFileTransferService {
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.ofEntries(
+            Map.entry("id", "id"),
+            Map.entry("filename", "fileName"),
+            Map.entry("filesize", "fileSize"),
+            Map.entry("mimetype", "mimeType"),
+            Map.entry("creator", "creator.lastName"),
+            Map.entry("created_at", "createdAt"),
+            Map.entry("event_id", "eventId"),
+            Map.entry("dive_group_id", "diveGroupId"),
+            Map.entry("status", "status"));
+    private static final String DEFAULT_SORT_COLUMN = "createdAt";
+    private static final String[] SEARCHABLE_COLUMNS = {"fileName", "mimeType", "creator.firstName", "creator.lastName"};
+
     @Value("${oxalate.upload.directory}")
     private String uploadMainDirectory;
     @Value("${oxalate.app.backend-url}")
@@ -54,9 +74,23 @@ public class DiveFileTransferService {
     private final EventParticipantsRepository eventParticipantsRepository;
     private final RoleService roleService;
 
-    public List<DiveFileResponse> findAllDiveFiles() {
-        var diveFiles = diveFileRepository.findAll();
-        return mapDiveFilesToResponses(diveFiles);
+    /**
+     * One page of dive files, optionally limited to one event, with the download URL populated.
+     *
+     * @param pagedRequest paging, sorting and search parameters
+     * @param eventId      only files of this event when given
+     * @return the requested page
+     */
+    public PagedResponse<DiveFileResponse> findAllDiveFilesPaged(PagedRequest pagedRequest, @Nullable Long eventId) {
+        var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
+        Specification<DiveFile> eventFilter = eventId == null ? null : (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("eventId"), eventId);
+        var specification = PagingTools.allOf(eventFilter, PagingTools.searchSpecification(pagedRequest, SEARCHABLE_COLUMNS));
+
+        return PagedResponse.fromPage(diveFileRepository.findAll(specification, pageable), diveFile -> {
+            var diveFileResponse = diveFile.toResponse();
+            diveFileResponse.setUrl(generateDiveFileUrl(diveFileResponse.getId()));
+            return diveFileResponse;
+        });
     }
 
     /**

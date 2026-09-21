@@ -51,3 +51,54 @@ And in the case of an error:
     log.error("Failed to zyx user ID {}: {}", userId, e.getMessage(), e);
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 ```
+
+### List endpoints and paging
+
+Endpoints that return a table of rows page on the server. The rules below are the contract shared with `oxalate-frontend`.
+
+**Request.** A paged endpoint is a `GET` whose API interface method takes a plain `io.oxalate.backend.api.request.PagedRequest` parameter, marked
+`@Parameter(hidden = true)` so that OpenAPI shows the documented query parameters instead of the Java fields. It is bound by
+`io.oxalate.backend.configuration.PagedRequestArgumentResolver` (registered through `WebMvcConfiguration`) from these snake_case query parameters, so
+the names match the JSON field naming of the rest of the API:
+
+| Parameter        | Type            | Default          | Notes                                                                                   |
+|------------------|-----------------|------------------|-----------------------------------------------------------------------------------------|
+| `page`           | int, 0-based    | `0`              | negative or non-numeric values are treated as 0                                         |
+| `size`           | int             | `25`             | non-numeric values and values below 1 fall back to the default, values above `PagingTools.MAX_PAGE_SIZE` (200) are capped |
+| `sort_by`        | string          | endpoint default | a snake_case response field name, validated against the endpoint's allow-list; unknown values fall back to the default and are logged, never a 500 |
+| `direction`      | `ASC` / `DESC`  | endpoint default | `org.springframework.data.domain.Sort.Direction`, case-insensitive; unknown values fall back to the default |
+| `search`         | string          | none             | matched as a literal substring (`LIKE %term%`, wildcards escaped) against the endpoint's searchable string columns, OR-ed |
+| `case_sensitive` | boolean         | `false`          |                                                                                         |
+
+Endpoint specific filters are additional `@RequestParam`s next to the `PagedRequest`, also named in snake_case (for example `event_id` on dive files,
+`creator_id` on documents, `filter_column` on the audit trail, `language` on blog articles).
+
+**Response.** Every paged endpoint returns `ResponseEntity<PagedResponse<T>>` with this stable JSON shape:
+
+```json
+{ "content": [ ... ], "page": 0, "size": 25, "total_elements": 1234, "total_pages": 50, "first": true, "last": false, "empty": false }
+```
+
+Build it with `PagedResponse.fromPage(springPage, Entity::toResponse)`, or `PagedResponse.of(...)` when the rows do not come from a Spring Data page.
+Endpoints that are switched off by configuration still answer with this shape (`PagingTools.emptyPage(pagedRequest)`), not with a plain empty list.
+
+**Implementation.** The controller stays thin and hands the `PagedRequest` to the service. The service owns
+
+- a `private static final Map<String, String> SORTABLE_COLUMNS` mapping the snake_case client sort names to entity property paths
+  (`"username" -> "user.lastName"`, `"created_at" -> "createdAt"`) and a default sort column and direction, turned into a `Pageable` by
+  `PagingTools.toPageable`;
+- the searchable entity string properties, turned into a `Specification` by `PagingTools.searchSpecification`;
+- the mandatory filters as `Specification`s (past events: `startTime < now`; active memberships: status `ACTIVE` and `endDate >= today or null`),
+  combined with the optional search through `PagingTools.allOf`, which skips `null`s.
+
+The repository extends `JpaRepository<E, Long>` and `JpaSpecificationExecutor<E>` and the query is `repository.findAll(specification, pageable)`.
+Per-row enrichment (URLs, user names, participants) happens in the mapper passed to `fromPage`, so it is bounded by the page size.
+
+**Tests.** A paged endpoint has a `*UTC` that verifies the `Pageable` handed to the repository (allow-listed sort mapped, unknown sort falls back) and a
+`*RTC` that inserts enough rows for two pages and asserts the JSON shape, the sort direction, the search filter and that a forbidden `sort_by` yields 200
+with the default order. The RTCs extend `PagedRestTestSupport`.
+
+**Paged endpoints.** `GET /api/users`, `GET /api/events/past`, `GET /api/memberships`, `GET /api/tokens`, `GET /api/files/avatars`,
+`GET /api/files/certificates`, `GET /api/files/dive-files`, `GET /api/files/documents`, `GET /api/files/page-files`, `GET /api/audits`,
+`GET /api/audits/{userId}` and `GET /api/pages/blogs`. Small, bounded lists (configuration, tags, certificate classifications, page groups), exports,
+reports and per-user aggregates deliberately stay unpaged.

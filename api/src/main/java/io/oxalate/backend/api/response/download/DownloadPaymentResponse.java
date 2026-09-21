@@ -1,34 +1,30 @@
 package io.oxalate.backend.api.response.download;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.PaymentTypeEnum;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonNaming;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class DownloadPaymentResponse {
 
-    @JsonProperty("id")
     private long id;
 
-    @JsonProperty("userId")
     private long userId;
 
-    @JsonProperty("name")
     private String name;
 
-    @JsonProperty("paymentCount")
     private Integer paymentCount;
 
-    @JsonProperty("paymentType")
     private PaymentTypeEnum paymentType;
 
-    @JsonProperty("created")
     private Instant created;
 }

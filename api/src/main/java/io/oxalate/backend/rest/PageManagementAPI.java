@@ -85,14 +85,14 @@ public interface PageManagementAPI {
 
     // Pages
     @Operation(description = "Get list of all pages for a specific path ID", tags = "PageManagementAPI")
-    @Parameter(name = "pageGroupId", description = "Page group ID of the pages that should be fetched", example = "1")
+    @Parameter(name = "page_group_id", description = "Page group ID of the pages that should be fetched", example = "1")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/pages", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<PageResponse>> getPagesByPageGroupId(@RequestParam(name = "pageGroupId") long pageGroupId);
+    ResponseEntity<List<PageResponse>> getPagesByPageGroupId(@RequestParam(name = "page_group_id") long pageGroupId);
 
     @Operation(description = "Get page by the given page ID", tags = "PageAPI")
     @Parameter(name = "pageId", description = "Page ID to be retrieved", example = "/info")

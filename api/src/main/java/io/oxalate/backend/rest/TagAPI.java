@@ -99,14 +99,14 @@ public interface TagAPI {
     // ---- Tags ----
 
     @Operation(description = "Get all tags (optionally filtered by tag group ID)", tags = "TagAPI")
-    @Parameter(name = "groupId", description = "Optional tag group ID filter", example = "1")
+    @Parameter(name = "group_id", description = "Optional tag group ID filter", example = "1")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = TAG_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<TagResponse>> getAllTags(@RequestParam(value = "groupId", required = false) Long groupId);
+    ResponseEntity<List<TagResponse>> getAllTags(@RequestParam(value = "group_id", required = false) Long groupId);
 
     @Operation(description = "Get tag by ID", tags = "TagAPI")
     @Parameter(name = "id", description = "Tag ID", example = "1")

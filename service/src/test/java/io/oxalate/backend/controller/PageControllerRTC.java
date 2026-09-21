@@ -1,11 +1,10 @@
 package io.oxalate.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.oxalate.backend.AbstractIntegrationTest;
 import io.oxalate.backend.api.PageStatusEnum;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
-import io.oxalate.backend.api.SortDirectionEnum;
+import org.springframework.data.domain.Sort;
 import io.oxalate.backend.api.UserStatusEnum;
 import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.PagedRequest;
@@ -31,13 +30,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -51,7 +50,6 @@ class PageControllerRTC extends AbstractIntegrationTest {
     private static final String BLOG_ENDPOINT = "/api/pages/blogs";
 
     private MockMvc mockMvc;
-    private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
     private WebApplicationContext webApplicationContext;
     @Autowired
@@ -98,17 +96,14 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When & Then - no authentication
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)))
                .andExpect(jsonPath("$.content", hasSize(1)))
-               .andExpect(jsonPath("$.content[0].pageVersions[0].title", is("Public Article")));
+               .andExpect(jsonPath("$.content[0].page_versions[0].title", is("Public Article")));
     }
 
     @Test
@@ -119,18 +114,15 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When & Then - with authentication
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request))
+        mockMvc.perform(blogRequest(request, "en")
                        .cookie(new Cookie(JWT_TOKEN, jwtToken)))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)))
                .andExpect(jsonPath("$.content", hasSize(1)))
-               .andExpect(jsonPath("$.content[0].pageVersions[0].title", is("Members Only")));
+               .andExpect(jsonPath("$.content[0].page_versions[0].title", is("Members Only")));
     }
 
     @Test
@@ -141,13 +133,10 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When & Then - without authentication
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(0)))
                .andExpect(jsonPath("$.content", hasSize(0)))
@@ -163,20 +152,15 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When & Then - anonymous user sees only public
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)));
 
         // When & Then - authenticated user sees both
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request))
+        mockMvc.perform(blogRequest(request, "en")
                        .cookie(new Cookie(JWT_TOKEN, jwtToken)))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(2)));
@@ -192,13 +176,10 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(5)
-                                  .language("en")
                                   .build();
 
         // When & Then - first page
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(15)))
                .andExpect(jsonPath("$.total_pages", is(3)))
@@ -208,9 +189,7 @@ class PageControllerRTC extends AbstractIntegrationTest {
 
         // Second page
         request.setPage(1);
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.page", is(1)))
                .andExpect(jsonPath("$.first", is(false)))
@@ -218,9 +197,7 @@ class PageControllerRTC extends AbstractIntegrationTest {
 
         // Last page
         request.setPage(2);
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.page", is(2)))
                .andExpect(jsonPath("$.first", is(false)))
@@ -236,17 +213,14 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
-                                  .sortBy("createdAt")
-                                  .direction(SortDirectionEnum.DESC)
+                                  .sortBy("created_at")
+                                  .direction(Sort.Direction.DESC)
                                   .build();
 
         // When & Then - newest first
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.content[0].pageVersions[0].title", is("Second Article")));
+               .andExpect(jsonPath("$.content[0].page_versions[0].title", is("Second Article")));
     }
 
     @Test
@@ -258,17 +232,14 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .sortBy("title")
-                                  .direction(SortDirectionEnum.ASC)
+                                  .direction(Sort.Direction.ASC)
                                   .build();
 
         // When & Then
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.content[0].pageVersions[0].title", is("Alpha Article")));
+               .andExpect(jsonPath("$.content[0].page_versions[0].title", is("Alpha Article")));
     }
 
     @Test
@@ -280,18 +251,15 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .search("special")
                                   .caseSensitive(false)
                                   .build();
 
         // When & Then
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)))
-               .andExpect(jsonPath("$.content[0].pageVersions[0].title", is("Special Article")));
+               .andExpect(jsonPath("$.content[0].page_versions[0].title", is("Special Article")));
     }
 
     @Test
@@ -303,18 +271,15 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .search("Special")
                                   .caseSensitive(true)
                                   .build();
 
         // When & Then
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)))
-               .andExpect(jsonPath("$.content[0].pageVersions[0].title", is("Special Article")));
+               .andExpect(jsonPath("$.content[0].page_versions[0].title", is("Special Article")));
     }
 
     @Test
@@ -326,16 +291,13 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("fi")
                                   .build();
 
         // When & Then
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "fi"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)))
-               .andExpect(jsonPath("$.content[0].pageVersions[0].title", is("Finnish Article")));
+               .andExpect(jsonPath("$.content[0].page_versions[0].title", is("Finnish Article")));
     }
 
     @Test
@@ -345,13 +307,10 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .build();
 
         // When & Then
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(0)))
                .andExpect(jsonPath("$.empty", is(true)));
@@ -366,15 +325,12 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .search("searchterm")
                                   .caseSensitive(false)
                                   .build();
 
         // When & Then
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)));
     }
@@ -388,17 +344,42 @@ class PageControllerRTC extends AbstractIntegrationTest {
         var request = PagedRequest.builder()
                                   .page(0)
                                   .size(10)
-                                  .language("en")
                                   .search("searchterm")
                                   .caseSensitive(false)
                                   .build();
 
         // When & Then
-        mockMvc.perform(post(BLOG_ENDPOINT)
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(blogRequest(request, "en"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)));
+    }
+
+    /**
+     * The blog endpoint takes its paging as query parameters, so the request object is flattened here.
+     */
+    private MockHttpServletRequestBuilder blogRequest(PagedRequest request, String language) {
+        var builder = get(BLOG_ENDPOINT).queryParam("language", language)
+                                        .queryParam("page", String.valueOf(request.getPage()))
+                                        .queryParam("size", String.valueOf(request.getSize()));
+
+        if (request.getSortBy() != null) {
+            builder.queryParam("sort_by", request.getSortBy());
+        }
+
+        if (request.getDirection() != null) {
+            builder.queryParam("direction", request.getDirection()
+                                                   .name());
+        }
+
+        if (request.getSearch() != null) {
+            builder.queryParam("search", request.getSearch());
+        }
+
+        if (request.getCaseSensitive() != null) {
+            builder.queryParam("case_sensitive", String.valueOf(request.getCaseSensitive()));
+        }
+
+        return builder;
     }
 
     private Page createBlogPage(String title, String ingress, String body, String language, boolean anonymousAccess, boolean authenticatedAccess) {

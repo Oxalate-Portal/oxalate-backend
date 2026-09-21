@@ -2,14 +2,19 @@ package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
+import io.oxalate.backend.api.request.PagedRequest;
+import static io.oxalate.backend.api.request.PagedRequest.CASE_SENSITIVE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.DIRECTION_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.PAGE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SIZE_DESCRIPTION;
 import io.oxalate.backend.api.response.AuditEntryResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,42 +26,39 @@ public interface AuditAPI {
 
     String BASE_PATH = API + "/audits";
 
-    @Operation(description = "Get all audit entries", tags = "AuditAPI")
-    @Parameter(name = "page", description = "Index of page to be retrieved", example = "3")
-    @Parameter(name = "pageSize", description = "Size of the page to be retrieved", example = "10")
-    @Parameter(name = "sorting", description = "What field the page should be sorted by, and which direction. The two values should be comma separated",
-            example = "createdAt,desc")
-    @Parameter(name = "filter", description = "Filter the column by the string", example = "Find me")
-    @Parameter(name = "filterColumn", description = "By which column should the filtering be done", example = "message")
+    String SORTABLE_COLUMNS_DESCRIPTION = "Column to sort by, one of: id, user_id, user_name, level, trace_id, ip_address, address, source, message, "
+            + "created_at. Unknown values fall back to created_at";
+
+    @Operation(description = "Get a page of audit entries, optionally filtered by one column", tags = "AuditAPI")
+    @Parameter(name = "page", description = PAGE_DESCRIPTION, example = "3")
+    @Parameter(name = "size", description = SIZE_DESCRIPTION, example = "10")
+    @Parameter(name = "sort_by", description = SORTABLE_COLUMNS_DESCRIPTION, example = "created_at")
+    @Parameter(name = "direction", description = DIRECTION_DESCRIPTION + " (DESC)", example = "DESC")
+    @Parameter(name = "search", description = "Text the column given in filter_column must contain. Ignored without a filter_column", example = "Find me")
+    @Parameter(name = "case_sensitive", description = CASE_SENSITIVE_DESCRIPTION, example = "false")
+    @Parameter(name = "filter_column", description = "Which column the search applies to, one of: user_name, trace_id, source, address, ip_address, message. "
+            + "With user_name the search matches user first or last names and returns the entries of the matching users", example = "message")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List of audit entries retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Page of audit entries retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Page<AuditEntryResponse>> getAuditEvents(
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
-            @RequestParam(name = "sorting", defaultValue = "createdAt,desc") String sorting,
-            @RequestParam(name = "filter", defaultValue = "") String filter,
-            @RequestParam(name = "filterColumn", defaultValue = "") String filterColumn);
+    ResponseEntity<PagedResponse<AuditEntryResponse>> getAuditEvents(@Parameter(hidden = true) PagedRequest pagedRequest,
+            @RequestParam(name = "filter_column", required = false) String filterColumn);
 
-    @Operation(description = "Get all audit entries of a user", tags = "AuditAPI")
-    @Parameter(name = "userId", description = "User ID who's certificates should be retrieved", example = "123", required = true)
-    @Parameter(name = "page", description = "Index of page to be retrieved", example = "3")
-    @Parameter(name = "pageSize", description = "Size of the page to be retrieved", example = "10")
-    @Parameter(name = "sorting", description = "What field the page should be sorted by, and which direction. The two values should be comma separated",
-            example = "createdAt,desc")
+    @Operation(description = "Get a page of the audit entries of a user", tags = "AuditAPI")
+    @Parameter(name = "userId", description = "User ID whose audit entries should be retrieved", example = "123", required = true)
+    @Parameter(name = "page", description = PAGE_DESCRIPTION, example = "3")
+    @Parameter(name = "size", description = SIZE_DESCRIPTION, example = "10")
+    @Parameter(name = "sort_by", description = SORTABLE_COLUMNS_DESCRIPTION, example = "created_at")
+    @Parameter(name = "direction", description = DIRECTION_DESCRIPTION + " (DESC)", example = "DESC")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List of audit entries for a user retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Page of audit entries for a user retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Page<AuditEntryResponse>> getAuditEventsByUserId(
-            @PathVariable("userId") long userId,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
-            @RequestParam(name = "sorting", defaultValue = "createdAt,desc") String sorting
-    );
+    ResponseEntity<PagedResponse<AuditEntryResponse>> getAuditEventsByUserId(@PathVariable("userId") long userId,
+            @Parameter(hidden = true) PagedRequest pagedRequest);
 }

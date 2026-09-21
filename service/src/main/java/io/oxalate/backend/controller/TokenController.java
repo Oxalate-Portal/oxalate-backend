@@ -2,7 +2,9 @@ package io.oxalate.backend.controller;
 
 import io.oxalate.backend.api.request.CreateTokenRequest;
 import io.oxalate.backend.api.request.InvalidateTokenRequest;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.request.RefreshTokenRequest;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.api.response.TokenResponse;
 import io.oxalate.backend.audit.AuditSource;
 import io.oxalate.backend.audit.Audited;
@@ -16,7 +18,6 @@ import static io.oxalate.backend.events.AppAuditMessages.THIRD_PARTY_TOKEN_REFRE
 import static io.oxalate.backend.events.AppAuditMessages.THIRD_PARTY_TOKEN_REFRESH_START;
 import io.oxalate.backend.rest.TokenAPI;
 import io.oxalate.backend.service.ThirdPartyTokenService;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -55,7 +56,7 @@ public class TokenController implements TokenAPI {
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     @Audited(startMessage = THIRD_PARTY_TOKEN_LIST_START, okMessage = THIRD_PARTY_TOKEN_LIST_OK)
-    public ResponseEntity<List<TokenResponse>> listTokens() {
-        return ResponseEntity.ok(tokenService.list());
+    public ResponseEntity<PagedResponse<TokenResponse>> listTokens(PagedRequest pagedRequest) {
+        return ResponseEntity.ok(tokenService.listPaged(pagedRequest));
     }
 }

@@ -58,7 +58,7 @@ class RestEndpointTestCoverageUTC {
      * Maximum number of endpoints that may lack a status-code test. Lower it whenever you add coverage; never raise
      * it. The target is 0.
      */
-    private static final int MAX_UNTESTED_ENDPOINTS = 129;
+    private static final int MAX_UNTESTED_ENDPOINTS = 101;
 
     @Test
     void everyEndpointIsClassifiedInTheBaselineOk() {

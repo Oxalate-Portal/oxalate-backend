@@ -231,7 +231,30 @@ when searching for scheduled work.
 - REST paths are plural + kebab-case; see `documentation/CONVENTIONS.md` for URI, HTTP method, status code, and response construction rules.
   `documentation/CODESTYLE.md` covers naming casing for Java, SQL, JSON, URLs, and YAML.
 - Return the least descriptive error possible to the client (never distinguish "user not found" from "wrong password"), but log the detail server-side.
-- JSON field naming is explicit with `@JsonProperty`; paging DTO example: `PagedRequest`/`PagedResponse`.
+- **JSON field names are snake_case on the wire, camelCase in Java.** Every DTO class under `io.oxalate.backend.api` (requests, responses, `Abstract*`
+  bases, nested DTOs) carries the class-level Jackson 3 annotation `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)`
+  (`tools.jackson.databind.annotation.JsonNaming`), on abstract bases and concrete subclasses alike. Do not add per-field `@JsonProperty` unless the wire
+  name must differ from the derived one, and then write the value in snake_case; `@JsonAlias`, `@JsonFormat`, `@JsonInclude` and `@JsonIgnore` are fine.
+  Enum wire values (`@JsonValue`) are not field names and keep their own casing. Query parameter names are snake_case too (`sort_by`, `filter_column`,
+  `event_id`, `creator_id`); path variables are Java identifiers and stay camelCase. `api/.../JsonNamingContractUTC` scans every DTO and fails the build on
+  a missing strategy or a camelCase `@JsonProperty` value. Renaming a wire field is a breaking API change — change the frontend model in the same change.
+- **List endpoints are paged server-side.** A paged `GET` endpoint takes a plain `io.oxalate.backend.api.request.PagedRequest` parameter (no
+  `@ModelAttribute`; hide it from OpenAPI with `@Parameter(hidden = true)` and document the individual query parameters instead). It is bound by
+  `io.oxalate.backend.configuration.PagedRequestArgumentResolver`, registered in `WebMvcConfiguration`, from the snake_case query parameters `page`
+  (0-based), `size` (default 25, capped at 200), `sort_by`, `direction` (`ASC`/`DESC`), `search` and `case_sensitive`; unparseable values fall back to
+  the defaults. The endpoint returns `ResponseEntity<PagedResponse<T>>`, whose wire shape is fixed: `content`, `page`, `size`, `total_elements`,
+  `total_pages`, `first`, `last`, `empty`. The service builds the `Pageable` with `PagingTools.toPageable` from a `private static final
+  Map<String, String> SORTABLE_COLUMNS` whose keys are the snake_case response field names the client sorts by (`start_time`, `created_at`,
+  `user_name`) and whose values are entity property paths (`startTime`, `user.lastName`), plus a default sort; an unknown `sort_by` falls back to the
+  default with a warning and must never become a 500. Free text search is `PagingTools.searchSpecification` over an explicit list of string properties, combined
+  with the endpoint's mandatory filters through `PagingTools.allOf`, executed with `repository.findAll(specification, pageable)` on a
+  `JpaSpecificationExecutor` repository and mapped with `PagedResponse.fromPage`. Paged endpoints: `GET /api/users`, `GET /api/events/past`,
+  `GET /api/memberships`, `GET /api/tokens`, the five `GET /api/files/{avatars,certificates,dive-files,documents,page-files}` lists (dive files take an
+  optional `event_id`, documents an optional `creator_id`), `GET /api/audits` (optional `filter_column`, one of `user_name`, `trace_id`, `source`,
+  `address`, `ip_address`, `message`, chooses the searched column) and `GET /api/audits/{userId}`, plus `GET /api/pages/blogs` which keeps its own
+  role-filtered native queries and a mandatory `language`. Document the paging parameters with `@Parameter` on the API interface and list the allowed
+  `sort_by` values there. Everything else (bounded configuration sets,
+  exports, aggregates) stays a plain list.
 - Enums that cross the wire carry explicit JSON values (example: `DiveTypeEnum.OPEN_WATER` -> `"open-water"`). Changing one is a breaking API change — update
   the frontend enum in the same change.
 - Nullability annotations come from JSpecify (`org.jspecify.annotations.NonNull` / `.Nullable`). The
@@ -338,8 +361,8 @@ vulnerabilities that were found in this codebase, not hypotheticals.
    `request.getRemoteAddr()`. Reading `X-Forwarded-For` directly lets an attacker reset the login lockout on every attempt and forge the `ipAddress` in the
    audit trail. Proxy handling belongs to
    `server.forward-headers-strategy: native`.
-6. **Validate anything that reaches Spring Data or the filesystem.** Sort columns must be checked against an allow-list (`AuditController.SORTABLE_COLUMNS`),
-   page sizes must be capped, and file names must go through
+6. **Validate anything that reaches Spring Data or the filesystem.** Sort columns must be checked against an allow-list (the per-service
+   `SORTABLE_COLUMNS` maps consumed by `PagingTools.toPageable`), page sizes must be capped, and file names must go through
    `FileTools.sanitizeFileName`. An unknown sort property is a 500, and a 500 that is cheap to trigger is a denial-of-service primitive.
 7. **Check for null before dereferencing a lookup result.** A missing record must be a handled 4xx, never a
    `NullPointerException`.

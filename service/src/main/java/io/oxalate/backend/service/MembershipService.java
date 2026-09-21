@@ -10,19 +10,25 @@ import static io.oxalate.backend.api.PortalConfigEnum.MembershipConfigEnum.MEMBE
 import static io.oxalate.backend.api.PortalConfigEnum.PAYMENT;
 import static io.oxalate.backend.api.PortalConfigEnum.PaymentConfigEnum.PAYMENT_PERIOD_START;
 import io.oxalate.backend.api.request.MembershipRequest;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.MembershipResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.model.Membership;
 import io.oxalate.backend.model.PeriodResult;
 import io.oxalate.backend.repository.MembershipRepository;
+import io.oxalate.backend.tools.PagingTools;
 import io.oxalate.backend.tools.PeriodTools;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,22 +38,52 @@ import org.springframework.transaction.annotation.Transactional;
 public class MembershipService {
 
     private static final String MEMBERSHIP_DISABLED_WARNING = "Membership creation is disabled";
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.of(
+            "id", "id",
+            "user_id", "userId",
+            "username", "user.lastName",
+            "status", "status",
+            "type", "type",
+            "start_date", "startDate",
+            "end_date", "endDate",
+            "created", "created");
+    private static final String DEFAULT_SORT_COLUMN = "userId";
+
     private final MembershipRepository membershipRepository;
     private final PortalConfigurationService portalConfigurationService;
     private final UserService userService;
 
-    public List<MembershipResponse> getAllActiveMemberships() {
+    /**
+     * One page of the memberships that are active today or in the future. When memberships are disabled by
+     * configuration the page is empty. The search matches the member's first and last name.
+     *
+     * @param pagedRequest paging, sorting and search parameters
+     * @return the requested page
+     */
+    public PagedResponse<MembershipResponse> getAllActiveMembershipsPaged(PagedRequest pagedRequest) {
         var membershipType = getMembershipTypeSetting();
 
         if (membershipType.equals(MembershipTypeEnum.DISABLED)) {
             log.warn(MEMBERSHIP_DISABLED_WARNING);
-            return new ArrayList<>();
+            return PagingTools.emptyPage(pagedRequest);
         }
 
-        var memberships = membershipRepository.findAllCurrentAndFutureByStatus(MembershipStatusEnum.ACTIVE);
-        return memberships.stream()
-                          .map(Membership::toResponse)
-                          .collect(Collectors.toList());
+        var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.ASC);
+        var specification = PagingTools.allOf(currentAndFutureActive(LocalDate.now()),
+                PagingTools.searchSpecification(pagedRequest, "user.firstName", "user.lastName"));
+
+        return PagedResponse.fromPage(membershipRepository.findAll(specification, pageable), Membership::toResponse);
+    }
+
+    /**
+     * Status ACTIVE and an end date of today or later, or no end date at all.
+     */
+    private static Specification<Membership> currentAndFutureActive(LocalDate today) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.and(
+                criteriaBuilder.equal(root.get("status"), MembershipStatusEnum.ACTIVE),
+                criteriaBuilder.or(
+                        criteriaBuilder.greaterThanOrEqualTo(root.get("endDate"), today),
+                        criteriaBuilder.isNull(root.get("endDate"))));
     }
 
     public MembershipResponse findById(long membershipId) {

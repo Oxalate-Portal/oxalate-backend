@@ -3,7 +3,14 @@ package io.oxalate.backend.rest;
 import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.MembershipRequest;
+import io.oxalate.backend.api.request.PagedRequest;
+import static io.oxalate.backend.api.request.PagedRequest.CASE_SENSITIVE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.DIRECTION_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.PAGE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SEARCH_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SIZE_DESCRIPTION;
 import io.oxalate.backend.api.response.MembershipResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,14 +30,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface MembershipAPI {
     String BASE_PATH = API + "/memberships";
 
-    @Operation(description = "Get a list of all active memberships", tags = "MembershipAPI")
+    @Operation(description = "Get a page of all active memberships. The page is empty when the membership type is disabled", tags = "MembershipAPI")
+    @Parameter(name = "page", description = PAGE_DESCRIPTION, example = "0")
+    @Parameter(name = "size", description = SIZE_DESCRIPTION, example = "25")
+    @Parameter(name = "sort_by", description = "Column to sort by, one of: id, user_id, username, status, type, start_date, end_date, created. "
+            + "Unknown values fall back to user_id", example = "username")
+    @Parameter(name = "direction", description = DIRECTION_DESCRIPTION + " (ASC)", example = "ASC")
+    @Parameter(name = "search", description = SEARCH_DESCRIPTION + ": member first name, member last name", example = "smith")
+    @Parameter(name = "case_sensitive", description = CASE_SENSITIVE_DESCRIPTION, example = "false")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Page retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<MembershipResponse>> getAllActiveMemberships();
+    ResponseEntity<PagedResponse<MembershipResponse>> getAllActiveMemberships(@Parameter(hidden = true) PagedRequest pagedRequest);
 
     @Operation(description = "Get the memberships by the id", tags = "MembershipAPI")
     @Parameter(name = "id", description = "Membership ID for which the membership should be fetched", example = "123")

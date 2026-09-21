@@ -7,9 +7,11 @@ import static io.oxalate.backend.api.RoleEnum.ROLE_ORGANIZER;
 import static io.oxalate.backend.api.UserStatusEnum.ANONYMIZED;
 import io.oxalate.backend.api.request.AdminUserRequest;
 import io.oxalate.backend.api.request.ConfirmationRequest;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.audit.AuditSource;
 import io.oxalate.backend.audit.Audited;
 import static io.oxalate.backend.events.AppAuditMessages.USERS_GET_DETAILS_NOT_FOUND;
@@ -190,12 +192,12 @@ public class UserController implements UserAPI {
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     @Audited(startMessage = USERS_GET_START, okMessage = USERS_GET_OK)
-    public ResponseEntity<List<AdminUserResponse>> getUsers() {
+    public ResponseEntity<PagedResponse<AdminUserResponse>> getUsers(PagedRequest pagedRequest) {
         if (!AuthTools.currentUserHasRole(ROLE_ADMIN)) {
             throw new OxalateUnauthorizedException(AuditLevelEnum.ERROR, USERS_GET_UNAUTHORIZED, HttpStatus.NOT_FOUND);
         }
 
-        var users = userService.findAll();
+        var users = userService.findAllPaged(pagedRequest);
         return ResponseEntity.ok(users);
     }
 

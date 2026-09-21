@@ -2,7 +2,7 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.PageStatusEnum;
 import io.oxalate.backend.api.RoleEnum;
-import io.oxalate.backend.api.SortDirectionEnum;
+import org.springframework.data.domain.Sort;
 import io.oxalate.backend.api.request.PageGroupRequest;
 import io.oxalate.backend.api.request.PageGroupVersionRequest;
 import io.oxalate.backend.api.request.PagedRequest;
@@ -76,6 +76,7 @@ class PageServiceUTC {
 
     private Set<RoleEnum> userRoles;
     private PagedRequest pagedRequest;
+    private String language;
 
     @BeforeEach
     void setUp() {
@@ -83,10 +84,10 @@ class PageServiceUTC {
         userRoles.add(RoleEnum.ROLE_ANONYMOUS);
         userRoles.add(RoleEnum.ROLE_USER);
 
+        language = "en";
         pagedRequest = PagedRequest.builder()
                                    .page(0)
                                    .size(10)
-                                   .language("en")
                                    .build();
     }
 
@@ -110,7 +111,7 @@ class PageServiceUTC {
                  .thenReturn(new HashSet<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -136,7 +137,7 @@ class PageServiceUTC {
                 .thenReturn(new ArrayList<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -150,10 +151,10 @@ class PageServiceUTC {
         when(portalConfigurationService.getArrayConfiguration(any(), any()))
                 .thenReturn(List.of("en", "fi", "sv"));
 
-        pagedRequest.setLanguage("xx");
+        language = "xx";
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -184,7 +185,7 @@ class PageServiceUTC {
                  .thenReturn(new HashSet<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -215,7 +216,7 @@ class PageServiceUTC {
                  .thenReturn(new HashSet<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -230,7 +231,7 @@ class PageServiceUTC {
                 .thenReturn(List.of("en", "fi", "sv"));
 
         pagedRequest.setSortBy("title");
-        pagedRequest.setDirection(SortDirectionEnum.ASC);
+        pagedRequest.setDirection(Sort.Direction.ASC);
 
         var mockPage = createMockPage(1L, "Alpha Title", "Ingress", "Body");
         var mockPages = List.of(mockPage);
@@ -246,7 +247,7 @@ class PageServiceUTC {
                  .thenReturn(new HashSet<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -260,7 +261,7 @@ class PageServiceUTC {
                 .thenReturn(List.of("en", "fi", "sv"));
 
         pagedRequest.setSortBy("title");
-        pagedRequest.setDirection(SortDirectionEnum.DESC);
+        pagedRequest.setDirection(Sort.Direction.DESC);
 
         var mockPage = createMockPage(1L, "Zebra Title", "Ingress", "Body");
         var mockPages = List.of(mockPage);
@@ -276,7 +277,7 @@ class PageServiceUTC {
                  .thenReturn(new HashSet<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -289,8 +290,8 @@ class PageServiceUTC {
         when(portalConfigurationService.getArrayConfiguration(any(), any()))
                 .thenReturn(List.of("en", "fi", "sv"));
 
-        pagedRequest.setSortBy("createdAt");
-        pagedRequest.setDirection(SortDirectionEnum.ASC);
+        pagedRequest.setSortBy("created_at");
+        pagedRequest.setDirection(Sort.Direction.ASC);
 
         var mockPage = createMockPage(1L, "Title", "Ingress", "Body");
         var mockPages = List.of(mockPage);
@@ -306,7 +307,7 @@ class PageServiceUTC {
                  .thenReturn(new HashSet<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -336,7 +337,7 @@ class PageServiceUTC {
                  .thenReturn(new HashSet<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -354,10 +355,10 @@ class PageServiceUTC {
         when(portalConfigurationService.getArrayConfiguration(any(), any()))
                 .thenReturn(List.of("en", "fi", "sv"));
 
-        pagedRequest.setLanguage(null);
+        language = null;
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, userRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, userRoles);
 
         // Then
         assertNotNull(result);
@@ -387,7 +388,7 @@ class PageServiceUTC {
                  .thenReturn(new HashSet<>());
 
         // When
-        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, anonymousRoles);
+        PagedResponse<PageResponse> result = pageService.getBlogArticles(pagedRequest, language, anonymousRoles);
 
         // Then
         assertNotNull(result);

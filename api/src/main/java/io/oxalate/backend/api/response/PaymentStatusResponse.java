@@ -1,28 +1,26 @@
 package io.oxalate.backend.api.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.UpdateStatusEnum;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonNaming;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class PaymentStatusResponse {
 
-    @JsonProperty("userId")
     private long userId;
 
-    @JsonProperty("name")
     private String name;
 
-    @JsonProperty("status")
     private UpdateStatusEnum status;
 
-    @JsonProperty("payments")
     private List<PaymentResponse> payments;
 }

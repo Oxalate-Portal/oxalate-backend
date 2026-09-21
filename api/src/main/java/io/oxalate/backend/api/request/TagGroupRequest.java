@@ -8,10 +8,13 @@ import java.util.List;
 import java.util.Map;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonNaming;
 
 @Data
 @NoArgsConstructor
 @Schema(description = "Tag group request")
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class TagGroupRequest extends TagGroupResponse {
     // An explicit constructor is needed to call the super constructor, as Lombok's @Data does not generate one with arguments
     public TagGroupRequest(Long id, String code, Map<String, String> names, List<TagResponse> tags, TagGroupEnum type) {
