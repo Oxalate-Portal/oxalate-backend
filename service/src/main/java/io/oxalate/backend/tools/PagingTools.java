@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -103,14 +104,24 @@ public final class PagingTools {
             return null;
         }
 
-        var caseSensitive = Boolean.TRUE.equals(pagedRequest.getCaseSensitive());
+        boolean caseSensitive = Boolean.TRUE.equals(pagedRequest.getCaseSensitive());
+        String filterColumn = pagedRequest.getFilterColumn();
+        var selectedProperties = new ArrayList<String>();
+        for (String property : searchableProperties) {
+            if (filterColumn == null || filterColumn.isBlank() || matchesFilterColumn(property, filterColumn.trim())) {
+                selectedProperties.add(property);
+            }
+        }
+        if (selectedProperties.isEmpty()) {
+            return null;
+        }
         var term = search.trim();
         var pattern = "%" + escapeLike(caseSensitive ? term : term.toLowerCase()) + "%";
 
         return (root, query, criteriaBuilder) -> {
-            var predicates = new ArrayList<Predicate>(searchableProperties.length);
+            var predicates = new ArrayList<Predicate>(selectedProperties.size());
 
-            for (var propertyPath : searchableProperties) {
+            for (var propertyPath : selectedProperties) {
                 Expression<String> expression = resolvePath(root, propertyPath);
 
                 if (!caseSensitive) {
@@ -122,6 +133,64 @@ public final class PagingTools {
 
             return criteriaBuilder.or(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    @Nullable
+    public static <T, E extends Enum<E>> Specification<T> enumSearchSpecification(PagedRequest pagedRequest,
+            Class<E> enumType, String property) {
+        var search = pagedRequest.getSearch();
+        var filterColumn = pagedRequest.getFilterColumn();
+        if (search == null || search.isBlank() || filterColumn == null
+                || !toSnakeCase(property.substring(property.lastIndexOf('.') + 1)).equalsIgnoreCase(filterColumn.trim())) {
+            return null;
+        }
+        var normalized = normalizeEnumValue(search);
+        var matchingValues = Arrays.stream(enumType.getEnumConstants())
+                                   .filter(value -> normalizeEnumValue(value.name()).contains(normalized)
+                                           || normalizeEnumValue(enumWireValue(value)).contains(normalized))
+                                   .toList();
+        return (root, query, criteriaBuilder) -> {
+            if (matchingValues.isEmpty()) {
+                return criteriaBuilder.disjunction();
+            }
+            Path<?> path = root;
+            for (var segment : property.split("\\.")) {
+                path = path.get(segment);
+            }
+            var enumPath = path;
+            var predicates = matchingValues.stream()
+                                           .map(value -> criteriaBuilder.equal(enumPath, value))
+                                           .toArray(Predicate[]::new);
+            return criteriaBuilder.or(predicates);
+        };
+    }
+
+    private static String normalizeEnumValue(String value) {
+        return value.trim()
+                    .replace('_', '-')
+                    .replace(' ', '-')
+                    .toLowerCase();
+    }
+
+    private static String enumWireValue(Enum<?> value) {
+        try {
+            return String.valueOf(value.getClass()
+                                       .getMethod("getTypeName")
+                                       .invoke(value));
+        } catch (ReflectiveOperationException ignored) {
+            return value.name();
+        }
+    }
+
+    private static String toSnakeCase(String value) {
+        return value.replaceAll("([a-z])([A-Z])", "$1_$2")
+                    .toLowerCase();
+    }
+
+    private static boolean matchesFilterColumn(String propertyPath, String filterColumn) {
+        var segments = propertyPath.split("\\.");
+        return toSnakeCase(segments[segments.length - 1]).equalsIgnoreCase(filterColumn)
+                || segments.length > 1 && toSnakeCase(segments[0]).equalsIgnoreCase(filterColumn);
     }
 
     /**
@@ -144,7 +213,7 @@ public final class PagingTools {
     /**
      * Escapes the LIKE wildcards and the escape character itself so that the search term is matched literally.
      */
-    static String escapeLike(String value) {
+    public static String escapeLike(String value) {
         var builder = new StringBuilder(value.length());
 
         for (var character : value.toCharArray()) {

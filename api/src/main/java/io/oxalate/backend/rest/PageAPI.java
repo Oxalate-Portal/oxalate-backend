@@ -20,6 +20,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "PageAPI", description = "Page REST endpoints")
@@ -48,8 +50,8 @@ public interface PageAPI {
             @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @GetMapping(path = BASE_PATH + "/blogs", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(@Parameter(hidden = true) PagedRequest pagedRequest,
+    @PostMapping(path = BASE_PATH + "/blogs", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(@RequestBody PagedRequest pagedRequest,
             @RequestParam(name = "language") String language);
 
     @Operation(description = "Get page by the given page ID", tags = "PageAPI")

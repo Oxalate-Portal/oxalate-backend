@@ -4,10 +4,10 @@ import io.oxalate.backend.AbstractIntegrationTest;
 import io.oxalate.backend.api.PageStatusEnum;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
-import org.springframework.data.domain.Sort;
 import io.oxalate.backend.api.UserStatusEnum;
 import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.PagedRequest;
+import io.oxalate.backend.controller.PagedRestTestSupport.LegacyPagedGetRequestFilter;
 import io.oxalate.backend.model.Page;
 import io.oxalate.backend.model.PageRoleAccess;
 import io.oxalate.backend.model.PageVersion;
@@ -30,13 +30,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -74,6 +75,7 @@ class PageControllerRTC extends AbstractIntegrationTest {
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(webApplicationContext)
                 .apply(springSecurity())
+                .addFilters(new LegacyPagedGetRequestFilter())
                 .build();
 
         // Clean up test data from previous runs

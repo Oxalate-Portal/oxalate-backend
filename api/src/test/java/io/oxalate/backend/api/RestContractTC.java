@@ -107,7 +107,19 @@ class RestContractTC {
         var duplicates = new TreeSet<String>();
 
         for (var endpoint : RestEndpointInventory.endpoints()) {
-            if (!seen.add(endpoint.httpMethod() + " " + endpoint.path())) {
+            var consumes = switch (endpoint.httpMethod()) {
+                case "POST" -> java.util.Arrays.toString(endpoint.method()
+                                                                 .getAnnotation(org.springframework.web.bind.annotation.PostMapping.class)
+                                                                 .consumes());
+                case "PUT" -> java.util.Arrays.toString(endpoint.method()
+                                                                .getAnnotation(org.springframework.web.bind.annotation.PutMapping.class)
+                                                                .consumes());
+                case "PATCH" -> java.util.Arrays.toString(endpoint.method()
+                                                                  .getAnnotation(org.springframework.web.bind.annotation.PatchMapping.class)
+                                                                  .consumes());
+                default -> "";
+            };
+            if (!seen.add(endpoint.httpMethod() + " " + endpoint.path() + " " + consumes)) {
                 duplicates.add(endpoint.describe());
             }
         }

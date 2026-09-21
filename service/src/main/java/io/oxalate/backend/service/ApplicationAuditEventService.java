@@ -1,5 +1,6 @@
 package io.oxalate.backend.service;
 
+import io.oxalate.backend.api.AuditLevelEnum;
 import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.AuditEntryResponse;
 import io.oxalate.backend.api.response.PagedResponse;
@@ -134,6 +135,10 @@ public class ApplicationAuditEventService {
                                      .toList();
             log.debug("Found {} users matching the audit filter", userIds.size());
             return userIdIn(userIds);
+        }
+
+        if ("level".equals(column)) {
+            return PagingTools.enumSearchSpecification(pagedRequest, AuditLevelEnum.class, "level");
         }
 
         var property = SEARCHABLE_COLUMNS.get(column);

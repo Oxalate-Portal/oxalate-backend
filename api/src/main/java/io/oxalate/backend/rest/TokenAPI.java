@@ -23,7 +23,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -61,7 +60,7 @@ public interface TokenAPI {
     @SecurityRequirement(name = JWT_COOKIE)
     ResponseEntity<Void> invalidateToken(@Valid @RequestBody InvalidateTokenRequest request);
 
-    @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = BASE_PATH + "/paged", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "List a page of third-party tokens")
     @Parameter(name = "page", description = PAGE_DESCRIPTION, example = "0")
     @Parameter(name = "size", description = SIZE_DESCRIPTION, example = "25")
@@ -75,5 +74,5 @@ public interface TokenAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    ResponseEntity<PagedResponse<TokenResponse>> listTokens(@Parameter(hidden = true) PagedRequest pagedRequest);
+    ResponseEntity<PagedResponse<TokenResponse>> listTokens(@RequestBody PagedRequest pagedRequest);
 }

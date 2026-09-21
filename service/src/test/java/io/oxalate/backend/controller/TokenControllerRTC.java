@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TokenControllerRTC extends PagedRestTestSupport {
 
-    private static final String TOKENS_ENDPOINT = "/api/tokens";
+    private static final String TOKENS_ENDPOINT = "/api/tokens/paged";
 
     @Autowired
     private ThirdPartyTokenRepository thirdPartyTokenRepository;

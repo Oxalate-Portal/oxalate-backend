@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MembershipControllerRTC extends PagedRestTestSupport {
 
-    private static final String MEMBERSHIPS_ENDPOINT = "/api/memberships";
+    private static final String MEMBERSHIPS_ENDPOINT = "/api/memberships/paged";
 
     @Autowired
     private MembershipRepository membershipRepository;

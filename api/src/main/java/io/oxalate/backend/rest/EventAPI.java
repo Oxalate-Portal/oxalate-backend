@@ -57,21 +57,23 @@ public interface EventAPI {
     @GetMapping(path = BASE_PATH + "/ongoing", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<EventResponse>> getOngoingEvents();
 
-    @Operation(description = "Get a page of all past events, i.e. events whose start time is in the past.", tags = "EventAPI")
+    @Operation(description = "Get a page of all past events, i.e. events whose start time is in the past. Search can be restricted to title, description, "
+            + "or organizer name.",
+            tags = "EventAPI")
     @Parameter(name = "page", description = PAGE_DESCRIPTION, example = "0")
     @Parameter(name = "size", description = SIZE_DESCRIPTION, example = "25")
     @Parameter(name = "sort_by", description = "Column to sort by, one of: start_time, title, status, type, event_duration, max_duration, max_depth, "
             + "max_participants. Unknown values fall back to start_time", example = "start_time")
     @Parameter(name = "direction", description = DIRECTION_DESCRIPTION + " (DESC)", example = "DESC")
-    @Parameter(name = "search", description = SEARCH_DESCRIPTION + ": title, description", example = "wreck")
+    @Parameter(name = "search", description = SEARCH_DESCRIPTION + ": title, description, organizer first name, organizer last name", example = "wreck")
     @Parameter(name = "case_sensitive", description = CASE_SENSITIVE_DESCRIPTION, example = "false")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Page retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(path = BASE_PATH + "/past", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<EventResponse>> getPastEvents(@Parameter(hidden = true) PagedRequest pagedRequest);
+    @PostMapping(path = BASE_PATH + "/past", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<EventResponse>> getPastEvents(@RequestBody PagedRequest pagedRequest);
 
     @Operation(description = "Get a list of all events for a specific user", tags = "EventAPI")
     @Parameter(name = "userId", description = "User ID for which all events should be fetched", example = "123")

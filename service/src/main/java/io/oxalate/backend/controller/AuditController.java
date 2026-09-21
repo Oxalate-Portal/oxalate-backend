@@ -34,10 +34,10 @@ public class AuditController implements AuditAPI {
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     @Audited(startMessage = AUDIT_GET_START, okMessage = AUDIT_GET_OK)
-    public ResponseEntity<PagedResponse<AuditEntryResponse>> getAuditEvents(PagedRequest pagedRequest, String filterColumn) {
+    public ResponseEntity<PagedResponse<AuditEntryResponse>> getAuditEvents(PagedRequest pagedRequest) {
         log.debug("getAuditEvents: page: {}, size: {}, sortBy: {}, direction: {}, filterColumn: {}", pagedRequest.getPage(), pagedRequest.getSize(),
-                pagedRequest.getSortBy(), pagedRequest.getDirection(), filterColumn);
-        var auditEvents = applicationAuditEventService.getAuditEventsPaged(pagedRequest, filterColumn);
+                pagedRequest.getSortBy(), pagedRequest.getDirection(), pagedRequest.getFilterColumn());
+        var auditEvents = applicationAuditEventService.getAuditEventsPaged(pagedRequest, pagedRequest.getFilterColumn());
 
         return ResponseEntity.status(HttpStatus.OK)
                              .body(auditEvents);

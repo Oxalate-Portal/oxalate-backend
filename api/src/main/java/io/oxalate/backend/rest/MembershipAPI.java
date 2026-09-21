@@ -43,8 +43,8 @@ public interface MembershipAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(path = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<MembershipResponse>> getAllActiveMemberships(@Parameter(hidden = true) PagedRequest pagedRequest);
+    @PostMapping(path = BASE_PATH + "/paged", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<MembershipResponse>> getAllActiveMemberships(@RequestBody PagedRequest pagedRequest);
 
     @Operation(description = "Get the memberships by the id", tags = "MembershipAPI")
     @Parameter(name = "id", description = "Membership ID for which the membership should be fetched", example = "123")

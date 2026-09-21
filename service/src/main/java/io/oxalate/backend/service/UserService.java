@@ -100,7 +100,9 @@ public class UserService {
     @Transactional(readOnly = true)
     public PagedResponse<AdminUserResponse> findAllPaged(PagedRequest pagedRequest) {
         var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.ASC);
-        var specification = PagingTools.allOf(PagingTools.<User>searchSpecification(pagedRequest, "username", "firstName", "lastName"));
+        var specification = PagingTools.allOf(
+                PagingTools.<User>searchSpecification(pagedRequest, "username", "firstName", "lastName"),
+                PagingTools.enumSearchSpecification(pagedRequest, UserStatusEnum.class, "status"));
         var users = userRepository.findAll(specification, pageable);
 
         return PagedResponse.fromPage(users, user -> {

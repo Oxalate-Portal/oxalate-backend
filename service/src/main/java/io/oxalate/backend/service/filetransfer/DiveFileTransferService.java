@@ -19,12 +19,12 @@ import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.repository.filetransfer.DiveFileRepository;
 import io.oxalate.backend.service.RoleService;
 import io.oxalate.backend.tools.FileTools;
-import io.oxalate.backend.tools.PagingTools;
 import static io.oxalate.backend.tools.FileTools.getFileSuffix;
 import static io.oxalate.backend.tools.FileTools.getSha1OfFile;
 import static io.oxalate.backend.tools.FileTools.readFileToResponseEntity;
 import static io.oxalate.backend.tools.FileTools.removeFile;
 import static io.oxalate.backend.tools.FileTools.verifyUploadPath;
+import io.oxalate.backend.tools.PagingTools;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -84,7 +84,9 @@ public class DiveFileTransferService {
     public PagedResponse<DiveFileResponse> findAllDiveFilesPaged(PagedRequest pagedRequest, @Nullable Long eventId) {
         var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
         Specification<DiveFile> eventFilter = eventId == null ? null : (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("eventId"), eventId);
-        var specification = PagingTools.allOf(eventFilter, PagingTools.searchSpecification(pagedRequest, SEARCHABLE_COLUMNS));
+        var specification = PagingTools.allOf(eventFilter,
+                PagingTools.searchSpecification(pagedRequest, SEARCHABLE_COLUMNS),
+                PagingTools.enumSearchSpecification(pagedRequest, UploadStatusEnum.class, "status"));
 
         return PagedResponse.fromPage(diveFileRepository.findAll(specification, pageable), diveFile -> {
             var diveFileResponse = diveFile.toResponse();

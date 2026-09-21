@@ -70,7 +70,9 @@ public class MembershipService {
 
         var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.ASC);
         var specification = PagingTools.allOf(currentAndFutureActive(LocalDate.now()),
-                PagingTools.searchSpecification(pagedRequest, "user.firstName", "user.lastName"));
+                PagingTools.searchSpecification(pagedRequest, "user.firstName", "user.lastName"),
+                PagingTools.enumSearchSpecification(pagedRequest, MembershipStatusEnum.class, "status"),
+                PagingTools.enumSearchSpecification(pagedRequest, MembershipTypeEnum.class, "type"));
 
         return PagedResponse.fromPage(membershipRepository.findAll(specification, pageable), Membership::toResponse);
     }

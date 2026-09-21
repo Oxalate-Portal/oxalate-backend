@@ -16,10 +16,10 @@ import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.repository.filetransfer.DocumentFileRepository;
 import io.oxalate.backend.service.RoleService;
 import io.oxalate.backend.tools.FileTools;
-import io.oxalate.backend.tools.PagingTools;
 import static io.oxalate.backend.tools.FileTools.getSha1OfFile;
 import static io.oxalate.backend.tools.FileTools.readFileToResponseEntity;
 import static io.oxalate.backend.tools.FileTools.removeFile;
+import io.oxalate.backend.tools.PagingTools;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,8 +28,8 @@ import java.time.Instant;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -76,7 +76,9 @@ public class DocumentFileTransferService {
         Specification<DocumentFile> creatorFilter = creatorId == null ? null
                 : (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("creator")
                                                                               .get("id"), creatorId);
-        var specification = PagingTools.allOf(creatorFilter, PagingTools.searchSpecification(pagedRequest, SEARCHABLE_COLUMNS));
+        var specification = PagingTools.allOf(creatorFilter,
+                PagingTools.searchSpecification(pagedRequest, SEARCHABLE_COLUMNS),
+                PagingTools.enumSearchSpecification(pagedRequest, UploadStatusEnum.class, "status"));
 
         return PagedResponse.fromPage(documentFileRepository.findAll(specification, pageable), documentFile -> {
             var documentFileResponse = documentFile.toResponse();

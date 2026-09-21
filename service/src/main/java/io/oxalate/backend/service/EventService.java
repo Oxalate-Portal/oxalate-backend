@@ -1,6 +1,7 @@
 package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.AuditLevelEnum;
+import io.oxalate.backend.api.DiveTypeEnum;
 import io.oxalate.backend.api.EmailNotificationDetailEnum;
 import io.oxalate.backend.api.EmailNotificationTypeEnum;
 import io.oxalate.backend.api.EventStatusEnum;
@@ -36,6 +37,8 @@ import io.oxalate.backend.repository.EventRepository;
 import io.oxalate.backend.repository.commenting.EventCommentRepository;
 import io.oxalate.backend.service.commenting.CommentService;
 import io.oxalate.backend.tools.PagingTools;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Subquery;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -524,7 +527,11 @@ public class EventService {
     @Transactional(readOnly = true)
     public PagedResponse<EventResponse> findPastEventsPaged(PagedRequest pagedRequest, Instant until) {
         var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
-        var specification = PagingTools.allOf(startTimeBefore(until), PagingTools.searchSpecification(pagedRequest, "title", "description"));
+        var specification = PagingTools.allOf(startTimeBefore(until),
+                PagingTools.searchSpecification(pagedRequest, "title", "description"),
+                PagingTools.enumSearchSpecification(pagedRequest, DiveTypeEnum.class, "type"),
+                PagingTools.enumSearchSpecification(pagedRequest, EventStatusEnum.class, "status"),
+                organizerSearch(pagedRequest));
 
         return PagedResponse.fromPage(eventRepository.findAll(specification, pageable), event -> {
             var organizer = userService.findUserEntityById(event.getOrganizerId());
@@ -539,6 +546,37 @@ public class EventService {
 
     private static Specification<Event> startTimeBefore(Instant until) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.lessThan(root.get("startTime"), until);
+    }
+
+    private static Specification<Event> organizerSearch(PagedRequest pagedRequest) {
+        var filterColumn = pagedRequest.getFilterColumn();
+        var search = pagedRequest.getSearch();
+
+        if (search == null || search.isBlank() || filterColumn == null
+                || !"organizer".equalsIgnoreCase(filterColumn.trim())) {
+            return null;
+        }
+
+        var term = search.trim();
+        var caseSensitive = Boolean.TRUE.equals(pagedRequest.getCaseSensitive());
+        var pattern = "%" + PagingTools.escapeLike(caseSensitive ? term : term.toLowerCase()) + "%";
+        return (root, query, criteriaBuilder) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            var userRoot = subquery.from(User.class);
+            Expression<String> firstName = userRoot.get("firstName");
+            Expression<String> lastName = userRoot.get("lastName");
+
+            if (!Boolean.TRUE.equals(pagedRequest.getCaseSensitive())) {
+                firstName = criteriaBuilder.lower(firstName);
+                lastName = criteriaBuilder.lower(lastName);
+            }
+
+            subquery.select(userRoot.get("id"))
+                    .where(criteriaBuilder.equal(userRoot.get("id"), root.get("organizerId")),
+                            criteriaBuilder.or(criteriaBuilder.like(firstName, pattern, '\\'),
+                                    criteriaBuilder.like(lastName, pattern, '\\')));
+            return criteriaBuilder.exists(subquery);
+        };
     }
 
     @Transactional(readOnly = true)

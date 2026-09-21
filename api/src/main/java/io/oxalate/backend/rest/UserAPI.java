@@ -26,6 +26,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -46,8 +47,8 @@ public interface UserAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<AdminUserResponse>> getUsers(@Parameter(hidden = true) PagedRequest pagedRequest);
+    @PostMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<AdminUserResponse>> getUsers(@RequestBody PagedRequest pagedRequest);
 
     @Operation(description = "Get a list of all users with given role", tags = "UserAPI")
     @Parameter(name = "role", description = "Role by which the users should be filtered", example = "ROLE_USER", required = true)

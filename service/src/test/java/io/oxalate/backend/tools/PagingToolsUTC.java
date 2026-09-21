@@ -1,5 +1,6 @@
 package io.oxalate.backend.tools;
 
+import io.oxalate.backend.api.DiveTypeEnum;
 import io.oxalate.backend.api.request.PagedRequest;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -18,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -170,6 +172,40 @@ class PagingToolsUTC {
         assertNotNull(specification);
         assertEquals(combined, specification.toPredicate(root, query, criteriaBuilder));
         verify(criteriaBuilder, never()).lower(any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void enumSearchSpecificationMatchesWireValueAndPartialSearchOk() {
+        var request = PagedRequest.builder()
+                                  .search("Open")
+                                  .filterColumn("type")
+                                  .build();
+        var typePath = (Path<Object>) mock(Path.class);
+        var predicate = mock(Predicate.class);
+        var combined = mock(Predicate.class);
+        when(root.get("type")).thenReturn(typePath);
+        lenient().when(criteriaBuilder.equal(any(), any()))
+                 .thenReturn(predicate);
+        when(criteriaBuilder.or(any(Predicate[].class))).thenReturn(combined);
+
+        var specification = PagingTools.enumSearchSpecification(request, DiveTypeEnum.class, "type");
+
+        assertNotNull(specification);
+        assertEquals(combined, specification.toPredicate(root, query, criteriaBuilder));
+    }
+
+    @Test
+    void enumSearchSpecificationUnknownValueMatchesNothingOk() {
+        var request = PagedRequest.builder()
+                                  .search("unknown")
+                                  .filterColumn("type")
+                                  .build();
+        var specification = PagingTools.enumSearchSpecification(request, DiveTypeEnum.class, "type");
+
+        assertNotNull(specification);
+        assertNull(specification.toPredicate(root, query, criteriaBuilder));
+        verify(criteriaBuilder).disjunction();
     }
 
     @Test

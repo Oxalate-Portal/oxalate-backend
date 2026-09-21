@@ -13,11 +13,9 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * Common paging, sorting and search parameters for list endpoints. The class is bound from the snake_case query
- * parameters of a GET request ({@code page}, {@code size}, {@code sort_by}, {@code direction}, {@code search},
- * {@code case_sensitive}) by the {@code PagedRequestArgumentResolver} of the service module and, should an endpoint ever
- * need it, from a JSON body with the same names, so both bindings agree. Sort columns are always validated against a
- * per-endpoint allow-list in the service layer before they reach Spring Data.
+ * Common paging, sorting and search parameters for list endpoints. The class is bound from a JSON request body using
+ * snake_case names. Sort columns are always validated against a per-endpoint allow-list in the service layer before
+ * they reach Spring Data.
  */
 @Schema(description = "Paging, sorting and search parameters")
 @SuperBuilder
@@ -33,8 +31,8 @@ public class PagedRequest {
     public static final int DEFAULT_PAGE_SIZE = 25;
 
     /**
-     * OpenAPI descriptions of the query parameters, shared by every paged GET endpoint so the documentation stays
-     * consistent. The {@code sort_by} description is endpoint specific because it lists the allowed columns.
+     * OpenAPI descriptions shared by every paged endpoint so the documentation stays consistent. The {@code sort_by}
+     * description is endpoint specific because it lists the allowed columns.
      */
     public static final String PAGE_DESCRIPTION = "Index of the page to be retrieved, 0-based. Negative values are treated as 0";
     public static final String SIZE_DESCRIPTION = "Number of items on the page, defaults to 25 and is capped at 200";
@@ -66,4 +64,8 @@ public class PagedRequest {
     @Schema(description = "Whether the search is case sensitive", example = "false", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @Nullable
     private Boolean caseSensitive;
+
+    @Schema(description = "Column to which the search applies", example = "description", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @Nullable
+    private String filterColumn;
 }

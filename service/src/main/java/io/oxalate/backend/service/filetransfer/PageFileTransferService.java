@@ -15,11 +15,11 @@ import io.oxalate.backend.repository.PageRoleAccessRepository;
 import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.repository.filetransfer.PageFileRepository;
 import io.oxalate.backend.tools.FileTools;
-import io.oxalate.backend.tools.PagingTools;
 import static io.oxalate.backend.tools.FileTools.readFileToResponseEntity;
 import static io.oxalate.backend.tools.FileTools.removeFile;
 import static io.oxalate.backend.tools.FileTools.sanitizeFileName;
 import static io.oxalate.backend.tools.FileTools.verifyUploadPath;
+import io.oxalate.backend.tools.PagingTools;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,7 +71,9 @@ public class PageFileTransferService {
      */
     public PagedResponse<PageFileResponse> findAllPageFilesPaged(PagedRequest pagedRequest) {
         var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
-        var specification = PagingTools.allOf(PagingTools.<PageFile>searchSpecification(pagedRequest, SEARCHABLE_COLUMNS));
+        var specification = PagingTools.allOf(
+                PagingTools.<PageFile>searchSpecification(pagedRequest, SEARCHABLE_COLUMNS),
+                PagingTools.enumSearchSpecification(pagedRequest, UploadStatusEnum.class, "status"));
 
         return PagedResponse.fromPage(pageFileRepository.findAll(specification, pageable), pageFile -> {
             var pageFileResponse = pageFile.toResponse();

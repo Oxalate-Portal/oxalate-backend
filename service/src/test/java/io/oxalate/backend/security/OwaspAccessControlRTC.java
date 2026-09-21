@@ -5,6 +5,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import io.oxalate.backend.api.UserTypeEnum;
+import io.oxalate.backend.controller.PagedRestTestSupport.LegacyPagedGetRequestFilter;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
@@ -90,6 +91,7 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                                  .apply(springSecurity())
+                                 .addFilters(new LegacyPagedGetRequestFilter())
                                  .build();
 
         member = createUser(RoleEnum.ROLE_USER);

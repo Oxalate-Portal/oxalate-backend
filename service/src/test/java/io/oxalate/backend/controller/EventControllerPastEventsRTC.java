@@ -18,13 +18,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import org.springframework.test.context.ActiveProfiles;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Paged past events, {@code GET /api/events/past}.
+ * Paged past events, {@code POST /api/events/past}.
  */
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -111,6 +113,43 @@ class EventControllerPastEventsRTC extends PagedRestTestSupport {
     @Test
     void getPastEventsSearchMatchesDescriptionOk() throws Exception {
         mockMvc.perform(get(PAST_EVENTS_ENDPOINT).queryParam("search", "description of " + marker + " event b")
+                                                 .queryParam("filter_column", "description")
+                                                 .cookie(new Cookie(JWT_TOKEN, memberJwt)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.total_elements", is(1)))
+               .andExpect(jsonPath("$.content[0].title", is(marker + " event B")));
+    }
+
+    @Test
+    void postPastEventsSearchByOrganizerFiltersResultsOk() throws Exception {
+        var matchingOrganizer = createUser(marker + " Organizer", "Name", RoleEnum.ROLE_ORGANIZER);
+        createEvent(matchingOrganizer, "Organizer-only event", Instant.now()
+                                                                      .minus(1, ChronoUnit.DAYS));
+
+        mockMvc.perform(post(PAST_EVENTS_ENDPOINT)
+                       .contentType(APPLICATION_JSON)
+                       .content("""
+                               {
+                                 "page": 0,
+                                 "size": 10,
+                                 "sort_by": "start_time",
+                                 "direction": "DESC",
+                                 "search": "%s",
+                                 "case_sensitive": false,
+                                 "filter_column": "organizer"
+                               }
+                               """.formatted(marker))
+                       .cookie(new Cookie(JWT_TOKEN, memberJwt)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.total_elements", is(1)))
+               .andExpect(jsonPath("$.content[0].title", is("Organizer-only event")))
+               .andExpect(jsonPath("$.content[0].organizer.first_name", is(marker + " Organizer")));
+    }
+
+    @Test
+    void getPastEventsSearchByTitleDoesNotIgnoreFilterOk() throws Exception {
+        mockMvc.perform(get(PAST_EVENTS_ENDPOINT).queryParam("search", marker + " event B")
+                                                 .queryParam("filter_column", "title")
                                                  .cookie(new Cookie(JWT_TOKEN, memberJwt)))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.total_elements", is(1)))

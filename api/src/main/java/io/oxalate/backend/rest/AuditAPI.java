@@ -17,9 +17,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "AuditAPI", description = "Audit REST endpoints")
 public interface AuditAPI {
@@ -43,9 +43,8 @@ public interface AuditAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<AuditEntryResponse>> getAuditEvents(@Parameter(hidden = true) PagedRequest pagedRequest,
-            @RequestParam(name = "filter_column", required = false) String filterColumn);
+    @PostMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<AuditEntryResponse>> getAuditEvents(@RequestBody PagedRequest pagedRequest);
 
     @Operation(description = "Get a page of the audit entries of a user", tags = "AuditAPI")
     @Parameter(name = "userId", description = "User ID whose audit entries should be retrieved", example = "123", required = true)
@@ -58,7 +57,7 @@ public interface AuditAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(value = BASE_PATH + "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = BASE_PATH + "/{userId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<PagedResponse<AuditEntryResponse>> getAuditEventsByUserId(@PathVariable("userId") long userId,
-            @Parameter(hidden = true) PagedRequest pagedRequest);
+            @RequestBody PagedRequest pagedRequest);
 }

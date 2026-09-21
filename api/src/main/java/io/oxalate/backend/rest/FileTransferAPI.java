@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
@@ -56,8 +57,8 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(path = BASE_PATH + "/" + AVATARS, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<AvatarFileResponse>> findAllAvatarFiles(@Parameter(hidden = true) PagedRequest pagedRequest);
+    @PostMapping(path = BASE_PATH + "/" + AVATARS, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<AvatarFileResponse>> findAllAvatarFiles(@RequestBody PagedRequest pagedRequest);
 
     /* Upload */
     @Operation(description = "Upload an avatar linked to a user, returns the external URL to access the file", tags = "FileTransferAPI")
@@ -109,8 +110,8 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(path = BASE_PATH + "/" + CERTIFICATES, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<CertificateFileResponse>> findAllCertificateFiles(@Parameter(hidden = true) PagedRequest pagedRequest);
+    @PostMapping(path = BASE_PATH + "/" + CERTIFICATES, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<CertificateFileResponse>> findAllCertificateFiles(@RequestBody PagedRequest pagedRequest);
 
     /* Upload */
     @Operation(description = "Upload a certificate file belonging to a specific user, returns the external URL to access the file", tags = "FileTransferAPI")
@@ -168,8 +169,8 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(path = BASE_PATH + "/" + DIVE_FILES, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<DiveFileResponse>> findAllDiveFiles(@Parameter(hidden = true) PagedRequest pagedRequest,
+    @PostMapping(path = BASE_PATH + "/" + DIVE_FILES, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<DiveFileResponse>> findAllDiveFiles(@RequestBody PagedRequest pagedRequest,
             @RequestParam(value = "event_id", required = false) Long eventId);
 
     /* Upload */
@@ -229,8 +230,8 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(path = BASE_PATH + "/" + DOCUMENTS, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<DocumentFileResponse>> findAllDocumentFiles(@Parameter(hidden = true) PagedRequest pagedRequest,
+    @PostMapping(path = BASE_PATH + "/" + DOCUMENTS, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<DocumentFileResponse>> findAllDocumentFiles(@RequestBody PagedRequest pagedRequest,
             @RequestParam(value = "creator_id", required = false) Long creatorId);
 
     /* Upload */
@@ -283,8 +284,8 @@ public interface FileTransferAPI {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(path = BASE_PATH + "/" + PAGE_FILES, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<PageFileResponse>> findAllPageFiles(@Parameter(hidden = true) PagedRequest pagedRequest);
+    @PostMapping(path = BASE_PATH + "/" + PAGE_FILES, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<PageFileResponse>> findAllPageFiles(@RequestBody PagedRequest pagedRequest);
 
     /* Upload */
     @Operation(description = "Upload a file belonging to a specific page language version, returns the external URL to access the file", tags = "FileTransferAPI")
