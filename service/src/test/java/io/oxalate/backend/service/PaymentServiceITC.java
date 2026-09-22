@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -596,8 +597,7 @@ class PaymentServiceITC extends AbstractIntegrationTest {
     }
 
     private User generateUser(UserStatusEnum userStatusEnum, RoleEnum roleEnum) {
-        var randomUsername = "test-" + Instant.now()
-                                              .toEpochMilli() + "@test.tld";
+        var randomUsername = "test-" + UUID.randomUUID() + "@test.tld";
         var user = User.builder()
                        .username(randomUsername)
                        .password("password")

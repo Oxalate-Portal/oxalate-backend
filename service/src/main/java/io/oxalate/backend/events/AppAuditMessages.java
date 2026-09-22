@@ -14,7 +14,6 @@ public class AppAuditMessages {
     // AuthController
     public static final String AUTH_AUTHENTICATION_FAIL = "User attempted to log in but the authentication failed: ";
     public static final String AUTH_AUTHENTICATION_START = "User attempted to log in: ";
-    public static final String AUTH_AUTHENTICATION_NON_ACTIVE = "User has non-active status: ";
     public static final String AUTH_AUTHENTICATION_NO_ROLES = "User has no defined roles: ";
     public static final String AUTH_AUTHENTICATION_OK = "User logged in: ";
 
@@ -29,7 +28,6 @@ public class AppAuditMessages {
     public static final String AUTH_UPDATE_PASSWORD_UNAUTHORIZED = "User not authorized to update password for: ";
     public static final String AUTH_UPDATE_PASSWORD_INACTIVE_STATUS = "Password not possible with inactive status";
     public static final String AUTH_UPDATE_PASSWORD_OLD_MISMATCH = "Old password did not match";
-    public static final String AUTH_UPDATE_PASSWORD_NEW_SAME_AS_OLD = "New password same as old password";
     public static final String AUTH_UPDATE_PASSWORD_FAIL_REQUIREMENTS = "New password does not qualify";
     public static final String AUTH_UPDATE_PASSWORD_NEW_MISMATCH = "New passwords do not match";
     public static final String AUTH_UPDATE_PASSWORD_OK = "New password accepted";
@@ -79,7 +77,6 @@ public class AppAuditMessages {
     public static final String BLOCKED_DATE_ADD_OK = "New blocked date added";
 
     public static final String BLOCKED_DATE_REMOVE_START = "Removing blocked date";
-    public static final String BLOCKED_DATE_REMOVE_UNAUTHORIZED = "User not authorized to remove blocked date";
     public static final String BLOCKED_DATE_REMOVE_NOT_FOUND = "Blocked date not found";
     public static final String BLOCKED_DATE_REMOVE_OK = "Blocked date removed";
 
@@ -211,12 +208,10 @@ public class AppAuditMessages {
     // PaymentController
     public static final String PAYMENTS_GET_ALL_ACTIVE_START = "Retrieving all active payment information";
     public static final String PAYMENTS_GET_ALL_ACTIVE_UNAUTHORIZED = "User was not authorized to retrieve all active payment information";
-    public static final String PAYMENTS_GET_ALL_ACTIVE_FAIL = "Failed retrieving all active payment information";
     public static final String PAYMENTS_GET_ALL_ACTIVE_OK = "Active payments retrieved";
 
     public static final String PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_START = "Retrieving all active payment information with type";
     public static final String PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_UNAUTHORIZED = "User was not authorized to retrieve all active payment information with type";
-    public static final String PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_FAIL = "Failed retrieving all active payment information with type";
     public static final String PAYMENTS_GET_ALL_ACTIVE_WITH_TYPE_OK = "Active payments retrieved with type";
 
     public static final String PAYMENTS_GET_USER_STATUS_START = "";
@@ -246,7 +241,6 @@ public class AppAuditMessages {
     public static final String USERS_UPDATE_START = "Updating user for user ID: ";
     public static final String USERS_UPDATE_UNAUTHORIZED = "User not authorized to update user for user ID: ";
     public static final String USERS_UPDATE_NOT_FOUND = "User not found with user ID: ";
-    public static final String USERS_UPDATE_ANONYMIZED = "User has been anonymized with user ID: ";
     public static final String USERS_UPDATE_USERNAME_CHANGED = "Username attempted to change for user ID: ";
     public static final String USERS_UPDATE_FAIL = "Failed to update user for user ID: ";
     public static final String USERS_UPDATE_OK = "Updated for user ID: ";
@@ -255,7 +249,6 @@ public class AppAuditMessages {
     public static final String USERS_UPDATE_STATUS_UNAUTHORIZED = "User not authorized to update user status for user ID: ";
     public static final String USERS_UPDATE_STATUS_NOT_FOUND = "User not found with user ID: ";
     public static final String USERS_UPDATE_STATUS_FAIL = "Failed to update user status for user ID: ";
-    public static final String USERS_UPDATE_STATUS_ANONYMIZED = "User has been anonymized with user ID: ";
     public static final String USERS_UPDATE_STATUS_OK = "User status updated for user ID: ";
 
     public static final String USERS_GET_START = "Fetching users";
@@ -327,11 +320,9 @@ public class AppAuditMessages {
 
     // PageController
     public static final String PAGES_GET_NAVIGATION_ELEMENTS_START = "Fetching all page groups";
-    public static final String PAGES_GET_NAVIGATION_ELEMENTS_UNAUTHORIZED = "User not authorized to get list of page groups";
     public static final String PAGES_GET_NAVIGATION_ELEMENTS_OK = "Return page groups";
 
     public static final String PAGES_GET_BLOGS_START = "Fetching list of all blog pages";
-    public static final String PAGES_GET_BLOGS_UNAUTHORIZED = "User not authorized to get list of blogs";
     public static final String PAGES_GET_BLOGS_OK = "Return blogs";
 
     public static final String PAGES_GET_PAGE_START = "Fetching specific page by id: ";
@@ -341,64 +332,47 @@ public class AppAuditMessages {
 
     // PageManagementController
     public static final String MGMNT_PAGES_GET_NAVIGATION_ELEMENTS_START = "Fetching all page groups for management";
-    public static final String MGMNT_PAGES_GET_NAVIGATION_ELEMENTS_UNAUTHORIZED = "User not authorized to get list of page groups";
     public static final String MGMNT_PAGES_GET_NAVIGATION_ELEMENTS_OK = "Return page groups";
 
     public static final String MGMNT_PAGES_GET_PAGE_GROUP_START = "Fetch page group for management";
     public static final String MGMNT_PAGES_GET_PAGE_GROUP_OK = "Return page group for management";
 
     public static final String MGMNT_PAGES_CREATE_GROUP_START = "Creating new page group";
-    public static final String MGMNT_PAGES_CREATE_GROUP_UNAUTHORIZED = "User not authorized to create a new page group";
     public static final String MGMNT_PAGES_CREATE_GROUP_NONE_CREATED = "Failed to create a new page group";
     public static final String MGMNT_PAGES_CREATE_GROUP_OK = "Return new page group";
 
     public static final String MGMNT_PAGES_UPDATE_PAGE_GROUP_START = "Updating page group";
-    public static final String MGMNT_PAGES_UPDATE_PAGE_GROUP_UNAUTHORIZED = "User not authorized to update page group";
     public static final String MGMNT_PAGES_UPDATE_PAGE_GROUP_NONE_UPDATED = "Failed to update existing page group: ";
     public static final String MGMNT_PAGES_UPDATE_PAGE_GROUP_OK = "Return updated page group";
 
     public static final String MGMNT_PAGES_CLOSE_PAGE_GROUP_START = "Close existing page group";
-    public static final String MGMNT_PAGES_CLOSE_PAGE_GROUP_UNAUTHORIZED = "User not authorized to close page group";
     public static final String MGMNT_PAGES_CLOSE_PAGE_GROUP_NOT_FOUND = "Fail to close non-existing page group: ";
     public static final String MGMNT_PAGES_CLOSE_PAGE_GROUP_OK = "page group closed";
 
     public static final String MGMNT_PAGES_GET_PAGES_START = "Fetching all pages of a page group for management";
-    public static final String MGMNT_PAGES_GET_PAGES_UNAUTHORIZED = "User not authorized to get list of pages";
     public static final String MGMNT_PAGES_GET_PAGES_OK = "Return list of pages";
 
     public static final String MGMNT_PAGES_GET_PAGE_START = "Fetching a page";
     public static final String MGMNT_PAGES_GET_PAGE_OK = "Return page";
 
     public static final String MGMNT_PAGES_CREATE_PAGE_START = "Creating a new page";
-    public static final String MGMNT_PAGES_CREATE_PAGE_UNAUTHORIZED = "User not authorized to create new page";
     public static final String MGMNT_PAGES_CREATE_PAGE_NONE_CREATED = "Failed to create a new page";
     public static final String MGMNT_PAGES_CREATE_PAGE_OK = "Return new page";
 
     public static final String MGMNT_PAGES_UPDATE_PAGE_START = "Updating page";
-    public static final String MGMNT_PAGES_UPDATE_PAGE_UNAUTHORIZED = "User not authorized to update page";
     public static final String MGMNT_PAGES_CREATE_PAGE_NONE_UPDATED = "Failed to update existing page";
     public static final String MGMNT_PAGES_UPDATE_PAGE_OK = "Return updated page";
 
     public static final String MGMNT_PAGES_CLOSE_PAGE_START = "Closing existing page";
-    public static final String MGMNT_PAGES_CLOSE_PAGE_UNAUTHORIZED = "User not authorized to close page";
     public static final String MGMNT_PAGES_CLOSE_PAGE_NOT_FOUND = "Fail to close non-existing page: ";
     public static final String MGMNT_PAGES_CLOSE_PAGE_OK = "Page closed";
 
     // EmailNotificationSubscriptionController
     public static final String EMAIL_SUBSCRIPTION_GET_ALL_START = "";
-    public static final String EMAIL_SUBSCRIPTION_GET_ALL_UNAUTHORIZED = "";
-    public static final String EMAIL_SUBSCRIPTION_GET_ALL_NOT_FOUND = "";
     public static final String EMAIL_SUBSCRIPTION_GET_ALL_OK = "";
 
     public static final String EMAIL_SUBSCRIPTION_SAVE_START = "";
-    public static final String EMAIL_SUBSCRIPTION_SAVE_UNAUTHORIZED = "";
-    public static final String EMAIL_SUBSCRIPTION_SAVE_NOT_FOUND = "";
     public static final String EMAIL_SUBSCRIPTION_SAVE_OK = "";
-
-    public static final String EMAIL_SUBSCRIPTION__START = "";
-    public static final String EMAIL_SUBSCRIPTION__UNAUTHORIZED = "";
-    public static final String EMAIL_SUBSCRIPTION__NOT_FOUND = "";
-    public static final String EMAIL_SUBSCRIPTION__OK = "";
 
     // UploadController
     public static final String FILE_AVATAR_GET_ALL_START = "Start fetching all avatar files";
@@ -407,12 +381,10 @@ public class AppAuditMessages {
     public static final String FILE_AVATAR_GET_ALL_OK = "Avatar files retrieved";
 
     public static final String FILE_AVATAR_UPLOAD_START = "Uploading avatar";
-    public static final String FILE_AVATAR_UPLOAD_UNAUTHORIZED = "User not authorized to upload avatar";
     public static final String FILE_AVATAR_UPLOAD_FAIL = "Failed to upload avatar";
     public static final String FILE_AVATAR_UPLOAD_OK = "Avatar uploaded";
 
     public static final String FILE_AVATAR_REMOVE_START = "Removing avatar";
-    public static final String FILE_AVATAR_REMOVE_UNAUTHORIZED = "User not authorized to remove avatar";
     public static final String FILE_AVATAR_REMOVE_FAIL = "Failed to remove avatar";
     public static final String FILE_AVATAR_REMOVE_OK = "Avatar removed";
 
@@ -427,14 +399,11 @@ public class AppAuditMessages {
     public static final String FILE_CERTIFICATE_DOWNLOAD_OK = "Certificate downloaded";
 
     public static final String FILE_CERTIFICATE_UPLOAD_START = "Uploading certificate";
-    public static final String FILE_CERTIFICATE_UPLOAD_UNAUTHORIZED = "User not authorized to upload certificate";
     public static final String FILE_CERTIFICATE_UPLOAD_FAIL = "Failed to upload certificate";
     public static final String FILE_CERTIFICATE_UPLOAD_OK = "Certificate uploaded";
 
     public static final String FILE_CERTIFICATE_REMOVE_START = "Removing certificate";
-    public static final String FILE_CERTIFICATE_REMOVE_UNAUTHORIZED = "User not authorized to remove certificate";
     public static final String FILE_CERTIFICATE_REMOVE_FAIL = "Failed to remove certificate";
-    public static final String FILE_CERTIFICATE_REMOVE_OK = "Certificate removed";
 
     public static final String FILE_DIVE_FILE_GET_ALL_START = "Start fetching all dive plan files";
     public static final String FILE_DIVE_FILE_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all dive plan files";
@@ -442,7 +411,6 @@ public class AppAuditMessages {
     public static final String FILE_DIVE_FILE_GET_ALL_OK = "Dive plan files retrieved";
 
     public static final String FILE_DIVE_FILE_UPLOAD_START = "Uploading dive plan";
-    public static final String FILE_DIVE_FILE_UPLOAD_UNAUTHORIZED = "User not authorized to upload dive plan";
     public static final String FILE_DIVE_FILE_UPLOAD_FAIL = "Failed to upload dive plan";
     public static final String FILE_DIVE_FILE_UPLOAD_OK = "Dive plan uploaded";
     public static final String FILE_DIVE_FILE_UPLOAD_DISABLED = "Dive file uploads are disabled by configuration";
@@ -455,16 +423,13 @@ public class AppAuditMessages {
     public static final String FILE_DOCUMENT_GET_ALL_UNAUTHORIZED = "User not authorized to fetch all document files";
     public static final String FILE_DOCUMENT_GET_ALL_FAIL = "Failed to fetch all document files";
     public static final String FILE_DOCUMENT_GET_ALL_OK = "Document files retrieved";
-    public static final String FILE_DOCUMENT_GET_ALL_DISABLED = "Document file listing is disabled by configuration";
 
     public static final String FILE_DOCUMENT_UPLOAD_START = "Uploading document";
-    public static final String FILE_DOCUMENT_UPLOAD_UNAUTHORIZED = "User not authorized to upload document";
     public static final String FILE_DOCUMENT_UPLOAD_FAIL = "Failed to upload document";
     public static final String FILE_DOCUMENT_UPLOAD_OK = "Document uploaded";
     public static final String FILE_DOCUMENT_UPLOAD_DISABLED = "Document uploads are disabled by configuration";
 
     public static final String FILE_DOCUMENT_REMOVE_START = "Removing document";
-    public static final String FILE_DOCUMENT_REMOVE_UNAUTHORIZED = "User not authorized to remove document";
     public static final String FILE_DOCUMENT_REMOVE_FAIL = "Failed to remove document";
     public static final String FILE_DOCUMENT_REMOVE_OK = "Document removed";
 
@@ -474,12 +439,10 @@ public class AppAuditMessages {
     public static final String FILE_PAGE_FILE_GET_ALL_OK = "Page files retrieved";
 
     public static final String FILE_PAGE_FILE_UPLOAD_START = "Uploading page file";
-    public static final String FILE_PAGE_FILE_UPLOAD_UNAUTHORIZED = "User not authorized to upload page file";
     public static final String FILE_PAGE_FILE_UPLOAD_FAIL = "Failed to upload page file";
     public static final String FILE_PAGE_FILE_UPLOAD_OK = "Page file uploaded";
 
     public static final String FILE_PAGE_FILE_REMOVE_START = "Removing page file";
-    public static final String FILE_PAGE_FILE_REMOVE_UNAUTHORIZED = "User not authorized to remove page file";
     public static final String FILE_PAGE_FILE_REMOVE_FAIL = "Failed to remove page file";
     public static final String FILE_PAGE_FILE_REMOVE_OK = "Page file removed";
 
@@ -488,11 +451,9 @@ public class AppAuditMessages {
     public static final String PORTAL_CONFIG_GET_ALL_OK = "Return list of portal configurations";
 
     public static final String PORTAL_CONFIG_RELOAD_START = "Reloading portal configurations";
-    public static final String PORTAL_CONFIG_RELOAD_FAIL = "Failed reloading portal configurations";
     public static final String PORTAL_CONFIG_RELOAD_OK = "Portal configurations reloaded";
 
     public static final String PORTAL_CONFIG_UPDATE_START = "Updating portal configuration";
-    public static final String PORTAL_CONFIG_UPDATE_FAIL = "Failed updating portal configuration";
     public static final String PORTAL_CONFIG_UPDATE_OK = "Portal configuration updated";
 
     public static final String PORTAL_CONFIG_GET_FRONTEND_START = "Getting frontend configurations";
@@ -564,12 +525,10 @@ public class AppAuditMessages {
     public static final String NOTIFICATIONS_MARK_READ_FAIL = "Failed to mark notifications as read";
 
     public static final String NOTIFICATIONS_CREATE_START = "Creating notification";
-    public static final String NOTIFICATIONS_CREATE_UNAUTHORIZED = "User not authorized to create notification";
     public static final String NOTIFICATIONS_CREATE_OK = "Notification created";
     public static final String NOTIFICATIONS_CREATE_FAIL = "Failed to create notification";
 
     public static final String NOTIFICATIONS_CREATE_BULK_START = "Creating bulk notifications";
-    public static final String NOTIFICATIONS_CREATE_BULK_UNAUTHORIZED = "User not authorized to create bulk notifications";
     public static final String NOTIFICATIONS_CREATE_BULK_OK = "Bulk notifications created";
     public static final String NOTIFICATIONS_CREATE_BULK_FAIL = "Failed to create bulk notifications";
 

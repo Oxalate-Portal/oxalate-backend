@@ -238,23 +238,21 @@ when searching for scheduled work.
   Enum wire values (`@JsonValue`) are not field names and keep their own casing. Query parameter names are snake_case too (`sort_by`, `filter_column`,
   `event_id`, `creator_id`); path variables are Java identifiers and stay camelCase. `api/.../JsonNamingContractUTC` scans every DTO and fails the build on
   a missing strategy or a camelCase `@JsonProperty` value. Renaming a wire field is a breaking API change — change the frontend model in the same change.
-- **List endpoints are paged server-side.** A paged `GET` endpoint takes a plain `io.oxalate.backend.api.request.PagedRequest` parameter (no
-  `@ModelAttribute`; hide it from OpenAPI with `@Parameter(hidden = true)` and document the individual query parameters instead). It is bound by
-  `io.oxalate.backend.configuration.PagedRequestArgumentResolver`, registered in `WebMvcConfiguration`, from the snake_case query parameters `page`
-  (0-based), `size` (default 25, capped at 200), `sort_by`, `direction` (`ASC`/`DESC`), `search` and `case_sensitive`; unparseable values fall back to
-  the defaults. The endpoint returns `ResponseEntity<PagedResponse<T>>`, whose wire shape is fixed: `content`, `page`, `size`, `total_elements`,
-  `total_pages`, `first`, `last`, `empty`. The service builds the `Pageable` with `PagingTools.toPageable` from a `private static final
-  Map<String, String> SORTABLE_COLUMNS` whose keys are the snake_case response field names the client sorts by (`start_time`, `created_at`,
-  `user_name`) and whose values are entity property paths (`startTime`, `user.lastName`), plus a default sort; an unknown `sort_by` falls back to the
-  default with a warning and must never become a 500. Free text search is `PagingTools.searchSpecification` over an explicit list of string properties, combined
-  with the endpoint's mandatory filters through `PagingTools.allOf`, executed with `repository.findAll(specification, pageable)` on a
-  `JpaSpecificationExecutor` repository and mapped with `PagedResponse.fromPage`. Paged endpoints: `GET /api/users`, `GET /api/events/past`,
-  `GET /api/memberships`, `GET /api/tokens`, the five `GET /api/files/{avatars,certificates,dive-files,documents,page-files}` lists (dive files take an
-  optional `event_id`, documents an optional `creator_id`), `GET /api/audits` (optional `filter_column`, one of `user_name`, `trace_id`, `source`,
-  `address`, `ip_address`, `message`, chooses the searched column) and `GET /api/audits/{userId}`, plus `GET /api/pages/blogs` which keeps its own
-  role-filtered native queries and a mandatory `language`. Document the paging parameters with `@Parameter` on the API interface and list the allowed
-  `sort_by` values there. Everything else (bounded configuration sets,
-  exports, aggregates) stays a plain list.
+- **List endpoints are paged server-side.** A paged endpoint is a `POST` that takes `io.oxalate.backend.api.request.PagedRequest` as its JSON
+  `@RequestBody`: `page` (0-based), `size` (default 25, capped at 200), `sort_by`, `direction` (`ASC`/`DESC`), `search`, `case_sensitive` and
+  `filter_column` (all snake_case through the class-level naming strategy). Endpoint specific filters stay `@RequestParam`s next to the body. The
+  endpoint returns `ResponseEntity<PagedResponse<T>>`, whose wire shape is fixed: `content`, `page`, `size`, `total_elements`, `total_pages`, `first`,
+  `last`, `empty`. The service builds the `Pageable` with `PagingTools.toPageable` from a `private static final Map<String, String> SORTABLE_COLUMNS`
+  whose keys are the snake_case response field names the client sorts by (`start_time`, `created_at`, `user_name`) and whose values are entity property
+  paths (`startTime`, `user.lastName`), plus a default sort; an unknown `sort_by` falls back to the default with a warning and must never become a 500.
+  Free text search is `PagingTools.searchSpecification` over an explicit list of string properties (restricted to one of them when `filter_column`
+  names it), enum columns are filtered exactly with `PagingTools.enumSearchSpecification` when `filter_column` names them, both combined with the
+  endpoint's mandatory filters through `PagingTools.allOf`, executed with `repository.findAll(specification, pageable)` on a
+  `JpaSpecificationExecutor` repository and mapped with `PagedResponse.fromPage`. Paged endpoints: `POST /api/users`, `POST /api/events/past`,
+  `POST /api/memberships/paged`, `POST /api/tokens/paged`, the five `POST /api/files/{avatars,certificates,dive-files,documents,page-files}` lists (dive files
+  take an optional `event_id`, documents an optional `creator_id`), `POST /api/audits` and `POST /api/audits/{userId}`, plus `POST /api/pages/blogs`
+  which keeps its own role-filtered native queries and a mandatory `language`. Document the allowed `sort_by` and `filter_column` values in the
+  `@Operation` description of the API interface. Everything else (bounded configuration sets, exports, aggregates) stays a plain list.
 - Enums that cross the wire carry explicit JSON values (example: `DiveTypeEnum.OPEN_WATER` -> `"open-water"`). Changing one is a breaking API change — update
   the frontend enum in the same change.
 - Nullability annotations come from JSpecify (`org.jspecify.annotations.NonNull` / `.Nullable`). The

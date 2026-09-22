@@ -1,7 +1,6 @@
 package io.oxalate.backend.repository;
 
 import io.oxalate.backend.model.Tag;
-import io.oxalate.backend.model.TagGroup;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -13,8 +12,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TagRepository extends JpaRepository<Tag, Long> {
     Optional<Tag> findByCode(String code);
-    List<Tag> findByTagGroup(TagGroup tagGroup);
-    List<Tag> findByTagGroupId(Long tagGroupId);
     boolean existsByCode(String code);
 
     @Query("SELECT t FROM Tag t LEFT JOIN FETCH t.translations WHERE t.id = :id")

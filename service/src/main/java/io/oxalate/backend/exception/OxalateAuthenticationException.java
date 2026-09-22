@@ -18,11 +18,4 @@ public class OxalateAuthenticationException extends OxalateAuditException {
         this.auditSource = auditSource;
         this.userId = userId;
     }
-
-    /**
-     * Backward-compatible alias for {@link #getHttpStatus()}.
-     */
-    public HttpStatus getHttpErrorStatus() {
-        return getHttpStatus();
-    }
 }

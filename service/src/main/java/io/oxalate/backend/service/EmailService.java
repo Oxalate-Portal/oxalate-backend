@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -257,25 +256,5 @@ public class EmailService {
         }
 
         javaMailSender.send(mail);
-    }
-
-    @Async
-    protected void sendTextMail(String sender, String recipient, String subject, String text) throws MailException {
-        if (!portalConfigurationService.getBooleanConfiguration(EMAIL.group, EMAIL_ENABLED.key)) {
-            log.info("Not sending email. Email service disabled!");
-            log.info("Logging email details: from:{}, to:{}, subject:{}, text:{}",
-                    sender, recipient, subject, text);
-            return;
-        }
-
-        var subjectPrefix = "prod".equals(env) ? "" : String.format("[env=%s] ", env);
-        subjectPrefix += "[" + portalConfigurationService.getStringConfiguration(GENERAL.group, ORG_NAME.key) + "] ";
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(sender);
-        message.setTo(recipient);
-        message.setSubject(subjectPrefix + subject);
-        message.setText(text);
-
-        javaMailSender.send(message);
     }
 }
