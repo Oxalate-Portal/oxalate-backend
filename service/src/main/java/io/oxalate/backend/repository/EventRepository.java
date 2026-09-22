@@ -4,22 +4,20 @@ import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.model.Event;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface EventRepository extends CrudRepository<Event, Long> {
+public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
     List<Event> findByStartTimeAfterOrderByStartTimeAsc(Instant instant);
 
     List<Event> findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum status, Instant instant);
 
     List<Event> findByStatusAndStartTimeBeforeOrderByStartTimeAsc(EventStatusEnum status, Instant instant);
-
-    @Query(nativeQuery = true, value = "SELECT * FROM events e WHERE e.start_time < :until ORDER BY e.start_time DESC")
-    List<Event> findAllEventsBefore(Instant until);
 
     @Query(nativeQuery = true, value =
             "SELECT e.* FROM events e, event_participants ep WHERE e.id = ep.event_id AND ep.user_id = :userId ORDER BY e.start_time ASC")

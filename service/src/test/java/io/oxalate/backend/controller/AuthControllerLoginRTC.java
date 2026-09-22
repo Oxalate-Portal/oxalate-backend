@@ -1,6 +1,7 @@
 package io.oxalate.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import io.oxalate.backend.AbstractIntegrationTest;
 import io.oxalate.backend.api.MembershipStatusEnum;
 import io.oxalate.backend.api.MembershipTypeEnum;
@@ -48,7 +49,8 @@ class AuthControllerLoginRTC extends AbstractIntegrationTest {
     private static final String RAW_PASSWORD = "Test^P4ssword";
 
     private MockMvc mockMvc;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+                                                        .build();
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -159,7 +161,7 @@ class AuthControllerLoginRTC extends AbstractIntegrationTest {
 
         performLogin(user.getUsername())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.primaryUserType", is(UserTypeEnum.SCUBA_DIVER.name())));
+                .andExpect(jsonPath("$.primary_user_type", is(UserTypeEnum.SCUBA_DIVER.name())));
     }
 
     @Test
@@ -168,7 +170,7 @@ class AuthControllerLoginRTC extends AbstractIntegrationTest {
 
         performLogin(user.getUsername())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.primaryUserType", is(UserTypeEnum.FREE_DIVER.name())));
+                .andExpect(jsonPath("$.primary_user_type", is(UserTypeEnum.FREE_DIVER.name())));
     }
 
     @Test
@@ -201,9 +203,9 @@ class AuthControllerLoginRTC extends AbstractIntegrationTest {
 
         performLogin(user.getUsername())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.primaryUserType", is(UserTypeEnum.FREE_DIVER.name())))
+                .andExpect(jsonPath("$.primary_user_type", is(UserTypeEnum.FREE_DIVER.name())))
                 .andExpect(jsonPath("$.memberships", hasSize(1)))
-                .andExpect(jsonPath("$.memberships[0].userId", is((int) user.getId()
+                .andExpect(jsonPath("$.memberships[0].user_id", is((int) user.getId()
                                                                             .longValue())));
     }
 

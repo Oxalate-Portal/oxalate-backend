@@ -3,7 +3,9 @@ package io.oxalate.backend.controller;
 import io.oxalate.backend.api.AuditLevelEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import io.oxalate.backend.api.request.MembershipRequest;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.MembershipResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.audit.AuditSource;
 import io.oxalate.backend.audit.Audited;
 import static io.oxalate.backend.events.AppAuditMessages.MEMBERSHIP_CREATE_OK;
@@ -40,8 +42,8 @@ public class MembershipController implements MembershipAPI {
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     @Audited(startMessage = MEMBERSHIP_GET_ALL_ACTIVE_START, okMessage = MEMBERSHIP_GET_ALL_ACTIVE_OK)
-    public ResponseEntity<List<MembershipResponse>> getAllActiveMemberships() {
-        var membershipResponses = membershipService.getAllActiveMemberships();
+    public ResponseEntity<PagedResponse<MembershipResponse>> getAllActiveMemberships(PagedRequest pagedRequest) {
+        var membershipResponses = membershipService.getAllActiveMembershipsPaged(pagedRequest);
         return ResponseEntity.ok(membershipResponses);
     }
 

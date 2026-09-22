@@ -4,7 +4,9 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import io.oxalate.backend.api.UploadDirectoryConstants;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.ActionResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.CertificateFileResponse;
 import io.oxalate.backend.model.filetransfer.CertificateFile;
@@ -12,6 +14,7 @@ import io.oxalate.backend.repository.CertificateRepository;
 import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.repository.filetransfer.CertificateDocumentRepository;
 import io.oxalate.backend.tools.FileTools;
+import io.oxalate.backend.tools.PagingTools;
 import static io.oxalate.backend.tools.FileTools.getFileSuffix;
 import static io.oxalate.backend.tools.FileTools.removeFile;
 import static io.oxalate.backend.tools.FileTools.verifyUploadPath;
@@ -21,11 +24,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +43,17 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Service
 public class CertificateFileTransferService {
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.ofEntries(
+            Map.entry("id", "id"),
+            Map.entry("filename", "fileName"),
+            Map.entry("filesize", "fileSize"),
+            Map.entry("mimetype", "mimeType"),
+            Map.entry("creator", "creator.lastName"),
+            Map.entry("created_at", "createdAt"),
+            Map.entry("certificate_id", "certificate.id"));
+    private static final String DEFAULT_SORT_COLUMN = "createdAt";
+    private static final String[] SEARCHABLE_COLUMNS = {"fileName", "mimeType", "creator.firstName", "creator.lastName"};
+
     @Value("${oxalate.upload.directory}")
     private String uploadMainDirectory;
     @Value("${oxalate.app.backend-url}")
@@ -48,19 +63,21 @@ public class CertificateFileTransferService {
     private final CertificateDocumentRepository certificateDocumentRepository;
     private final UserRepository userRepository;
 
-    public List<CertificateFileResponse> findAllCertificateFiles() {
-        var certificateFiles = certificateDocumentRepository.findAll();
-        var certificateFileResponses = certificateFiles.stream()
-                                                       .map(CertificateFile::toResponse)
-                                                       .toList();
+    /**
+     * One page of all certificate files with their download URL populated.
+     *
+     * @param pagedRequest paging, sorting and search parameters
+     * @return the requested page
+     */
+    public PagedResponse<CertificateFileResponse> findAllCertificateFilesPaged(PagedRequest pagedRequest) {
+        var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
+        var specification = PagingTools.allOf(PagingTools.<CertificateFile>searchSpecification(pagedRequest, SEARCHABLE_COLUMNS));
 
-        certificateFileResponses.forEach(certificateFileResponse -> {
-            var certificateId = certificateFileResponse.getCertificateId();
-            certificateFileResponse.setUrl(getCertificateFileUrl(certificateId));
+        return PagedResponse.fromPage(certificateDocumentRepository.findAll(specification, pageable), certificateFile -> {
+            var certificateFileResponse = certificateFile.toResponse();
+            certificateFileResponse.setUrl(getCertificateFileUrl(certificateFileResponse.getCertificateId()));
+            return certificateFileResponse;
         });
-
-        return certificateFileResponses;
-
     }
 
     /**

@@ -1,6 +1,5 @@
 package io.oxalate.backend.api.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.AbstractEvent;
 import io.oxalate.backend.api.EventStatusEnum;
 import java.util.List;
@@ -9,28 +8,25 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonNaming;
 
 @SuperBuilder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class EventResponse extends AbstractEvent {
 
-    @JsonProperty("status")
     private EventStatusEnum status;
 
-    @JsonProperty("organizer")
     private UserResponse organizer;
 
-    @JsonProperty("participants")
     private List<ListUserResponse> participants;
 
-    @JsonProperty("waitingList")
     private List<ListUserResponse> waitingList;
 
-    @JsonProperty("eventCommentId")
     private long eventCommentId;
 
-    @JsonProperty("tags")
     private Set<TagResponse> tags;
 }

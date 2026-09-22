@@ -4,6 +4,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import static io.oxalate.backend.api.UploadDirectoryConstants.DIVE_FILES;
 import io.oxalate.backend.api.UploadStatusEnum;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.model.DiveGroup;
 import io.oxalate.backend.model.Event;
 import io.oxalate.backend.model.EventsParticipant;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.any;
@@ -40,6 +42,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -148,7 +154,7 @@ class DiveFileTransferServiceUTC {
     }
 
     private MockMultipartFile pdfUploadFile() {
-        return new MockMultipartFile("uploadFile", "dive plan.pdf", "application/pdf", "PDF content".getBytes(StandardCharsets.UTF_8));
+        return new MockMultipartFile("upload_file", "dive plan.pdf", "application/pdf", "PDF content".getBytes(StandardCharsets.UTF_8));
     }
 
     private void stubValidUpload() {
@@ -177,14 +183,43 @@ class DiveFileTransferServiceUTC {
     // ------------------------------------------------------------------
 
     @Test
-    void findAllDiveFilesOk() {
-        when(diveFileRepository.findAll()).thenReturn(List.of(diveFile()));
+    void findAllDiveFilesPagedOk() {
+        when(diveFileRepository.findAll(ArgumentMatchers.<Specification<DiveFile>>any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(diveFile())));
 
-        var responses = diveFileTransferService.findAllDiveFiles();
+        var page = diveFileTransferService.findAllDiveFilesPaged(PagedRequest.builder()
+                                                                             .sortBy("event_id")
+                                                                             .direction(Sort.Direction.ASC)
+                                                                             .build(), EVENT_ID);
 
-        assertEquals(1, responses.size());
-        assertEquals("http://localhost:8080/api/files/dive-files/" + DIVE_FILE_ID, responses.getFirst()
-                                                                                            .getUrl());
+        assertEquals(1, page.getTotalElements());
+        assertEquals("http://localhost:8080/api/files/dive-files/" + DIVE_FILE_ID, page.getContent()
+                                                                                       .getFirst()
+                                                                                       .getUrl());
+        var pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(diveFileRepository).findAll(ArgumentMatchers.<Specification<DiveFile>>any(), pageableCaptor.capture());
+        var order = pageableCaptor.getValue()
+                                  .getSort()
+                                  .getOrderFor("eventId");
+        assertNotNull(order);
+        assertEquals(Sort.Direction.ASC, order.getDirection());
+    }
+
+    @Test
+    void findAllDiveFilesPagedUnknownSortFallsBackOk() {
+        when(diveFileRepository.findAll(ArgumentMatchers.<Specification<DiveFile>>any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        var page = diveFileTransferService.findAllDiveFilesPaged(PagedRequest.builder()
+                                                                             .sortBy("creator.password")
+                                                                             .build(), null);
+
+        assertTrue(page.isEmpty());
+        var pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(diveFileRepository).findAll(ArgumentMatchers.<Specification<DiveFile>>any(), pageableCaptor.capture());
+        assertNotNull(pageableCaptor.getValue()
+                                    .getSort()
+                                    .getOrderFor("createdAt"));
     }
 
     @Test
@@ -355,7 +390,7 @@ class DiveFileTransferServiceUTC {
         when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup()));
         when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, UPLOADER_ID)).thenReturn(participant(UPLOADER_ID, GROUP_ID));
 
-        var uploadFile = new MockMultipartFile("uploadFile", "malware.exe", "application/octet-stream", new byte[] { 1, 2, 3 });
+        var uploadFile = new MockMultipartFile("upload_file", "malware.exe", "application/octet-stream", new byte[] { 1, 2, 3 });
 
         var exception = assertThrows(ResponseStatusException.class,
                 () -> diveFileTransferService.uploadDiveFile(uploadFile, EVENT_ID, GROUP_ID, UPLOADER_ID));
@@ -371,7 +406,7 @@ class DiveFileTransferServiceUTC {
         when(diveGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(diveGroup()));
         when(eventParticipantsRepository.findByEventIdAndUserId(EVENT_ID, UPLOADER_ID)).thenReturn(participant(UPLOADER_ID, GROUP_ID));
 
-        var uploadFile = new MockMultipartFile("uploadFile", "../..", "application/pdf", new byte[] { 1, 2, 3 });
+        var uploadFile = new MockMultipartFile("upload_file", "../..", "application/pdf", new byte[] { 1, 2, 3 });
 
         assertThrows(IllegalArgumentException.class,
                 () -> diveFileTransferService.uploadDiveFile(uploadFile, EVENT_ID, GROUP_ID, UPLOADER_ID));

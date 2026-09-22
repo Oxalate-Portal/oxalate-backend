@@ -5,7 +5,9 @@ import static io.oxalate.backend.api.UpdateStatusEnum.OK;
 import static io.oxalate.backend.api.UploadDirectoryConstants.DOCUMENTS;
 import io.oxalate.backend.api.UploadStatusEnum;
 import static io.oxalate.backend.api.UrlConstants.FILES_URL;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.ActionResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.DocumentFileResponse;
 import io.oxalate.backend.model.User;
@@ -17,15 +19,19 @@ import io.oxalate.backend.tools.FileTools;
 import static io.oxalate.backend.tools.FileTools.getSha1OfFile;
 import static io.oxalate.backend.tools.FileTools.readFileToResponseEntity;
 import static io.oxalate.backend.tools.FileTools.removeFile;
+import io.oxalate.backend.tools.PagingTools;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -37,6 +43,17 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Service
 public class DocumentFileTransferService {
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.ofEntries(
+            Map.entry("id", "id"),
+            Map.entry("filename", "fileName"),
+            Map.entry("filesize", "fileSize"),
+            Map.entry("mimetype", "mimeType"),
+            Map.entry("creator", "creator.lastName"),
+            Map.entry("created_at", "createdAt"),
+            Map.entry("status", "status"));
+    private static final String DEFAULT_SORT_COLUMN = "createdAt";
+    private static final String[] SEARCHABLE_COLUMNS = {"fileName", "mimeType", "creator.firstName", "creator.lastName"};
+
     private final DocumentFileRepository documentFileRepository;
     private final UserRepository userRepository;
     private final RoleService roleService;
@@ -46,24 +63,28 @@ public class DocumentFileTransferService {
     @Value("${oxalate.app.backend-url}")
     private String backendUrl;
 
-    public List<DocumentFileResponse> findAllDocumentFiles() {
-        var documentFiles = documentFileRepository.findAll();
-        return mapDocumentFilesToResponses(documentFiles);
-    }
+    /**
+     * One page of document files, optionally limited to one creator, with the download URL populated. The caller is
+     * responsible for deciding whether the current user may see documents of other creators.
+     *
+     * @param pagedRequest paging, sorting and search parameters
+     * @param creatorId    only documents uploaded by this user when given
+     * @return the requested page
+     */
+    public PagedResponse<DocumentFileResponse> findAllDocumentFilesPaged(PagedRequest pagedRequest, @Nullable Long creatorId) {
+        var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
+        Specification<DocumentFile> creatorFilter = creatorId == null ? null
+                : (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("creator")
+                                                                              .get("id"), creatorId);
+        var specification = PagingTools.allOf(creatorFilter,
+                PagingTools.searchSpecification(pagedRequest, SEARCHABLE_COLUMNS),
+                PagingTools.enumSearchSpecification(pagedRequest, UploadStatusEnum.class, "status"));
 
-    public List<DocumentFileResponse> findDocumentFilesByCreatorId(long creatorId) {
-        var documentFiles = documentFileRepository.findAllByCreator_Id(creatorId);
-        return mapDocumentFilesToResponses(documentFiles);
-    }
-
-    private List<DocumentFileResponse> mapDocumentFilesToResponses(List<DocumentFile> documentFiles) {
-        var documentFileResponses = documentFiles.stream()
-                                                 .map(DocumentFile::toResponse)
-                                                 .toList();
-
-        documentFileResponses.forEach(documentFileResponse -> documentFileResponse.setUrl(getDocumentUrl(documentFileResponse.getId())));
-
-        return documentFileResponses;
+        return PagedResponse.fromPage(documentFileRepository.findAll(specification, pageable), documentFile -> {
+            var documentFileResponse = documentFile.toResponse();
+            documentFileResponse.setUrl(getDocumentUrl(documentFileResponse.getId()));
+            return documentFileResponse;
+        });
     }
 
     /**

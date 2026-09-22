@@ -5,6 +5,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import io.oxalate.backend.api.UserTypeEnum;
+import io.oxalate.backend.controller.PagedRestTestSupport.LegacyPagedGetRequestFilter;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
@@ -67,6 +68,7 @@ class OwaspErrorHandlingRTC extends AbstractIntegrationTest {
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                                  .apply(springSecurity())
+                                 .addFilters(new LegacyPagedGetRequestFilter())
                                  .build();
 
         administrator = createAdministrator();
@@ -101,7 +103,7 @@ class OwaspErrorHandlingRTC extends AbstractIntegrationTest {
                                     .param("pageSize", "10")
                                     .param("sorting", sorting)
                                     .param("filter", "")
-                                    .param("filterColumn", "")
+                                    .param("filter_column", "")
                                     .cookie(new Cookie(JWT_TOKEN, administratorToken)))
                             .andReturn()
                             .getResponse()
@@ -120,7 +122,7 @@ class OwaspErrorHandlingRTC extends AbstractIntegrationTest {
                                     .param("pageSize", String.valueOf(Integer.MAX_VALUE))
                                     .param("sorting", "createdAt,descend")
                                     .param("filter", "")
-                                    .param("filterColumn", "")
+                                    .param("filter_column", "")
                                     .cookie(new Cookie(JWT_TOKEN, administratorToken)))
                             .andReturn()
                             .getResponse()
@@ -136,7 +138,7 @@ class OwaspErrorHandlingRTC extends AbstractIntegrationTest {
                                     .param("pageSize", "-1")
                                     .param("sorting", "createdAt,descend")
                                     .param("filter", "")
-                                    .param("filterColumn", "")
+                                    .param("filter_column", "")
                                     .cookie(new Cookie(JWT_TOKEN, administratorToken)))
                             .andReturn()
                             .getResponse()

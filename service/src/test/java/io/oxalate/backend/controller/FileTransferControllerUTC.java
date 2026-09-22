@@ -5,7 +5,9 @@ import static io.oxalate.backend.api.PortalConfigEnum.FileConfigEnum.DIVE_FILES_
 import static io.oxalate.backend.api.PortalConfigEnum.FileConfigEnum.DOCUMENTS_SUPPORTED;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
 import static io.oxalate.backend.api.UpdateStatusEnum.OK;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.ActionResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.CertificateFileResponse;
 import io.oxalate.backend.api.response.filetransfer.DiveFileResponse;
@@ -22,9 +24,10 @@ import io.oxalate.backend.tools.AuthTools;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -51,13 +54,18 @@ class FileTransferControllerUTC {
             portalConfigurationService
     );
 
+    private static final PagedRequest PAGED_REQUEST = PagedRequest.builder()
+                                                                  .page(0)
+                                                                  .size(10)
+                                                                  .build();
+
     @Test
     void findAllDocumentFiles_adminWithCreatorId_returnsCreatorScopedFiles() {
-        var expected = List.of(DocumentFileResponse.builder()
-                                                   .id(11L)
-                                                   .build());
+        var expected = pageOf(DocumentFileResponse.builder()
+                                                  .id(11L)
+                                                  .build());
         when(portalConfigurationService.getBooleanConfiguration(FILES.group, DOCUMENTS_SUPPORTED.key)).thenReturn(true);
-        when(documentFileTransferService.findDocumentFilesByCreatorId(15L)).thenReturn(expected);
+        when(documentFileTransferService.findAllDocumentFilesPaged(PAGED_REQUEST, 15L)).thenReturn(expected);
 
         try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
             authTools.when(AuthTools::getCurrentUserId)
@@ -65,21 +73,41 @@ class FileTransferControllerUTC {
             authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
                      .thenReturn(true);
 
-            var response = controller.findAllDocumentFiles(15L);
+            var response = controller.findAllDocumentFiles(PAGED_REQUEST, 15L);
 
             assertEquals(expected, response.getBody());
-            verify(documentFileTransferService).findDocumentFilesByCreatorId(15L);
-            verify(documentFileTransferService, never()).findAllDocumentFiles();
+            verify(documentFileTransferService).findAllDocumentFilesPaged(PAGED_REQUEST, 15L);
+        }
+    }
+
+    @Test
+    void findAllDocumentFiles_adminWithoutCreatorId_returnsAllFiles() {
+        var expected = pageOf(DocumentFileResponse.builder()
+                                                  .id(13L)
+                                                  .build());
+        when(portalConfigurationService.getBooleanConfiguration(FILES.group, DOCUMENTS_SUPPORTED.key)).thenReturn(true);
+        when(documentFileTransferService.findAllDocumentFilesPaged(PAGED_REQUEST, null)).thenReturn(expected);
+
+        try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
+            authTools.when(AuthTools::getCurrentUserId)
+                     .thenReturn(7L);
+            authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
+                     .thenReturn(true);
+
+            var response = controller.findAllDocumentFiles(PAGED_REQUEST, null);
+
+            assertEquals(expected, response.getBody());
+            verify(documentFileTransferService).findAllDocumentFilesPaged(PAGED_REQUEST, null);
         }
     }
 
     @Test
     void findAllDocumentFiles_nonAdminWithoutCreatorId_returnsOwnFiles() {
-        var expected = List.of(DocumentFileResponse.builder()
-                                                   .id(12L)
-                                                   .build());
+        var expected = pageOf(DocumentFileResponse.builder()
+                                                  .id(12L)
+                                                  .build());
         when(portalConfigurationService.getBooleanConfiguration(FILES.group, DOCUMENTS_SUPPORTED.key)).thenReturn(true);
-        when(documentFileTransferService.findDocumentFilesByCreatorId(9L)).thenReturn(expected);
+        when(documentFileTransferService.findAllDocumentFilesPaged(PAGED_REQUEST, 9L)).thenReturn(expected);
 
         try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
             authTools.when(AuthTools::getCurrentUserId)
@@ -87,23 +115,43 @@ class FileTransferControllerUTC {
             authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
                      .thenReturn(false);
 
-            var response = controller.findAllDocumentFiles(null);
+            var response = controller.findAllDocumentFiles(PAGED_REQUEST, null);
 
             assertEquals(expected, response.getBody());
-            verify(documentFileTransferService).findDocumentFilesByCreatorId(9L);
-            verify(documentFileTransferService, never()).findAllDocumentFiles();
+            verify(documentFileTransferService).findAllDocumentFilesPaged(PAGED_REQUEST, 9L);
         }
     }
 
     @Test
-    void findAllDocumentFiles_whenFeatureDisabled_returnsEmptyListWithoutServiceCall() {
+    void findAllDocumentFiles_nonAdminWithOtherCreatorId_throwsUnauthorized() {
+        when(portalConfigurationService.getBooleanConfiguration(FILES.group, DOCUMENTS_SUPPORTED.key)).thenReturn(true);
+
+        try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
+            authTools.when(AuthTools::getCurrentUserId)
+                     .thenReturn(9L);
+            authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
+                     .thenReturn(false);
+
+            assertThrows(OxalateUnauthorizedException.class, () -> controller.findAllDocumentFiles(PAGED_REQUEST, 15L));
+            verify(documentFileTransferService, never()).findAllDocumentFilesPaged(any(), any());
+        }
+    }
+
+    @Test
+    void findAllDocumentFiles_whenFeatureDisabled_returnsEmptyPageWithoutServiceCall() {
         when(portalConfigurationService.getBooleanConfiguration(FILES.group, DOCUMENTS_SUPPORTED.key)).thenReturn(false);
 
-        var response = controller.findAllDocumentFiles(null);
+        var response = controller.findAllDocumentFiles(PAGED_REQUEST, null);
 
-        assertEquals(List.of(), response.getBody());
-        verify(documentFileTransferService, never()).findAllDocumentFiles();
-        verify(documentFileTransferService, never()).findDocumentFilesByCreatorId(anyLong());
+        assertTrue(response.getBody()
+                           .isEmpty());
+        assertEquals(10, response.getBody()
+                                 .getSize());
+        verify(documentFileTransferService, never()).findAllDocumentFilesPaged(any(), any());
+    }
+
+    private static <T> PagedResponse<T> pageOf(T item) {
+        return PagedResponse.of(List.of(item), 0, 10, 1);
     }
 
     @Test
@@ -138,11 +186,11 @@ class FileTransferControllerUTC {
 
     @Test
     void findAllDiveFiles_asAdmin_returnsAllFiles() {
-        var expected = List.of(DiveFileResponse.builder()
-                                               .id(21L)
-                                               .build());
+        var expected = pageOf(DiveFileResponse.builder()
+                                              .id(21L)
+                                              .build());
         when(portalConfigurationService.getBooleanConfiguration(FILES.group, DIVE_FILES_SUPPORTED.key)).thenReturn(true);
-        when(diveFileTransferService.findAllDiveFiles()).thenReturn(expected);
+        when(diveFileTransferService.findAllDiveFilesPaged(PAGED_REQUEST, 5L)).thenReturn(expected);
 
         try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
             authTools.when(AuthTools::getCurrentUserId)
@@ -150,7 +198,7 @@ class FileTransferControllerUTC {
             authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
                      .thenReturn(true);
 
-            var response = controller.findAllDiveFiles();
+            var response = controller.findAllDiveFiles(PAGED_REQUEST, 5L);
 
             assertEquals(expected, response.getBody());
         }
@@ -166,23 +214,24 @@ class FileTransferControllerUTC {
             authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
                      .thenReturn(false);
 
-            assertThrows(OxalateUnauthorizedException.class, () -> controller.findAllDiveFiles());
+            assertThrows(OxalateUnauthorizedException.class, () -> controller.findAllDiveFiles(PAGED_REQUEST, null));
         }
     }
 
     @Test
-    void findAllDiveFiles_whenFeatureDisabled_returnsEmptyListWithoutServiceCall() {
+    void findAllDiveFiles_whenFeatureDisabled_returnsEmptyPageWithoutServiceCall() {
         when(portalConfigurationService.getBooleanConfiguration(FILES.group, DIVE_FILES_SUPPORTED.key)).thenReturn(false);
 
-        var response = controller.findAllDiveFiles();
+        var response = controller.findAllDiveFiles(PAGED_REQUEST, null);
 
-        assertEquals(List.of(), response.getBody());
-        verify(diveFileTransferService, never()).findAllDiveFiles();
+        assertTrue(response.getBody()
+                           .isEmpty());
+        verify(diveFileTransferService, never()).findAllDiveFilesPaged(any(), any());
     }
 
     @Test
     void uploadDiveFile_returnsUploadResponseFromService() {
-        var uploadFile = new MockMultipartFile("uploadFile", "plan.pdf", "application/pdf", new byte[] { 1 });
+        var uploadFile = new MockMultipartFile("upload_file", "plan.pdf", "application/pdf", new byte[] { 1 });
         var expected = UploadResponse.builder()
                                      .url("http://localhost/api/files/dive-files/21")
                                      .build();
@@ -201,7 +250,7 @@ class FileTransferControllerUTC {
 
     @Test
     void uploadDiveFile_whenServiceThrows_throwsValidationException() {
-        var uploadFile = new MockMultipartFile("uploadFile", "plan.pdf", "application/pdf", new byte[] { 1 });
+        var uploadFile = new MockMultipartFile("upload_file", "plan.pdf", "application/pdf", new byte[] { 1 });
         when(portalConfigurationService.getBooleanConfiguration(FILES.group, DIVE_FILES_SUPPORTED.key)).thenReturn(true);
         when(diveFileTransferService.uploadDiveFile(uploadFile, 42L, 7L, 9L)).thenThrow(new RuntimeException("boom"));
 
@@ -215,7 +264,7 @@ class FileTransferControllerUTC {
 
     @Test
     void uploadDiveFile_whenServiceReturnsNull_throwsValidationException() {
-        var uploadFile = new MockMultipartFile("uploadFile", "plan.pdf", "application/pdf", new byte[] { 1 });
+        var uploadFile = new MockMultipartFile("upload_file", "plan.pdf", "application/pdf", new byte[] { 1 });
         when(portalConfigurationService.getBooleanConfiguration(FILES.group, DIVE_FILES_SUPPORTED.key)).thenReturn(true);
         when(diveFileTransferService.uploadDiveFile(uploadFile, 42L, 7L, 9L)).thenReturn(null);
 
@@ -229,7 +278,7 @@ class FileTransferControllerUTC {
 
     @Test
     void uploadDiveFile_whenFeatureDisabled_throwsValidationException() {
-        var uploadFile = new MockMultipartFile("uploadFile", "plan.pdf", "application/pdf", new byte[] { 1 });
+        var uploadFile = new MockMultipartFile("upload_file", "plan.pdf", "application/pdf", new byte[] { 1 });
         when(portalConfigurationService.getBooleanConfiguration(FILES.group, DIVE_FILES_SUPPORTED.key)).thenReturn(false);
 
         assertThrows(OxalateValidationException.class, () -> controller.uploadDiveFile(uploadFile, 42L, 7L));
@@ -244,16 +293,16 @@ class FileTransferControllerUTC {
             authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
                      .thenReturn(false);
 
-            assertThrows(OxalateUnauthorizedException.class, () -> controller.findAllCertificateFiles());
+            assertThrows(OxalateUnauthorizedException.class, () -> controller.findAllCertificateFiles(PAGED_REQUEST));
         }
     }
 
     @Test
     void findAllCertificateFiles_adminReturnsFiles() {
-        var expected = List.of(CertificateFileResponse.builder()
-                                                      .id(8L)
-                                                      .build());
-        when(certificateFileTransferService.findAllCertificateFiles()).thenReturn(expected);
+        var expected = pageOf(CertificateFileResponse.builder()
+                                                     .id(8L)
+                                                     .build());
+        when(certificateFileTransferService.findAllCertificateFilesPaged(PAGED_REQUEST)).thenReturn(expected);
 
         try (MockedStatic<AuthTools> authTools = mockStatic(AuthTools.class)) {
             authTools.when(AuthTools::getCurrentUserId)
@@ -261,14 +310,14 @@ class FileTransferControllerUTC {
             authTools.when(() -> AuthTools.currentUserHasRole(ROLE_ADMIN))
                      .thenReturn(true);
 
-            assertEquals(expected, controller.findAllCertificateFiles()
+            assertEquals(expected, controller.findAllCertificateFiles(PAGED_REQUEST)
                                              .getBody());
         }
     }
 
     @Test
     void uploadCertificateFile_serviceFailureReturnsValidationError() {
-        var uploadFile = new MockMultipartFile("uploadFile", "cert.jpg", "image/jpeg", new byte[] { 1 });
+        var uploadFile = new MockMultipartFile("upload_file", "cert.jpg", "image/jpeg", new byte[] { 1 });
         when(certificateFileTransferService.uploadCertificateFile(uploadFile, 7L, 8L))
                 .thenThrow(new RuntimeException("storage failed"));
 

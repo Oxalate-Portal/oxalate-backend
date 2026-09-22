@@ -2,17 +2,21 @@ package io.oxalate.backend.service;
 
 import static io.oxalate.backend.api.AuditLevelEnum.WARN;
 import io.oxalate.backend.api.request.CreateTokenRequest;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.request.RefreshTokenRequest;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.api.response.TokenResponse;
 import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.model.ThirdPartyToken;
 import io.oxalate.backend.repository.ThirdPartyTokenRepository;
+import io.oxalate.backend.tools.PagingTools;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
-import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +25,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ThirdPartyTokenService {
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.of(
+            "token_id", "tokenId",
+            "created_at", "createdAt",
+            "expires_at", "expiresAt",
+            "description", "description");
+    private static final String DEFAULT_SORT_COLUMN = "createdAt";
     private final ThirdPartyTokenRepository repository;
     private final AppEventPublisher appEventPublisher;
 
@@ -58,12 +68,16 @@ public class ThirdPartyTokenService {
         repository.save(token);
     }
 
+    /**
+     * One page of third-party tokens, newest first unless the request says otherwise. The search matches the
+     * description and the token value.
+     */
     @Transactional(readOnly = true)
-    public List<TokenResponse> list() {
-        return repository.findAllByOrderByCreatedAtDesc()
-                         .stream()
-                         .map(token -> toResponse(token, true))
-                         .toList();
+    public PagedResponse<TokenResponse> listPaged(PagedRequest pagedRequest) {
+        var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.DESC);
+        var specification = PagingTools.allOf(PagingTools.<ThirdPartyToken>searchSpecification(pagedRequest, "description", "tokenValue"));
+
+        return PagedResponse.fromPage(repository.findAll(specification, pageable), token -> toResponse(token, true));
     }
 
     @Transactional(readOnly = true)

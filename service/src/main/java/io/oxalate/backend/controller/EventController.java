@@ -7,9 +7,11 @@ import io.oxalate.backend.api.request.EventDiveListRequest;
 import io.oxalate.backend.api.request.EventDiveRequest;
 import io.oxalate.backend.api.request.EventRequest;
 import io.oxalate.backend.api.request.EventSubscribeRequest;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.EventDiveListResponse;
 import io.oxalate.backend.api.response.EventListResponse;
 import io.oxalate.backend.api.response.EventResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.audit.AuditSource;
 import io.oxalate.backend.audit.Audited;
 import static io.oxalate.backend.events.AppAuditMessages.EVENTS_CANCEL_FAIL;
@@ -146,14 +148,15 @@ public class EventController implements EventAPI {
     @Override
     @PreAuthorize("hasAnyRole('USER', 'ORGANIZER', 'ADMIN')")
     @Audited(startMessage = EVENTS_GET_PAST_START, okMessage = EVENTS_GET_PAST_OK)
-    public ResponseEntity<List<EventResponse>> getPastEvents() {
+    public ResponseEntity<PagedResponse<EventResponse>> getPastEvents(PagedRequest pagedRequest) {
         if (AuthTools.currentUserHasNotAcceptedTerms()) {
             log.error("User ID {} has not accepted terms and conditions", AuthTools.getCurrentUserId());
             throw new OxalateValidationException(AuditLevelEnum.WARN, EVENTS_GET_PAST_TERMS_NOT_ACCEPTED, HttpStatus.NO_CONTENT);
         }
 
-        var eventResponses = eventService.findAllEventsBefore(Instant.now());
-        return ResponseEntity.ok().body(eventResponses);
+        var eventResponses = eventService.findPastEventsPaged(pagedRequest, Instant.now());
+        return ResponseEntity.ok()
+                             .body(eventResponses);
     }
 
     @Override

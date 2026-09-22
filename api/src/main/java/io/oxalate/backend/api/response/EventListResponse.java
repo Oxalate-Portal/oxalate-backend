@@ -1,31 +1,28 @@
 package io.oxalate.backend.api.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.oxalate.backend.api.AbstractEvent;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonNaming;
 
 @SuperBuilder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class EventListResponse extends AbstractEvent {
 
-    @JsonProperty("organizerName")
     private String organizerName;
 
-    @JsonProperty("participantCount")
     private int participantCount;
 
-    @JsonProperty("waitingListCount")
     private int waitingListCount;
 
-    @JsonProperty("eventCommentId")
     private long eventCommentId;
 
-    @JsonProperty("tags")
     private Set<TagResponse> tags;
 }

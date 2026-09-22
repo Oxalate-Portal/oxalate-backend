@@ -6,8 +6,10 @@ import static io.oxalate.backend.api.SecurityConstants.ANONYMIZED_STRING;
 import io.oxalate.backend.api.UserStatusEnum;
 import static io.oxalate.backend.api.UserStatusEnum.ANONYMIZED;
 import static io.oxalate.backend.api.UserStatusEnum.REGISTERED;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.model.Role;
 import io.oxalate.backend.model.Tag;
 import io.oxalate.backend.model.User;
@@ -18,16 +20,19 @@ import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
 import io.oxalate.backend.service.filetransfer.AvatarFileTransferService;
 import io.oxalate.backend.tools.AuthTools;
+import io.oxalate.backend.tools.PagingTools;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +40,23 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class UserService {
+    /**
+     * Client sort names of {@code GET /api/users} mapped to the {@link User} property they sort by. Anything else
+     * falls back to the default ordering, see {@link PagingTools#toPageable}.
+     */
+    private static final Map<String, String> SORTABLE_COLUMNS = Map.ofEntries(
+            Map.entry("id", "id"),
+            Map.entry("username", "username"),
+            Map.entry("first_name", "firstName"),
+            Map.entry("last_name", "lastName"),
+            Map.entry("status", "status"),
+            Map.entry("registered", "registered"),
+            Map.entry("last_seen", "lastSeen"),
+            Map.entry("approved_terms", "approvedTerms"),
+            Map.entry("health_statement_id", "healthStatementId"),
+            Map.entry("primary_user_type", "primaryUserType"));
+    private static final String DEFAULT_SORT_COLUMN = "id";
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RoleService roleService;
@@ -66,6 +88,29 @@ public class UserService {
         }
 
         return getAdminUserResponseList(users);
+    }
+
+    /**
+     * One page of all users for the member administration table. Sorting is validated against the allow-list and the
+     * optional search matches the username, first name or last name.
+     *
+     * @param pagedRequest paging, sorting and search parameters
+     * @return the requested page
+     */
+    @Transactional(readOnly = true)
+    public PagedResponse<AdminUserResponse> findAllPaged(PagedRequest pagedRequest) {
+        var pageable = PagingTools.toPageable(pagedRequest, SORTABLE_COLUMNS, DEFAULT_SORT_COLUMN, Sort.Direction.ASC);
+        var specification = PagingTools.allOf(
+                PagingTools.<User>searchSpecification(pagedRequest, "username", "firstName", "lastName"),
+                PagingTools.enumSearchSpecification(pagedRequest, UserStatusEnum.class, "status"));
+        var users = userRepository.findAll(specification, pageable);
+
+        return PagedResponse.fromPage(users, user -> {
+            populateUser(user);
+            var adminUserResponse = user.toAdminUserResponse();
+            adminUserResponse.setStatus(user.getStatus());
+            return adminUserResponse;
+        });
     }
 
     @Transactional(readOnly = true)

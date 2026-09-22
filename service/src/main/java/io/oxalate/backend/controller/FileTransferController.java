@@ -6,7 +6,9 @@ import static io.oxalate.backend.api.PortalConfigEnum.FileConfigEnum.DIVE_FILES_
 import static io.oxalate.backend.api.PortalConfigEnum.FileConfigEnum.DOCUMENTS_SUPPORTED;
 import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.RoleEnum.ROLE_ADMIN;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.ActionResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.oxalate.backend.api.response.UploadErrorResponse;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.api.response.filetransfer.AvatarFileResponse;
@@ -81,9 +83,9 @@ import io.oxalate.backend.service.filetransfer.DiveFileTransferService;
 import io.oxalate.backend.service.filetransfer.DocumentFileTransferService;
 import io.oxalate.backend.service.filetransfer.PageFileTransferService;
 import io.oxalate.backend.tools.AuthTools;
+import io.oxalate.backend.tools.PagingTools;
 import static io.oxalate.backend.tools.AuthTools.currentUserHasRole;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -110,7 +112,7 @@ public class FileTransferController implements FileTransferAPI {
     @PreAuthorize("hasRole('ADMIN')")
     @Override
     @Audited(startMessage = FILE_AVATAR_GET_ALL_START, okMessage = FILE_AVATAR_GET_ALL_OK)
-    public ResponseEntity<List<AvatarFileResponse>> findAllAvatarFiles() {
+    public ResponseEntity<PagedResponse<AvatarFileResponse>> findAllAvatarFiles(PagedRequest pagedRequest) {
         var userId = AuthTools.getCurrentUserId();
 
         if (userId < 0 || !currentUserHasRole(ROLE_ADMIN)) {
@@ -118,7 +120,7 @@ public class FileTransferController implements FileTransferAPI {
             throw new OxalateUnauthorizedException(FILE_AVATAR_GET_ALL_UNAUTHORIZED, HttpStatus.FORBIDDEN);
         }
 
-        var allAvatarFiles = avatarFileTransferService.findAllAvatarFiles();
+        var allAvatarFiles = avatarFileTransferService.findAllAvatarFilesPaged(pagedRequest);
 
         if (allAvatarFiles == null) {
             throw new OxalateValidationException(AuditLevelEnum.WARN, FILE_AVATAR_GET_ALL_FAIL, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -171,7 +173,7 @@ public class FileTransferController implements FileTransferAPI {
     @PreAuthorize("hasRole('ADMIN')")
     @Override
     @Audited(startMessage = FILE_CERTIFICATE_GET_ALL_START, okMessage = FILE_CERTIFICATE_GET_ALL_OK)
-    public ResponseEntity<List<CertificateFileResponse>> findAllCertificateFiles() {
+    public ResponseEntity<PagedResponse<CertificateFileResponse>> findAllCertificateFiles(PagedRequest pagedRequest) {
         var userId = AuthTools.getCurrentUserId();
 
         if (userId < 0 || !currentUserHasRole(ROLE_ADMIN)) {
@@ -179,7 +181,7 @@ public class FileTransferController implements FileTransferAPI {
             throw new OxalateUnauthorizedException(FILE_CERTIFICATE_GET_ALL_UNAUTHORIZED, HttpStatus.FORBIDDEN);
         }
 
-        var allCertificateFiles = certificateFileTransferService.findAllCertificateFiles();
+        var allCertificateFiles = certificateFileTransferService.findAllCertificateFilesPaged(pagedRequest);
 
         if (allCertificateFiles == null) {
             throw new OxalateValidationException(AuditLevelEnum.WARN, FILE_CERTIFICATE_GET_ALL_FAIL, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -248,9 +250,9 @@ public class FileTransferController implements FileTransferAPI {
     @PreAuthorize("hasRole('ADMIN')")
     @Override
     @Audited(startMessage = FILE_DIVE_FILE_GET_ALL_START, okMessage = FILE_DIVE_FILE_GET_ALL_OK)
-    public ResponseEntity<List<DiveFileResponse>> findAllDiveFiles() {
+    public ResponseEntity<PagedResponse<DiveFileResponse>> findAllDiveFiles(PagedRequest pagedRequest, Long eventId) {
         if (!portalConfigurationService.getBooleanConfiguration(FILES.group, DIVE_FILES_SUPPORTED.key)) {
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.ok(PagingTools.emptyPage(pagedRequest));
         }
 
         var userId = AuthTools.getCurrentUserId();
@@ -260,7 +262,7 @@ public class FileTransferController implements FileTransferAPI {
             throw new OxalateUnauthorizedException(FILE_DIVE_FILE_GET_ALL_UNAUTHORIZED, HttpStatus.FORBIDDEN);
         }
 
-        var allDiveFiles = diveFileTransferService.findAllDiveFiles();
+        var allDiveFiles = diveFileTransferService.findAllDiveFilesPaged(pagedRequest, eventId);
 
         if (allDiveFiles == null) {
             throw new OxalateValidationException(AuditLevelEnum.WARN, FILE_DIVE_FILE_GET_ALL_FAIL, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -320,11 +322,11 @@ public class FileTransferController implements FileTransferAPI {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Override
     @Audited(startMessage = FILE_DOCUMENT_GET_ALL_START, okMessage = FILE_DOCUMENT_GET_ALL_OK)
-    public ResponseEntity<List<DocumentFileResponse>> findAllDocumentFiles(Long creatorId) {
+    public ResponseEntity<PagedResponse<DocumentFileResponse>> findAllDocumentFiles(PagedRequest pagedRequest, Long creatorId) {
         // Check if documents are enabled
         if (!portalConfigurationService.getBooleanConfiguration(FILES.group, DOCUMENTS_SUPPORTED.key)) {
             log.warn("Document file listing attempted but feature is disabled by configuration");
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.ok(PagingTools.emptyPage(pagedRequest));
         }
 
         var userId = AuthTools.getCurrentUserId();
@@ -339,15 +341,9 @@ public class FileTransferController implements FileTransferAPI {
             throw new OxalateUnauthorizedException(FILE_DOCUMENT_GET_ALL_UNAUTHORIZED, HttpStatus.FORBIDDEN);
         }
 
-        if (creatorId != null && isAdmin) {
-            return ResponseEntity.ok(documentFileTransferService.findDocumentFilesByCreatorId(creatorId));
-        }
-
-        if (!isAdmin) {
-            return ResponseEntity.ok(documentFileTransferService.findDocumentFilesByCreatorId(userId));
-        }
-
-        var allDocumentFiles = documentFileTransferService.findAllDocumentFiles();
+        // Administrators may list everything or one creator, everybody else is limited to their own documents
+        var effectiveCreatorId = isAdmin ? creatorId : Long.valueOf(userId);
+        var allDocumentFiles = documentFileTransferService.findAllDocumentFilesPaged(pagedRequest, effectiveCreatorId);
 
         if (allDocumentFiles == null) {
             throw new OxalateValidationException(AuditLevelEnum.WARN, FILE_DOCUMENT_GET_ALL_FAIL, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -400,7 +396,7 @@ public class FileTransferController implements FileTransferAPI {
     @PreAuthorize("hasRole('ADMIN')")
     @Override
     @Audited(startMessage = FILE_PAGE_FILE_GET_ALL_START, okMessage = FILE_PAGE_FILE_GET_ALL_OK)
-    public ResponseEntity<List<PageFileResponse>> findAllPageFiles() {
+    public ResponseEntity<PagedResponse<PageFileResponse>> findAllPageFiles(PagedRequest pagedRequest) {
         var userId = AuthTools.getCurrentUserId();
 
         if (userId < 0 || !currentUserHasRole(ROLE_ADMIN)) {
@@ -408,7 +404,7 @@ public class FileTransferController implements FileTransferAPI {
             throw new OxalateUnauthorizedException(FILE_PAGE_FILE_GET_ALL_UNAUTHORIZED, HttpStatus.FORBIDDEN);
         }
 
-        var allPageFiles = pageFileTransferService.findAllPageFiles();
+        var allPageFiles = pageFileTransferService.findAllPageFilesPaged(pagedRequest);
 
         if (allPageFiles == null) {
             throw new OxalateValidationException(AuditLevelEnum.WARN, FILE_PAGE_FILE_GET_ALL_FAIL, HttpStatus.INTERNAL_SERVER_ERROR);

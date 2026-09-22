@@ -1,6 +1,7 @@
 package io.oxalate.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import io.oxalate.backend.AbstractIntegrationTest;
 import static io.oxalate.backend.api.EventStatusEnum.PUBLISHED;
 import io.oxalate.backend.api.RoleEnum;
@@ -77,7 +78,8 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+                                                        .build();
 
     private MockMvc mockMvc;
 
@@ -264,7 +266,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                                      .build())))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.name").value("First group"))
-               .andExpect(jsonPath("$.ownerId").value(firstUser.getId()))
+               .andExpect(jsonPath("$.owner_id").value(firstUser.getId()))
                .andExpect(jsonPath("$.members.length()").value(1));
     }
 
@@ -332,7 +334,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                                      .ownerId(firstUser.getId())
                                                      .build())))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.ownerId").value(firstUser.getId()));
+               .andExpect(jsonPath("$.owner_id").value(firstUser.getId()));
     }
 
     @Test
@@ -346,7 +348,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                                      .ownerId(organizer.getId())
                                                      .build())))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.ownerId").value(organizer.getId()));
+               .andExpect(jsonPath("$.owner_id").value(organizer.getId()));
     }
 
     @Test
@@ -360,9 +362,9 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                                      .memberIds(List.of(secondUser.getId()))
                                                      .build())))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.ownerId").value(firstUser.getId()))
+               .andExpect(jsonPath("$.owner_id").value(firstUser.getId()))
                .andExpect(jsonPath("$.members.length()").value(2))
-               .andExpect(jsonPath("$.members[?(@.userId == " + secondUser.getId() + ")].owner").value(false));
+               .andExpect(jsonPath("$.members[?(@.user_id == " + secondUser.getId() + ")].owner").value(false));
     }
 
     @Test
@@ -413,7 +415,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                                      .memberIds(List.of(secondUser.getId(), firstUser.getId()))
                                                      .build())))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.ownerId").value(firstUser.getId()))
+               .andExpect(jsonPath("$.owner_id").value(firstUser.getId()))
                .andExpect(jsonPath("$.members.length()").value(2));
     }
 
@@ -504,7 +506,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
         mockMvc.perform(get(BASE_PATH + "/{diveGroupId}", groupId)
                        .cookie(new Cookie(JWT_TOKEN, secondUserToken)))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.ownerId").value(secondUser.getId()));
+               .andExpect(jsonPath("$.owner_id").value(secondUser.getId()));
     }
 
     @Test
@@ -559,7 +561,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                                                            .ownerId(secondUser.getId())
                                                            .build())))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$.ownerId").value(secondUser.getId()));
+               .andExpect(jsonPath("$.owner_id").value(secondUser.getId()));
     }
 
     @Test
@@ -690,11 +692,11 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
         mockMvc.perform(get(BASE_PATH + "/events/{eventId}", event.getId())
                        .cookie(new Cookie(JWT_TOKEN, firstUserToken)))
                .andExpect(status().isOk())
-               .andExpect(jsonPath("$[0].groupOrder").value(1))
-               .andExpect(jsonPath("$[1].groupOrder").value(2))
-               .andExpect(jsonPath("$[2].groupOrder").value(3))
-               .andExpect(jsonPath("$[0].ownerId").value(firstUser.getId()))
-               .andExpect(jsonPath("$[2].ownerId").value(organizer.getId()));
+               .andExpect(jsonPath("$[0].group_order").value(1))
+               .andExpect(jsonPath("$[1].group_order").value(2))
+               .andExpect(jsonPath("$[2].group_order").value(3))
+               .andExpect(jsonPath("$[0].owner_id").value(firstUser.getId()))
+               .andExpect(jsonPath("$[2].owner_id").value(organizer.getId()));
     }
 
     @Test
@@ -710,11 +712,11 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.length()").value(3))
                .andExpect(jsonPath("$[0].id").value(thirdGroupId))
-               .andExpect(jsonPath("$[0].groupOrder").value(1))
+               .andExpect(jsonPath("$[0].group_order").value(1))
                .andExpect(jsonPath("$[1].id").value(firstGroupId))
-               .andExpect(jsonPath("$[1].groupOrder").value(2))
+               .andExpect(jsonPath("$[1].group_order").value(2))
                .andExpect(jsonPath("$[2].id").value(secondGroupId))
-               .andExpect(jsonPath("$[2].groupOrder").value(3));
+               .andExpect(jsonPath("$[2].group_order").value(3));
 
         mockMvc.perform(get(BASE_PATH + "/events/{eventId}", event.getId())
                        .cookie(new Cookie(JWT_TOKEN, firstUserToken)))
@@ -849,9 +851,9 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.length()").value(2))
                .andExpect(jsonPath("$[0].id").value(secondGroupId))
-               .andExpect(jsonPath("$[0].groupOrder").value(1))
+               .andExpect(jsonPath("$[0].group_order").value(1))
                .andExpect(jsonPath("$[1].id").value(thirdGroupId))
-               .andExpect(jsonPath("$[1].groupOrder").value(2));
+               .andExpect(jsonPath("$[1].group_order").value(2));
     }
 
     // ------------------------------------------------------------------
@@ -915,7 +917,7 @@ class DiveGroupControllerRTC extends AbstractIntegrationTest {
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.name").value("Member renamed"))
                .andExpect(jsonPath("$.description").value("Member plan"))
-               .andExpect(jsonPath("$.ownerId").value(firstUser.getId()));
+               .andExpect(jsonPath("$.owner_id").value(firstUser.getId()));
     }
 
     @Test

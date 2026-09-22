@@ -5,9 +5,16 @@ import static io.oxalate.backend.api.SecurityConstants.JWT_COOKIE;
 import static io.oxalate.backend.api.UrlConstants.API;
 import io.oxalate.backend.api.request.AdminUserRequest;
 import io.oxalate.backend.api.request.ConfirmationRequest;
+import io.oxalate.backend.api.request.PagedRequest;
+import static io.oxalate.backend.api.request.PagedRequest.CASE_SENSITIVE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.DIRECTION_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.PAGE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SEARCH_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SIZE_DESCRIPTION;
 import io.oxalate.backend.api.request.UserStatusRequest;
 import io.oxalate.backend.api.response.AdminUserResponse;
 import io.oxalate.backend.api.response.ListUserResponse;
+import io.oxalate.backend.api.response.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,6 +26,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -26,14 +34,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface UserAPI {
     String BASE_PATH = API + "/users";
 
-    @Operation(description = "Get a list of all users", tags = "UserAPI")
+    @Operation(description = "Get a page of all users", tags = "UserAPI")
+    @Parameter(name = "page", description = PAGE_DESCRIPTION, example = "0")
+    @Parameter(name = "size", description = SIZE_DESCRIPTION, example = "25")
+    @Parameter(name = "sort_by", description = "Column to sort by, one of: id, username, first_name, last_name, status, registered, last_seen, "
+            + "approved_terms, health_statement_id, primary_user_type. Unknown values fall back to id", example = "last_name")
+    @Parameter(name = "direction", description = DIRECTION_DESCRIPTION + " (ASC)", example = "ASC")
+    @Parameter(name = "search", description = SEARCH_DESCRIPTION + ": username, first name, last name", example = "smith")
+    @Parameter(name = "case_sensitive", description = CASE_SENSITIVE_DESCRIPTION, example = "false")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Page retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
-    @GetMapping(value = BASE_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<List<AdminUserResponse>> getUsers();
+    @PostMapping(value = BASE_PATH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PagedResponse<AdminUserResponse>> getUsers(@RequestBody PagedRequest pagedRequest);
 
     @Operation(description = "Get a list of all users with given role", tags = "UserAPI")
     @Parameter(name = "role", description = "Role by which the users should be filtered", example = "ROLE_USER", required = true)

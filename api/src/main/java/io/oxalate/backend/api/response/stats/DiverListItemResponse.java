@@ -1,25 +1,23 @@
 package io.oxalate.backend.api.response.stats;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonNaming;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class DiverListItemResponse {
-    @JsonProperty("userId")
     private long userId;
 
-    @JsonProperty("userName")
     private String userName;
 
-    @JsonProperty("position")
     private long position;
 
-    @JsonProperty("diveCount")
     private long diveCount;
 }

@@ -87,12 +87,12 @@ public interface PaymentAPI {
     ResponseEntity<PaymentResponse> updatePaymentForUser(@RequestBody PaymentRequest paymentRequest);
 
     @Operation(description = "Reset all period payments immediately. This will update the period payment expiration time to now()", tags = "PaymentAPI")
-    @Parameter(name = "paymentType", description = "Type of payments that needs to be reset", example = "ONE_TIME")
+    @Parameter(name = "payment_type", description = "Type of payments that needs to be reset", example = "ONE_TIME")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Reset completed successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = JWT_COOKIE)
     @GetMapping(path = BASE_PATH + "/reset")
-    ResponseEntity<Void> resetAllPayments(@RequestParam(value = "paymentType") PaymentTypeEnum paymentType);
+    ResponseEntity<Void> resetAllPayments(@RequestParam(value = "payment_type") PaymentTypeEnum paymentType);
 }

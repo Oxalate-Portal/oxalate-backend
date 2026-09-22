@@ -1,6 +1,7 @@
 package io.oxalate.backend.service.filetransfer;
 
 import static io.oxalate.backend.api.UploadDirectoryConstants.AVATARS;
+import io.oxalate.backend.api.request.PagedRequest;
 import io.oxalate.backend.api.response.UploadResponse;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.model.filetransfer.AvatarFile;
@@ -22,6 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.any;
@@ -31,6 +34,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -84,9 +91,11 @@ class AvatarFileTransferServiceUTC {
 
     @Test
     void findAllAvatarFiles_urlContainsApiFilesAvatarsPath() {
-        when(avatarFileRepository.findAll()).thenReturn(List.of(testAvatarFile));
+        stubPagedFindAll();
 
-        var result = avatarFileTransferService.findAllAvatarFiles();
+        var result = avatarFileTransferService.findAllAvatarFilesPaged(PagedRequest.builder()
+                                                                                    .build())
+                                                  .getContent();
 
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -98,9 +107,11 @@ class AvatarFileTransferServiceUTC {
 
     @Test
     void findAllAvatarFiles_urlUsesDatabaseIdNotFilename() {
-        when(avatarFileRepository.findAll()).thenReturn(List.of(testAvatarFile));
+        stubPagedFindAll();
 
-        var result = avatarFileTransferService.findAllAvatarFiles();
+        var result = avatarFileTransferService.findAllAvatarFilesPaged(PagedRequest.builder()
+                                                                                    .build())
+                                                  .getContent();
 
         var url = result.getFirst()
                         .getUrl();
@@ -111,9 +122,11 @@ class AvatarFileTransferServiceUTC {
 
     @Test
     void findAllAvatarFiles_urlHasProperSeparatorBetweenHostAndPath() {
-        when(avatarFileRepository.findAll()).thenReturn(List.of(testAvatarFile));
+        stubPagedFindAll();
 
-        var result = avatarFileTransferService.findAllAvatarFiles();
+        var result = avatarFileTransferService.findAllAvatarFilesPaged(PagedRequest.builder()
+                                                                                    .build())
+                                                  .getContent();
 
         var url = result.getFirst()
                         .getUrl();
@@ -124,9 +137,11 @@ class AvatarFileTransferServiceUTC {
     @Test
     void findAllAvatarFiles_urlIsWellFormedWhenBackendUrlHasTrailingSlash() {
         ReflectionTestUtils.setField(avatarFileTransferService, "backendUrl", "http://localhost:8080/");
-        when(avatarFileRepository.findAll()).thenReturn(List.of(testAvatarFile));
+        stubPagedFindAll();
 
-        var result = avatarFileTransferService.findAllAvatarFiles();
+        var result = avatarFileTransferService.findAllAvatarFilesPaged(PagedRequest.builder()
+                                                                                    .build())
+                                                  .getContent();
 
         var url = result.getFirst()
                         .getUrl();
@@ -175,8 +190,55 @@ class AvatarFileTransferServiceUTC {
         assertEquals("http://localhost:8080/api/files/avatars/11", response.getUrl());
         assertFalse(Files.exists(oldFilePath), "Old avatar file must be deleted when extension changes");
         assertTrue(Files.exists(avatarDirectory.resolve("100.jpg")), "New avatar file should be written");
-        verify(avatarFileRepository, never()).delete(any());
+        verify(avatarFileRepository, never()).delete(any(AvatarFile.class));
         verify(avatarFileRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    void findAllAvatarFilesPaged_mapsAllowedSortColumnOk() {
+        stubPagedFindAll();
+
+        var page = avatarFileTransferService.findAllAvatarFilesPaged(PagedRequest.builder()
+                                                                                 .page(1)
+                                                                                 .size(10)
+                                                                                 .sortBy("creator")
+                                                                                 .direction(Sort.Direction.ASC)
+                                                                                 .build());
+
+        var pageable = capturePageable();
+        assertEquals(1, pageable.getPageNumber());
+        assertEquals(10, pageable.getPageSize());
+        var order = pageable.getSort()
+                            .getOrderFor("creator.lastName");
+        assertNotNull(order);
+        assertEquals(Sort.Direction.ASC, order.getDirection());
+        assertEquals(1, page.getTotalElements());
+        assertFalse(page.isEmpty());
+    }
+
+    @Test
+    void findAllAvatarFilesPaged_unknownSortFallsBackToCreatedAtDescOk() {
+        stubPagedFindAll();
+
+        avatarFileTransferService.findAllAvatarFilesPaged(PagedRequest.builder()
+                                                                      .sortBy("file_checksum")
+                                                                      .build());
+
+        var order = capturePageable().getSort()
+                                     .getOrderFor("createdAt");
+        assertNotNull(order);
+        assertEquals(Sort.Direction.DESC, order.getDirection());
+    }
+
+    private void stubPagedFindAll() {
+        when(avatarFileRepository.findAll(ArgumentMatchers.<Specification<AvatarFile>>any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(testAvatarFile)));
+    }
+
+    private Pageable capturePageable() {
+        var pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(avatarFileRepository).findAll(ArgumentMatchers.<Specification<AvatarFile>>any(), pageableCaptor.capture());
+        return pageableCaptor.getValue();
     }
 
     @Test

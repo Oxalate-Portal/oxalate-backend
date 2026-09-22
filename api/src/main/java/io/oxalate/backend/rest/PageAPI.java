@@ -2,6 +2,11 @@ package io.oxalate.backend.rest;
 
 import static io.oxalate.backend.api.UrlConstants.PAGES_URL;
 import io.oxalate.backend.api.request.PagedRequest;
+import static io.oxalate.backend.api.request.PagedRequest.CASE_SENSITIVE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.DIRECTION_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.PAGE_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SEARCH_DESCRIPTION;
+import static io.oxalate.backend.api.request.PagedRequest.SIZE_DESCRIPTION;
 import io.oxalate.backend.api.response.PageGroupResponse;
 import io.oxalate.backend.api.response.PageResponse;
 import io.oxalate.backend.api.response.PagedResponse;
@@ -32,14 +37,22 @@ public interface PageAPI {
     @GetMapping(path = BASE_PATH + "/navigation-elements", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<PageGroupResponse>> getNavigationElements(@RequestParam(name = "language") String language);
 
-    @Operation(description = "Get all pages from the blogs page group for a given language with pagination, sorting and search support", tags = "PageAPI")
+    @Operation(description = "Get a page of the blog articles of one language. Only articles the caller's roles may read are returned", tags = "PageAPI")
+    @Parameter(name = "language", description = "ISO-639-1 language code of the articles", example = "en", required = true)
+    @Parameter(name = "page", description = PAGE_DESCRIPTION, example = "0")
+    @Parameter(name = "size", description = SIZE_DESCRIPTION, example = "25")
+    @Parameter(name = "sort_by", description = "Column to sort by, one of: created_at, title. Unknown values fall back to created_at", example = "created_at")
+    @Parameter(name = "direction", description = DIRECTION_DESCRIPTION + " (DESC)", example = "DESC")
+    @Parameter(name = "search", description = SEARCH_DESCRIPTION + ": title, ingress, body", example = "wreck")
+    @Parameter(name = "case_sensitive", description = CASE_SENSITIVE_DESCRIPTION, example = "false")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Page retrieved successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @PostMapping(path = BASE_PATH + "/blogs", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(@RequestBody PagedRequest pagedRequest);
+    ResponseEntity<PagedResponse<PageResponse>> getBlogArticles(@RequestBody PagedRequest pagedRequest,
+            @RequestParam(name = "language") String language);
 
     @Operation(description = "Get page by the given page ID", tags = "PageAPI")
     @Parameter(name = "pageId", description = "Page ID to be retrieved", example = "1", required = true)

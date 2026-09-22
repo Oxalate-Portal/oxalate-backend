@@ -5,6 +5,7 @@ import io.oxalate.backend.api.RoleEnum;
 import static io.oxalate.backend.api.SecurityConstants.JWT_TOKEN;
 import static io.oxalate.backend.api.UserStatusEnum.ACTIVE;
 import io.oxalate.backend.api.UserTypeEnum;
+import io.oxalate.backend.controller.PagedRestTestSupport.LegacyPagedGetRequestFilter;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.RoleRepository;
 import io.oxalate.backend.repository.UserRepository;
@@ -55,6 +56,12 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
 
     private static final String MEMBERSHIPS = "/api/memberships";
     private static final String AUDITS = "/api/audits";
+    private static final String USERS = "/api/users";
+    private static final String TOKENS = "/api/tokens";
+    private static final String AVATAR_FILES = "/api/files/avatars";
+    private static final String CERTIFICATE_FILES = "/api/files/certificates";
+    private static final String DIVE_FILES = "/api/files/dive-files";
+    private static final String PAGE_FILES = "/api/files/page-files";
     private static final String STATS = "/api/stats";
     private static final String DATA_DOWNLOAD = "/api/data-download";
     private static final String TAG_GROUPS = "/api/tag-groups";
@@ -84,6 +91,7 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                                  .apply(springSecurity())
+                                 .addFilters(new LegacyPagedGetRequestFilter())
                                  .build();
 
         member = createUser(RoleEnum.ROLE_USER);
@@ -213,10 +221,11 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
     void getAuditEventsAsMemberFail() throws Exception {
         mockMvc.perform(get(AUDITS)
                        .param("page", "0")
-                       .param("pageSize", "10")
-                       .param("sorting", "createdAt,descend")
-                       .param("filter", "")
-                       .param("filterColumn", "")
+                       .param("size", "10")
+                       .param("sort_by", "created_at")
+                       .param("direction", "DESC")
+                       .param("filter_column", "message")
+                       .param("search", "login")
                        .cookie(new Cookie(JWT_TOKEN, memberToken)))
                .andExpect(status().isForbidden());
     }
@@ -225,12 +234,38 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
     void getAuditEventsAsOrganizerFail() throws Exception {
         mockMvc.perform(get(AUDITS)
                        .param("page", "0")
-                       .param("pageSize", "10")
-                       .param("sorting", "createdAt,descend")
-                       .param("filter", "")
-                       .param("filterColumn", "")
+                       .param("size", "10")
+                       .param("sort_by", "created_at")
+                       .param("direction", "DESC")
                        .cookie(new Cookie(JWT_TOKEN, organizerToken)))
                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAuditEventsByUserIdAsMemberFail() throws Exception {
+        // Even the member's own audit trail is an administrative surface
+        mockMvcExpectForbidden(AUDITS + "/" + member.getId(), memberToken);
+        mockMvcExpectForbidden(AUDITS + "/" + otherMember.getId(), memberToken);
+    }
+
+    @Test
+    void getUsersAsMemberFail() throws Exception {
+        mockMvcExpectForbidden(USERS, memberToken);
+        mockMvcExpectForbidden(USERS, organizerToken);
+    }
+
+    @Test
+    void listTokensAsMemberFail() throws Exception {
+        mockMvcExpectForbidden(TOKENS, memberToken);
+        mockMvcExpectForbidden(TOKENS, organizerToken);
+    }
+
+    @Test
+    void listFilesAsMemberFail() throws Exception {
+        for (var path : List.of(AVATAR_FILES, CERTIFICATE_FILES, DIVE_FILES, PAGE_FILES)) {
+            mockMvcExpectForbidden(path, memberToken);
+            mockMvcExpectForbidden(path, organizerToken);
+        }
     }
 
     @Test
@@ -329,13 +364,13 @@ class OwaspAccessControlRTC extends AbstractIntegrationTest {
      */
     private String membershipJson(long userId) {
         return """
-                {"id": 0, "userId": %d, "status": "ACTIVE", "type": "PERIODICAL", "startDate": "2024-01-01", "endDate": "2024-12-31"}
+                {"id": 0, "user_id": %d, "status": "ACTIVE", "type": "PERIODICAL", "start_date": "2024-01-01", "end_date": "2024-12-31"}
                 """.formatted(userId);
     }
 
     private String diveGroupOrderJson() {
         return """
-                {"diveGroupIds": [2, 1]}
+                {"dive_group_ids": [2, 1]}
                 """;
     }
 
