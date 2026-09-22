@@ -271,10 +271,4 @@ public class MessageService {
         log.debug("Created notification with ID {} for {} users in group {}", messageResponse.getId(), userIds.size(), messageRequest.getNotificationGroup());
         return userIds.size();
     }
-
-    // Legacy method - keeping for backwards compatibility
-    @Deprecated(since = "1.0", forRemoval = true)
-    public List<MessageResponse> unreadUserMessages(long userId) {
-        return getUnreadUserMessages(userId);
-    }
 }

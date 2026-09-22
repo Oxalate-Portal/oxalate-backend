@@ -26,8 +26,6 @@ public interface TagGroupRepository extends JpaRepository<TagGroup, Long> {
            "LEFT JOIN FETCH t.translations")
     List<TagGroup> findAllWithTagsAndTranslations();
 
-    List<TagGroup> findByType(TagGroupEnum type);
-
     @Query("SELECT tg FROM TagGroup tg LEFT JOIN FETCH tg.translations WHERE tg.type = :type")
     List<TagGroup> findByTypeWithTranslations(@Param("type") TagGroupEnum type);
 

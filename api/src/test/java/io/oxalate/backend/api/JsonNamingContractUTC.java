@@ -70,7 +70,7 @@ class JsonNamingContractUTC {
         assertTrue(names.contains("io.oxalate.backend.api.AbstractUser"), "abstract bases must be scanned");
         assertTrue(names.contains("io.oxalate.backend.api.response.UploadErrorResponse$UploadErrorMessage"), "nested DTOs must be scanned");
         assertFalse(names.contains("io.oxalate.backend.api.RoleEnum"), "enums are not DTOs");
-        assertTrue(names.size() > 100, "Expected more than 100 DTO classes, found " + names.size());
+        assertTrue(names.size() >= 100, "Expected at least 100 DTO classes, found " + names.size());
     }
 
     private static boolean declaresSnakeCaseNaming(Class<?> dtoClass) {

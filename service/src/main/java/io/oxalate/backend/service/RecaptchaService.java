@@ -28,9 +28,6 @@ public class RecaptchaService {
     @Value("${oxalate.captcha.verification-url}")
     private String captchaVerificationUrl;
 
-    @Value("${oxalate.captcha.site-key}")
-    private String captchaSiteKey;
-
     @Value("${oxalate.captcha.secret-key}")
     private String captchaSecretKey;
 

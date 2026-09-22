@@ -36,13 +36,6 @@ spring:
       max-file-size: 50MB
       max-request-size: 51MB
 
-actuator:
-  enabled: true
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-
 management:
   server:
     port: 8081

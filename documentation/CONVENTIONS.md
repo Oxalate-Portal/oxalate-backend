@@ -56,22 +56,21 @@ And in the case of an error:
 
 Endpoints that return a table of rows page on the server. The rules below are the contract shared with `oxalate-frontend`.
 
-**Request.** A paged endpoint is a `GET` whose API interface method takes a plain `io.oxalate.backend.api.request.PagedRequest` parameter, marked
-`@Parameter(hidden = true)` so that OpenAPI shows the documented query parameters instead of the Java fields. It is bound by
-`io.oxalate.backend.configuration.PagedRequestArgumentResolver` (registered through `WebMvcConfiguration`) from these snake_case query parameters, so
-the names match the JSON field naming of the rest of the API:
+**Request.** A paged endpoint is a `POST` whose API interface method takes `io.oxalate.backend.api.request.PagedRequest` as its JSON `@RequestBody`.
+The body uses the snake_case naming of the rest of the API:
 
-| Parameter        | Type            | Default          | Notes                                                                                   |
-|------------------|-----------------|------------------|-----------------------------------------------------------------------------------------|
-| `page`           | int, 0-based    | `0`              | negative or non-numeric values are treated as 0                                         |
-| `size`           | int             | `25`             | non-numeric values and values below 1 fall back to the default, values above `PagingTools.MAX_PAGE_SIZE` (200) are capped |
-| `sort_by`        | string          | endpoint default | a snake_case response field name, validated against the endpoint's allow-list; unknown values fall back to the default and are logged, never a 500 |
-| `direction`      | `ASC` / `DESC`  | endpoint default | `org.springframework.data.domain.Sort.Direction`, case-insensitive; unknown values fall back to the default |
-| `search`         | string          | none             | matched as a literal substring (`LIKE %term%`, wildcards escaped) against the endpoint's searchable string columns, OR-ed |
-| `case_sensitive` | boolean         | `false`          |                                                                                         |
+| Field            | Type           | Default          | Notes                                                                                                                                                                   |
+|------------------|----------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `page`           | int, 0-based   | `0`              | negative values are treated as 0                                                                                                                                        |
+| `size`           | int            | `25`             | values below 1 fall back to the default, values above `PagingTools.MAX_PAGE_SIZE` (200) are capped                                                                      |
+| `sort_by`        | string         | endpoint default | a snake_case response field name, validated against the endpoint's allow-list; unknown values fall back to the default and are logged, never a 500                      |
+| `direction`      | `ASC` / `DESC` | endpoint default | `org.springframework.data.domain.Sort.Direction`                                                                                                                        |
+| `search`         | string         | none             | matched as a literal substring (`LIKE %term%`, wildcards escaped) against the endpoint's searchable string columns, OR-ed                                               |
+| `case_sensitive` | boolean        | `false`          |                                                                                                                                                                         |
+| `filter_column`  | string         | none             | a snake_case response field name; restricts `search` to that text column, or, for an enum column, matches `search` exactly against the enum constant name or wire value |
 
-Endpoint specific filters are additional `@RequestParam`s next to the `PagedRequest`, also named in snake_case (for example `event_id` on dive files,
-`creator_id` on documents, `filter_column` on the audit trail, `language` on blog articles).
+Endpoint specific filters are additional `@RequestParam`s next to the body, also named in snake_case (for example `event_id` on dive files,
+`creator_id` on documents, `language` on blog articles).
 
 **Response.** Every paged endpoint returns `ResponseEntity<PagedResponse<T>>` with this stable JSON shape:
 

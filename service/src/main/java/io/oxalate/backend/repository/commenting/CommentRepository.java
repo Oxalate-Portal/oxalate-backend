@@ -2,7 +2,6 @@ package io.oxalate.backend.repository.commenting;
 
 import io.oxalate.backend.model.commenting.Comment;
 import java.util.List;
-import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.NativeQuery;
@@ -31,5 +30,4 @@ public interface CommentRepository extends JpaRepository<Comment, Long>, JpaSpec
             FROM comment_tree""")
     long countChildren(@Param(value = "parentId") long commentId);
 
-	Comment findByTitle(@NonNull String eventRootTopic);
 }
