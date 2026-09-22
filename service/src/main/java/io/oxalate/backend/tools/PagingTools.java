@@ -146,8 +146,8 @@ public final class PagingTools {
         }
         var normalized = normalizeEnumValue(search);
         var matchingValues = Arrays.stream(enumType.getEnumConstants())
-                                   .filter(value -> normalizeEnumValue(value.name()).contains(normalized)
-                                           || normalizeEnumValue(enumWireValue(value)).contains(normalized))
+                                   .filter(value -> normalizeEnumValue(value.name()).equals(normalized)
+                                           || normalizeEnumValue(enumWireValue(value)).equals(normalized))
                                    .toList();
         return (root, query, criteriaBuilder) -> {
             if (matchingValues.isEmpty()) {

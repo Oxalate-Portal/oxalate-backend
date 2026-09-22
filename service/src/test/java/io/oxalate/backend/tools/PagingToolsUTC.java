@@ -19,7 +19,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -176,23 +175,46 @@ class PagingToolsUTC {
 
     @Test
     @SuppressWarnings("unchecked")
-    void enumSearchSpecificationMatchesWireValueAndPartialSearchOk() {
+    void enumSearchSpecificationMatchesExactWireValueOnlyOk() {
+        // "cave" must select CAVE alone; a substring match would also pull in OPEN_AND_CAVE ("open-and-cave").
         var request = PagedRequest.builder()
-                                  .search("Open")
+                                  .search("cave")
                                   .filterColumn("type")
                                   .build();
         var typePath = (Path<Object>) mock(Path.class);
         var predicate = mock(Predicate.class);
         var combined = mock(Predicate.class);
         when(root.get("type")).thenReturn(typePath);
-        lenient().when(criteriaBuilder.equal(any(), any()))
-                 .thenReturn(predicate);
+        when(criteriaBuilder.equal(typePath, DiveTypeEnum.CAVE)).thenReturn(predicate);
         when(criteriaBuilder.or(any(Predicate[].class))).thenReturn(combined);
 
         var specification = PagingTools.enumSearchSpecification(request, DiveTypeEnum.class, "type");
 
         assertNotNull(specification);
         assertEquals(combined, specification.toPredicate(root, query, criteriaBuilder));
+        verify(criteriaBuilder, times(1)).equal(any(Expression.class), any(Object.class));
+        verify(criteriaBuilder).equal(typePath, DiveTypeEnum.CAVE);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void enumSearchSpecificationMatchesConstantNameIgnoringCaseOk() {
+        var request = PagedRequest.builder()
+                                  .search("OPEN_AND_CAVE")
+                                  .filterColumn("type")
+                                  .build();
+        var typePath = (Path<Object>) mock(Path.class);
+        var predicate = mock(Predicate.class);
+        var combined = mock(Predicate.class);
+        when(root.get("type")).thenReturn(typePath);
+        when(criteriaBuilder.equal(typePath, DiveTypeEnum.OPEN_AND_CAVE)).thenReturn(predicate);
+        when(criteriaBuilder.or(any(Predicate[].class))).thenReturn(combined);
+
+        var specification = PagingTools.enumSearchSpecification(request, DiveTypeEnum.class, "type");
+
+        assertNotNull(specification);
+        assertEquals(combined, specification.toPredicate(root, query, criteriaBuilder));
+        verify(criteriaBuilder, times(1)).equal(any(Expression.class), any(Object.class));
     }
 
     @Test
