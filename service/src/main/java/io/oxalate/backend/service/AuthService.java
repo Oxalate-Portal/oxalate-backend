@@ -622,6 +622,10 @@ public class AuthService {
             log.warn("User attempted to verify registration with invalid token: {}", token);
             appEventPublisher.publishAuditEvent(AUTH_REGISTRATION_VERIFY_INVALID_TOKEN, WARN, request, AUDIT_NAME, null, auditUuid);
             returnStatus = "INVALID";
+            return UriComponentsBuilder.fromUriString(registrationUrl)
+                                       .query("status={returnStatus}")
+                                       .buildAndExpand(returnStatus)
+                                       .toUri();
         }
 
         userService.updateStatus(registrationToken.getUserId(), ACTIVE);

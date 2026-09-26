@@ -25,7 +25,7 @@ class SetOrderUTC {
     }
 
     /**
-     * Generate a list of 10 000 random <integer, integer> between 0 and 1000 and put them into a list which then is copied to a set.
+     * Generate a list of 10 000 random integer pairs between 0 and 1000 and put them into a list which then is copied to a set.
      */
     @Test
     void listToSetPreservesOrderFail() {
@@ -68,7 +68,7 @@ class SetOrderUTC {
     }
 
     /**
-     * Generate a list of 10 000 random <integer, integer> between 0 and 1000 and put them into a list which then is copied to a set.
+     * Generate a list of 10 000 random integer pairs between 0 and 1000 and put them into a list which then is copied to a set.
      */
     @Test
     void listToListPreservesOrderOk() {

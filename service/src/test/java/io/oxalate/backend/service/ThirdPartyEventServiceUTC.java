@@ -2,6 +2,7 @@ package io.oxalate.backend.service;
 
 import io.oxalate.backend.api.EventStatusEnum;
 import io.oxalate.backend.model.Event;
+import io.oxalate.backend.model.User;
 import io.oxalate.backend.repository.EventRepository;
 import java.time.Instant;
 import java.util.List;
@@ -19,6 +20,8 @@ class ThirdPartyEventServiceUTC {
     private EventRepository eventRepository;
     @Mock
     private ThirdPartyTokenService tokenService;
+    @Mock
+    private UserService userService;
     @InjectMocks
     private ThirdPartyEventService service;
 
@@ -31,7 +34,14 @@ class ThirdPartyEventServiceUTC {
                 .thenReturn(List.of(Event.builder()
                                          .startTime(date)
                                          .title("Future event")
+                                         .eventDuration(4)
+                                         .organizerId(7)
                                          .build()));
+        when(userService.findUserEntityById(7))
+                .thenReturn(User.builder()
+                                .lastName("Diver")
+                                .firstName("Jane")
+                                .build());
 
         var response = service.getUpcomingEvents("valid");
 
@@ -39,5 +49,9 @@ class ThirdPartyEventServiceUTC {
                                    .getEventDate());
         assertEquals("Future event", response.getFirst()
                                              .getEventName());
+        assertEquals("Diver Jane", response.getFirst()
+                                           .getOrganizerName());
+        assertEquals(4, response.getFirst()
+                                .getEventDuration());
     }
 }

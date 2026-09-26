@@ -14,16 +14,25 @@ import org.springframework.transaction.annotation.Transactional;
 public class ThirdPartyEventService {
     private final EventRepository eventRepository;
     private final ThirdPartyTokenService tokenService;
+    private final UserService userService;
 
     @Transactional(readOnly = true)
     public List<ThirdPartyEventResponse> getUpcomingEvents(String tokenValue) {
         tokenService.validate(tokenValue);
         return eventRepository.findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum.PUBLISHED, Instant.now())
                               .stream()
-                              .map(event -> ThirdPartyEventResponse.builder()
-                                                                   .eventDate(event.getStartTime())
-                                                                   .eventName(event.getTitle())
-                                                                   .build())
+                              .map(event -> {
+                                  var organizer = userService.findUserEntityById(event.getOrganizerId());
+                                  if (organizer == null) {
+                                      throw new IllegalStateException("Organizer not found for event " + event.getId());
+                                  }
+                                  return ThirdPartyEventResponse.builder()
+                                                                .eventDate(event.getStartTime())
+                                                                .eventName(event.getTitle())
+                                                                .organizerName(organizer.getLastName() + " " + organizer.getFirstName())
+                                                                .eventDuration(event.getEventDuration())
+                                                                .build();
+                              })
                               .toList();
     }
 }

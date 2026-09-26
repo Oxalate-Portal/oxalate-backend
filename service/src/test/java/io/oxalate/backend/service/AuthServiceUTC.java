@@ -8,12 +8,15 @@ import static io.oxalate.backend.api.UserStatusEnum.LOCKED;
 import io.oxalate.backend.api.UserTypeEnum;
 import io.oxalate.backend.api.request.EmailChangeRequest;
 import io.oxalate.backend.api.request.LoginRequest;
+import io.oxalate.backend.api.request.SignupRequest;
 import io.oxalate.backend.events.AppEventPublisher;
 import io.oxalate.backend.exception.OxalateAuthenticationException;
 import io.oxalate.backend.model.Membership;
 import io.oxalate.backend.model.Role;
 import io.oxalate.backend.model.Token;
 import static io.oxalate.backend.model.TokenType.EMAIL_CHANGE;
+import static io.oxalate.backend.model.TokenType.EMAIL_RESEND;
+import static io.oxalate.backend.model.TokenType.REGISTRATION;
 import io.oxalate.backend.model.User;
 import io.oxalate.backend.security.LoginAttemptService;
 import io.oxalate.backend.security.jwt.JwtUtils;
@@ -78,6 +81,7 @@ class AuthServiceUTC {
         ReflectionTestUtils.setField(authService, "secureCookie", true);
         ReflectionTestUtils.setField(authService, "sameSite", "Strict");
         ReflectionTestUtils.setField(authService, "emailChangeUrl", "http://localhost:3000/auth/email-change");
+        ReflectionTestUtils.setField(authService, "registrationUrl", "http://localhost:3000/registration");
     }
 
     @Test
@@ -205,6 +209,43 @@ class AuthServiceUTC {
         assertEquals("http://localhost:3000/auth/email-change?status=INVALID", uri.toString());
         verify(registrationService).removeTokenByUserIdAndType(100L, EMAIL_CHANGE);
         verify(userService, never()).updateUsername(anyLong(), anyString());
+    }
+
+    @Test
+    void verifyRegistrationInvalidTokenReturnsInvalidRedirectWithoutDereferencingToken() {
+        var request = new MockHttpServletRequest();
+        when(registrationService.getValidToken("missing-token", REGISTRATION)).thenReturn(null);
+
+        URI uri = authService.verifyRegistration("missing-token", request);
+
+        assertEquals("http://localhost:3000/registration?status=INVALID", uri.toString());
+        verify(userService, never()).updateStatus(anyLong(), eq(ACTIVE));
+        verify(registrationService, never()).removeTokenByUserId(anyLong());
+    }
+
+    @Test
+    void registerUserGeneratesAndEmailsRegistrationTokenBeforeResendToken() {
+        var request = new MockHttpServletRequest();
+        var signupRequest = SignupRequest.builder()
+                                         .username("new.user@example.com")
+                                         .password("ValidPassword1!")
+                                         .firstName("New")
+                                         .lastName("User")
+                                         .language("en")
+                                         .build();
+        var user = createActiveUser(100L, signupRequest.getUsername());
+
+        when(userService.isUsernameValid(signupRequest.getUsername())).thenReturn(true);
+        when(userService.createNewUser(signupRequest)).thenReturn(user);
+        when(registrationService.generateToken(100L, REGISTRATION)).thenReturn("registration-token");
+        when(registrationService.generateToken(100L, EMAIL_RESEND)).thenReturn("resend-token");
+
+        var response = authService.registerUser(signupRequest, request);
+
+        assertEquals("resend-token", response.getToken());
+        verify(registrationService).generateToken(100L, REGISTRATION);
+        verify(registrationService).generateToken(100L, EMAIL_RESEND);
+        verify(emailService).sendConfirmationEmail(user, "registration-token");
     }
 
     private User createActiveUser(long id, String username) {
