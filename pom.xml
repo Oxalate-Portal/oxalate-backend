@@ -38,7 +38,7 @@
         <jacoco.min.line>0.00</jacoco.min.line>
 
         <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
-        <checkstyle.version>10.26.1</checkstyle.version>
+        <checkstyle.version>14.1.0</checkstyle.version>
         <checkstyle.config.location>${maven.multiModuleProjectDirectory}/config/checkstyle/checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>${maven.multiModuleProjectDirectory}/config/checkstyle/suppressions.xml</checkstyle.suppressions.location>
     </properties>

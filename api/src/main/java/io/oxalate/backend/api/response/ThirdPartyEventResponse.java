@@ -16,4 +16,6 @@ import tools.jackson.databind.annotation.JsonNaming;
 public class ThirdPartyEventResponse {
     private Instant eventDate;
     private String eventName;
+    private String organizerName;
+    private int eventDuration;
 }
