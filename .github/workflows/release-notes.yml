@@ -1,0 +1,87 @@
+name: Generate release notes
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    name: Generate and publish release notes
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out released commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Resolve release tags
+        id: tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --force --tags origin
+
+          current_tag="$(git tag --points-at '${{ github.event.workflow_run.head_sha }}' \
+            | sort -V \
+            | tail -n 1)"
+          if [ -z "${current_tag}" ]; then
+            echo "No release tag points at the completed CI commit." >&2
+            exit 1
+          fi
+
+          previous_tag="$(git tag --sort=-version:refname \
+            | awk -v current="${current_tag}" '$0 != current { print; exit }')"
+          if [ -z "${previous_tag}" ]; then
+            echo "No previous release tag was found." >&2
+            exit 1
+          fi
+
+          echo "base-ref=${previous_tag}" >> "${GITHUB_OUTPUT}"
+          echo "head-ref=${current_tag}" >> "${GITHUB_OUTPUT}"
+          echo "Generating notes for ${previous_tag}..${current_tag}"
+
+      - name: Generate release notes with Copilot
+        id: notes
+        uses: github/copilot-release-notes@main
+        with:
+          base-ref: ${{ steps.tags.outputs.base-ref }}
+          head-ref: ${{ steps.tags.outputs.head-ref }}
+          instructions: .github/release-notes-instructions.md
+          model: gpt-5.6-luna
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+
+      - name: Update GitHub release
+        uses: actions/github-script@v9
+        env:
+          RELEASE_TAG: ${{ steps.tags.outputs.head-ref }}
+          RELEASE_NOTES: ${{ steps.notes.outputs.release-notes }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = process.env.RELEASE_TAG;
+            const body = process.env.RELEASE_NOTES;
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              body
+            });
+
+            core.info(`Updated release notes for ${tag}: ${release.data.html_url}`);
