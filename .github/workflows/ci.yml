@@ -3,6 +3,9 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - synchronize
   push:
     branches:
       - main
@@ -19,6 +22,7 @@ concurrency: build
 jobs:
   test:
     name: Run all tests
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -51,11 +55,14 @@ jobs:
     name: Build and push Docker image
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
       packages: write
       id-token: write
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout repository
@@ -99,11 +106,20 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
 
       - name: Build jar-file with Maven
         shell: bash
         run: |
           ./mvnw clean package
+
+      - name: Publish API package to GitHub Packages
+        shell: bash
+        run: |
+          ./mvnw -B -ntp deploy -pl api -am -DskipTests \
+            -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }}
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action

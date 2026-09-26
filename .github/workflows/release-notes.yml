@@ -59,6 +59,7 @@ jobs:
           instructions: .github/release-notes-instructions.md
           model: gpt-5.6-luna
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
       - name: Update GitHub release
