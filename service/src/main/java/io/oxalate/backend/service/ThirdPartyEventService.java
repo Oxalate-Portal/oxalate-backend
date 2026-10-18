@@ -19,18 +19,25 @@ public class ThirdPartyEventService {
     @Transactional(readOnly = true)
     public List<ThirdPartyEventResponse> getUpcomingEvents(String tokenValue) {
         tokenService.validate(tokenValue);
+
         return eventRepository.findByStatusAndStartTimeAfterOrderByStartTimeAsc(EventStatusEnum.PUBLISHED, Instant.now())
                               .stream()
                               .map(event -> {
                                   var organizer = userService.findUserEntityById(event.getOrganizerId());
+
                                   if (organizer == null) {
                                       throw new IllegalStateException("Organizer not found for event " + event.getId());
                                   }
+
+                                  var participantCount = userService.findEventParticipants(event.getId())
+                                                                    .size();
+
                                   return ThirdPartyEventResponse.builder()
                                                                 .eventDate(event.getStartTime())
                                                                 .eventName(event.getTitle())
                                                                 .organizerName(organizer.getLastName() + " " + organizer.getFirstName())
                                                                 .eventDuration(event.getEventDuration())
+                                                                .participantCount(participantCount + 1) // +1 for the organizer
                                                                 .build();
                               })
                               .toList();

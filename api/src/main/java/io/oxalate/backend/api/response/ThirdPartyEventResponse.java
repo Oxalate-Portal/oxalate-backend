@@ -18,4 +18,5 @@ public class ThirdPartyEventResponse {
     private String eventName;
     private String organizerName;
     private int eventDuration;
+    private int participantCount;
 }
