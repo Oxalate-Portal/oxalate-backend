@@ -210,12 +210,12 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.196</version>
+                <version>6.0.0</version>
             </dependency>
             <dependency>
                 <groupId>org.checkerframework</groupId>
                 <artifactId>checker-qual</artifactId>
-                <version>4.3.0</version>
+                <version>4.3.1</version>
             </dependency>
             <dependency>
                 <groupId>io.swagger.core.v3</groupId>
