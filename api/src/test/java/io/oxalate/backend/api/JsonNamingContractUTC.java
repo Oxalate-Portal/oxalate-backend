@@ -92,7 +92,8 @@ class JsonNamingContractUTC {
     private static List<Class<?>> dtoClasses() {
         var result = new ArrayList<Class<?>>();
 
-        try (ScanResult scanResult = new ClassGraph().acceptPackages(API_PACKAGE)
+        try (ScanResult scanResult = new ClassGraph().enableClasspath()
+                                                     .acceptPackages(API_PACKAGE)
                                                      .enableClassInfo()
                                                      .scan()) {
             for (var classInfo : scanResult.getAllClasses()) {
@@ -100,7 +101,7 @@ class JsonNamingContractUTC {
                     continue;
                 }
 
-                var dtoClass = classInfo.loadClass();
+                var dtoClass = loadClass(classInfo.getName());
 
                 if (hasInstanceField(dtoClass) || dtoClass.isAnnotationPresent(Schema.class)) {
                     result.add(dtoClass);
@@ -116,8 +117,16 @@ class JsonNamingContractUTC {
      * cross the wire, so they are not part of the contract.
      */
     private static boolean isLombokBuilder(ClassInfo classInfo) {
-        return classInfo.isInnerClass() && classInfo.getSimpleName()
-                                                    .endsWith("Builder");
+        return classInfo.isNestedClass() && classInfo.getSimpleName()
+                                                     .endsWith("Builder");
+    }
+
+    private static Class<?> loadClass(String className) {
+        try {
+            return Class.forName(className, false, JsonNamingContractUTC.class.getClassLoader());
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException("Unable to load scanned DTO class " + className, exception);
+        }
     }
 
     private static boolean hasInstanceField(Class<?> dtoClass) {
