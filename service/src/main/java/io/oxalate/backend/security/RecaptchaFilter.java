@@ -30,6 +30,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class RecaptchaFilter extends OncePerRequestFilter {
 
     private static final String AUDIT_NAME = "RecaptchaFilter";
+    public static final String RECAPTCHA_VERIFICATION_FAILED = "RECAPTCHA_VERIFICATION_FAILED";
 
     /**
      * OWASP A07:2025 - every unauthenticated POST endpoint that can be abused for credential stuffing, account
@@ -70,7 +71,11 @@ public class RecaptchaFilter extends OncePerRequestFilter {
                     recaptchaResponse = recaptchaService.validateToken(recaptchaToken);
                 } catch (RuntimeException e) {
                     log.error("RecaptchaFilter.doFilterInternal: Failed to validate captcha token", e);
-                    throw new BadCredentialsException("Failed to validate captcha token towards server");
+                    response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    response.setContentType("application/json");
+                    response.getWriter()
+                            .write("{\"code\":\"" + RECAPTCHA_VERIFICATION_FAILED + "\"}");
+                    return;
                 }
 
                 if (recaptchaResponse != null) {
