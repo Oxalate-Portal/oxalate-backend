@@ -106,16 +106,27 @@ public final class RestEndpointInventory {
 
     public static synchronized List<Class<?>> apiInterfaces() {
         if (cachedInterfaces == null) {
-            try (var scan = new ClassGraph().enableClassInfo()
+            try (var scan = new ClassGraph().enableClasspath()
+                                            .enableClassInfo()
                                             .acceptPackages(API_PACKAGE)
                                             .scan()) {
                 List<Class<?>> interfaces = new ArrayList<>(scan.getAllInterfaces()
-                                                                .loadClasses());
+                                                                .stream()
+                                                                .map(classInfo -> loadClass(classInfo.getName()))
+                                                                .toList());
                 interfaces.sort(Comparator.comparing(Class::getSimpleName));
                 cachedInterfaces = List.copyOf(interfaces);
             }
         }
         return cachedInterfaces;
+    }
+
+    private static Class<?> loadClass(String className) {
+        try {
+            return Class.forName(className, false, RestEndpointInventory.class.getClassLoader());
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException("Unable to load scanned API interface " + className, exception);
+        }
     }
 
     public static synchronized List<Endpoint> endpoints() {
